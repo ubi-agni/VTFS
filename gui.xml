@@ -1,0 +1,6 @@
+<vbox>
+  <slider args="0,255,128" handle="slider"/>
+  <button args="Click me" handle="my button"/>
+  <checkbox args="Check me,true" handle="theCheckBox"/>
+  <image handle="image2"/>
+</vbox>

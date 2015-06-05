@@ -35,6 +35,8 @@ SET(APPS ApproachTest
         ICLCartImpTest
         RightKukaTest
         TwistFollowTest
+        NewappTest
+        RemoteGUITest
 #        anotherapp
    )
 
