@@ -34,4 +34,14 @@ struct dirt_points_msg{
     Eigen::Vector3d markerpoints_pos;
     Eigen::Vector3d markerpoints_nv;
 };
+
+struct gui_msg{
+    //check whether button is clicked
+    bool bt_click;
+    //check the value of the slider
+    double sl;
+    //check whether the checkbox is checked
+    bool cb;
+};
+
 #endif // MSGCONTENTTYPE_H

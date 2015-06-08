@@ -49,25 +49,29 @@ enum RsbDataType{
     LeftMyrmex,
     RightMyrmex,
     LeftTacPointClouds,
-    RightTacPointClouds
+    RightTacPointClouds,
+    GuiEvent
 };
 
 class ComRSB : public Com
 {
 public:
     ComRSB();
+    bool gui_receive(gui_msg& msg);
     bool tactile_receive(myrmex_msg& msg, std::string tacpart);
     bool fiducialmarker_receive(markered_object_msg & msg);
     bool markerpoints_receive(dirt_points_msg& msg);
     void add_msg(RsbDataType& rdt);
     void kuka_msg_send(kuka_msg& msg, std::string tacpart);
     void tacpcs_msg_send(tacpcs_msg& msg, std::string tacpart);
+    void register_external(RsbDataType &type, boost::function<void(boost::shared_ptr<std::string>)> &fun);
 private:
     boost::shared_ptr< rsb::converter::ProtocolBufferConverter<TacMsg> >* converterTac;
     boost::shared_ptr< rsb::converter::ProtocolBufferConverter<VisMsg> >* converterVis;
     boost::shared_ptr< rsb::converter::ProtocolBufferConverter<MarkerPointsMsg> > *converterMarkerPoints;
     boost::shared_ptr< rsb::converter::ProtocolBufferConverter<PCsMsg> >* converterPCs;
     boost::shared_ptr< rsb::converter::ProtocolBufferConverter<RobotMsg> >* converterRobot;
+    boost::shared_ptr< rsb::converter::ProtocolBufferConverter<GuiMsg> >* converterGui;
 
     std::map<std::string,Informer<PCsMsg>::Ptr> inf_pcs;
     std::map<std::string,Informer<RobotMsg>::Ptr> inf_robot;
@@ -76,6 +80,7 @@ private:
     Scope* scope_Markerpoints;
     std::map<std::string,ListenerPtr> lis_tac;
     ListenerPtr lis_vis,lis_Markerpoints;
+    ListenerPtr lis_gui;
     Factory* factory;
 };
 

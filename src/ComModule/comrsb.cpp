@@ -3,7 +3,7 @@
 #include <kdl/frames.hpp>
 
 std::mutex mutex_lefttac,mutex_righttac,mutex_vis,\
-        mutex_pcs,mutex_markerpoints;
+        mutex_pcs,mutex_markerpoints,mutex_gui;
 double right_position3d[3],right_CPnormal[3],\
         right_position3d_Object[3],right_CPnormal_Object[3];
 double left_position3d[3],left_CPnormal[3],\
@@ -14,11 +14,24 @@ tacpcs_msg  left_tacpcs_msg, right_tacpcs_msg;
 myrmex_msg left_myrmex, right_myrmex;
 markered_object_msg obj;
 dirt_points_msg dirt_ps;
+gui_msg gm;
 
 bool is_get_left_tac_msg = false;
 bool is_get_right_tac_msg = false;
 bool is_get_vis_msg = false;
 bool is_get_dirtps_msg = false;
+
+void handle_gui(boost::shared_ptr<std::string> data){
+    mutex_gui.lock();
+    std::cout<<"data get from gui "<<*data<<std::endl;
+//    //check whether button is clicked
+//    gm.bt_click = data->bt_click();
+//    //check the value of the slider
+//    gm.sl = data->sl();
+//    //check whether the checkbox is checked
+//    gm.cb = data->cb();
+    mutex_gui.unlock();
+}
 
 void handle_lefttac(boost::shared_ptr<TacMsg> data) {
     mutex_lefttac.lock();
@@ -114,6 +127,14 @@ void ComRSB::tacpcs_msg_send(tacpcs_msg& msg, std::string tacpart){
         pcs_msg->add_cpnormalobjectvector(msg.CPnormal_Object[i]);
     }
     inf_pcs[tacpart]->publish(pcs_msg);
+}
+
+
+bool ComRSB::gui_receive(gui_msg& msg){
+    mutex_gui.lock();
+    msg = gm;
+    mutex_gui.unlock();
+
 }
 
 bool ComRSB::tactile_receive(myrmex_msg& msg, std::string tacpart){
@@ -255,10 +276,24 @@ void ComRSB::add_msg(RsbDataType& rdt){
         rsb::converter::converterRepository<std::string>()->registerConverter(*converterPCs);
         inf_pcs["rightmyrmex"] = factory->createInformer<PCsMsg> ("/right/PCsMsg");
         break;
+    case GuiEvent:
+        converterGui = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<GuiMsg> > \
+                (new rsb::converter::ProtocolBufferConverter<GuiMsg>());
+        lis_gui = factory->createListener(*(new Scope("/foo")));
+        lis_gui->addHandler(HandlerPtr(new DataFunctionHandler<std::string>(&handle_gui)));
+        break;
     default:
         std::cout<<"you are adding the wrong msg"<<std::endl;
     }
 }
+
+void ComRSB::register_external(RsbDataType &type, boost::function<void(boost::shared_ptr<std::string>)> &fun) {
+    converterGui = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<GuiMsg> > \
+            (new rsb::converter::ProtocolBufferConverter<GuiMsg>());
+    lis_gui = factory->createListener(*(new Scope("/foo")));
+    lis_gui->addHandler(HandlerPtr(new DataFunctionHandler<std::string>(fun)));
+}
+
 ComRSB::ComRSB()
 {
     factory = &(getFactory());

@@ -38,6 +38,7 @@ class TacMsg;
 class VisMsg;
 class RobotMsg;
 class MarkerPointsMsg;
+class GuiMsg;
 
 // ===================================================================
 
@@ -627,6 +628,108 @@ class MarkerPointsMsg : public ::google::protobuf::Message {
   void InitAsDefaultInstance();
   static MarkerPointsMsg* default_instance_;
 };
+// -------------------------------------------------------------------
+
+class GuiMsg : public ::google::protobuf::Message {
+ public:
+  GuiMsg();
+  virtual ~GuiMsg();
+
+  GuiMsg(const GuiMsg& from);
+
+  inline GuiMsg& operator=(const GuiMsg& from) {
+    CopyFrom(from);
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const GuiMsg& default_instance();
+
+  void Swap(GuiMsg* other);
+
+  // implements Message ----------------------------------------------
+
+  GuiMsg* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const GuiMsg& from);
+  void MergeFrom(const GuiMsg& from);
+  void Clear();
+  bool IsInitialized() const;
+
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // required bool bt_click = 1;
+  inline bool has_bt_click() const;
+  inline void clear_bt_click();
+  static const int kBtClickFieldNumber = 1;
+  inline bool bt_click() const;
+  inline void set_bt_click(bool value);
+
+  // required double sl = 2;
+  inline bool has_sl() const;
+  inline void clear_sl();
+  static const int kSlFieldNumber = 2;
+  inline double sl() const;
+  inline void set_sl(double value);
+
+  // required bool cb = 3;
+  inline bool has_cb() const;
+  inline void clear_cb();
+  static const int kCbFieldNumber = 3;
+  inline bool cb() const;
+  inline void set_cb(bool value);
+
+  // @@protoc_insertion_point(class_scope:manip.GuiMsg)
+ private:
+  inline void set_has_bt_click();
+  inline void clear_has_bt_click();
+  inline void set_has_sl();
+  inline void clear_has_sl();
+  inline void set_has_cb();
+  inline void clear_has_cb();
+
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+
+  double sl_;
+  bool bt_click_;
+  bool cb_;
+
+  mutable int _cached_size_;
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+
+  friend void  protobuf_AddDesc_mydata_2eproto();
+  friend void protobuf_AssignDesc_mydata_2eproto();
+  friend void protobuf_ShutdownFile_mydata_2eproto();
+
+  void InitAsDefaultInstance();
+  static GuiMsg* default_instance_;
+};
 // ===================================================================
 
 
@@ -1080,6 +1183,76 @@ MarkerPointsMsg::normalvector() const {
 inline ::google::protobuf::RepeatedField< float >*
 MarkerPointsMsg::mutable_normalvector() {
   return &normalvector_;
+}
+
+// -------------------------------------------------------------------
+
+// GuiMsg
+
+// required bool bt_click = 1;
+inline bool GuiMsg::has_bt_click() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
+}
+inline void GuiMsg::set_has_bt_click() {
+  _has_bits_[0] |= 0x00000001u;
+}
+inline void GuiMsg::clear_has_bt_click() {
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline void GuiMsg::clear_bt_click() {
+  bt_click_ = false;
+  clear_has_bt_click();
+}
+inline bool GuiMsg::bt_click() const {
+  return bt_click_;
+}
+inline void GuiMsg::set_bt_click(bool value) {
+  set_has_bt_click();
+  bt_click_ = value;
+}
+
+// required double sl = 2;
+inline bool GuiMsg::has_sl() const {
+  return (_has_bits_[0] & 0x00000002u) != 0;
+}
+inline void GuiMsg::set_has_sl() {
+  _has_bits_[0] |= 0x00000002u;
+}
+inline void GuiMsg::clear_has_sl() {
+  _has_bits_[0] &= ~0x00000002u;
+}
+inline void GuiMsg::clear_sl() {
+  sl_ = 0;
+  clear_has_sl();
+}
+inline double GuiMsg::sl() const {
+  return sl_;
+}
+inline void GuiMsg::set_sl(double value) {
+  set_has_sl();
+  sl_ = value;
+}
+
+// required bool cb = 3;
+inline bool GuiMsg::has_cb() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+inline void GuiMsg::set_has_cb() {
+  _has_bits_[0] |= 0x00000004u;
+}
+inline void GuiMsg::clear_has_cb() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+inline void GuiMsg::clear_cb() {
+  cb_ = false;
+  clear_has_cb();
+}
+inline bool GuiMsg::cb() const {
+  return cb_;
+}
+inline void GuiMsg::set_cb(bool value) {
+  set_has_cb();
+  cb_ = value;
 }
 
 
