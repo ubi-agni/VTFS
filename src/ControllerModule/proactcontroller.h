@@ -1,25 +1,6 @@
-/*
-    This file is part of VTFS--Visuo-Tactile-Force-Servoing.
-
-    VTFS is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
-    (at your option) any later version.
-
-    VTFS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with CBF.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    Copyright 2009, 2010 Qiang Li
-*/
 #ifndef PROACTCONTROLLER_H
 #define PROACTCONTROLLER_H
-#include "actcontroller.h"
+#include "ControllerModule/actcontroller.h"
 #include "RobotModule/Robot.h"
 #include "TaskModule/kukaselfctrltask.h"
 
@@ -33,6 +14,7 @@ public:
     //move the object to the desired reference designed by Task
     void update_robot_reference(Robot *, Task *);
     void update_robot_reference(Robot *, Task *,myrmex_msg *){}
+    void update_robot_reference(Robot *, Task *,FingertipTac *){}
     void update_robot_reference(Robot *, Task *, Eigen::VectorXd, RobotState*){}
     void update_controller_para(Eigen::Vector3d,PROTaskNameT);
     void update_controller_para(std::pair<Eigen::Vector3d,double>&,PROTaskNameT);
@@ -44,6 +26,7 @@ public:
     void set_pm(ParameterManager &p);
     void get_desired_lv(Robot *, Task *);
     void get_desired_lv(Robot *, Task *, myrmex_msg *){}
+    void get_desired_lv(Robot *, Task *, FingertipTac *){}
     void get_desired_lv(Robot *, Task *, Eigen::VectorXd kukaft,RobotState*){}
     void get_lv(Eigen::Vector3d& lv, Eigen::Vector3d& ov);
     void set_init_TM(Eigen::Matrix3d tm) {m_init_tm = tm;}

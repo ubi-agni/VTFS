@@ -325,10 +325,11 @@ void KukaLwr::initKukaResource (){
     kukaResourceP->set((*myResourceVector));
 }
 
-void KukaLwr::initChains(){
+void KukaLwr::initChains(ToolNameT tn){
 /*
     DH representation referecen paper:Visual Estimation and Control of Robot Manipulating Systems(phd thesis)
 */
+    toolname = tn;
     if (kuka_right == rn){
 #ifdef DJALLIL_CONF
     worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
@@ -341,8 +342,13 @@ void KukaLwr::initChains(){
         worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
 #else
         worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0.0823, 0.897, 0.2975))));
+        //initial orientation kuka base local y then local z
         worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(1.047)))));
         worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(0.5236)))));
+        // Orientation identical to ROS model from kuka_cal.xml (fixed axis roll pitch yaw  = x y z)
+        //worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(M_PI-2.28576)))));
+        //worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(0.8484)))));
+        //worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotX(0.71215)))));
 
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
@@ -355,8 +361,14 @@ void KukaLwr::initChains(){
     }
     if (kuka_left == rn){
         worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(-0.0823, 0.897, 0.2975))));
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(-1.047)))));
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(2.6180)))));
+        //initial orientation kuka base local y then local z
+//        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(-1.047)))));
+//        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(2.6180)))));
+        // Orientation identical to ROS model from kuka_cal.xml (fixed axis roll pitch yaw  = x y z)
+        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(2.28576)))));
+        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(0.8484)))));
+        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotX(-0.71215)))));
+
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.4,0.0))));
@@ -365,8 +377,13 @@ void KukaLwr::initChains(){
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
         //please comment the next line code if you are doing the robot calibration.
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
+        if(tn == sensing_pole){
+            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
+            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
+        }
+        if(tn == teensy_finger){
+            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
+        }
     }
     baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
     baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
@@ -561,7 +578,7 @@ void KukaLwr::initCbf (){
 }
 
 
-KukaLwr::KukaLwr(RobotNameT robotname, ComOkc& com)
+KukaLwr::KukaLwr(RobotNameT robotname, ComOkc& com, ToolNameT tn)
 {
     if (0 != pthread_mutex_init(&primitiveControllerMutex,NULL)){
         perror ("CbfPlanner: could not initialize Mutex");
@@ -569,7 +586,7 @@ KukaLwr::KukaLwr(RobotNameT robotname, ComOkc& com)
     }
     rn = robotname;
     okc_node = &com;
-    initChains();
+    initChains(tn);
     initCbf();
     control_period = 4;
     Jac_kdl = KDL::Jacobian (7);

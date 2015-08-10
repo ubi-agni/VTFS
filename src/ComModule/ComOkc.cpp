@@ -1,5 +1,6 @@
 #include "ComModule/ComOkc.h"
 #include "UtilModule/Util.h"
+#include "cd_dynamics/CDDynamics.hpp"
 
 int ComOkc::instance_count = 0;
 okc_handle_t* ComOkc::okc = NULL;
@@ -8,87 +9,90 @@ struct timeval v_last;
 int ComOkc::left_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fri_float_t* new_pos){
     ComOkc *com_okc_ptr = (ComOkc*) priv;
     fri_float_t jnt_pos[7];
-    struct timeval v_cur, v_old;
-    long long intervaltime;
+    static int lCnt = 0;
+
     okc_get_jntpos_act(ComOkc::okc,com_okc_ptr->getrobot_id(), jnt_pos);
     okc_get_ft_tcp_est(ComOkc::okc,com_okc_ptr->getrobot_id(), com_okc_ptr->ft);
-    //following two printout are fri_command from krl and fri part test.
-//    std::cout<<"fri offset ";
-//    for (int i = 0; i < LBR_MNJ; i++)
-//    {
-//        std::cout<<ComOkc::okc->robot_data[com_okc_ptr->getrobot_id()].cmdJntPosFriOffset[i]<<",";
-//    }
-//    std::cout<<std::endl;
-
-//    std::cout<<"cmdjntpos ";
-//    for (int i = 0; i < LBR_MNJ; i++)
-//    {
-//        std::cout<<ComOkc::okc->robot_data[com_okc_ptr->getrobot_id()].cmdJntPos[i]<<",";
-//    }
-//    std::cout<<std::endl;
 
     for(int i = 0; i <7; i++){
         com_okc_ptr->jnt_position_act[i] = pos_act[i];
         com_okc_ptr->jnt_position_mea[i] = jnt_pos[i];
     }
+    // feed back data from FRI is available
+    com_okc_ptr->data_available = true;
+
 
     //for the starting stage, without this kuka can not switch to the fri mode.
     if (OKC_OK != okc_is_robot_in_command_mode(com_okc_ptr->okc,com_okc_ptr->robot_id)){
-        //following two printout are fri_command from krl and fri part test.
-//        std::cout<<"left fri offset ";
-//        for (int i = 0; i < LBR_MNJ; i++)
-//        {
-//            std::cout<<ComOkc::okc->robot_data[com_okc_ptr->getrobot_id()].cmdJntPosFriOffset[i]<<",";
-//        }
-//        std::cout<<std::endl;
-
-//        std::cout<<"left cmdjntpos ";
-//        for (int i = 0; i < LBR_MNJ; i++)
-//        {
-//            std::cout<<ComOkc::okc->robot_data[com_okc_ptr->getrobot_id()].cmdJntPos[i]<<",";
-//        }
-//        std::cout<<std::endl;
-
-//        std::cout<<"left msrjntpos ";
-//        for (int i = 0; i < LBR_MNJ; i++)
-//        {
-//            std::cout<<jnt_pos[i]<<",";
-//        }
-//        std::cout<<std::endl;
+        // monitor mode
 
         for(int i = 0; i <7; i++){
             new_pos[i] = jnt_pos[i];
         }
-        return (OKC_OK);
-    }
-    intervaltime = 0;
-    if(gettimeofday(&v_old,NULL)){
-        std::cout<<"gettimeofday function error at the current time"<<std::endl;
-    }
-    com_okc_ptr->data_available = true;
-    while((intervaltime < 1500)&&(com_okc_ptr->controller_update == false)){
-        if(gettimeofday(&v_cur,NULL)){
-            std::cout<<"gettimeofday function error at the current time"<<std::endl;
-        }
-        intervaltime = timeval_diff(NULL,&v_cur,&v_old);
-    }
-    if(com_okc_ptr->controller_update == true){
-        //Todo:use the updated control output
-        for(int i = 0; i <7; i++){
-            new_pos[i] = com_okc_ptr->jnt_command[i];
-//            okc_set_axis_stiffness_damping(okc,robot_id,stiff,damp);
-        }
-        com_okc_ptr->controller_update = false;
-        com_okc_ptr->data_available = false;
     }
     else{
+        // command mode
+        for(int i=0; i<7; i++ ) com_okc_ptr->mLeftCurrentJoint(i) = jnt_pos[i];
+
+        // initialize filter
+        if(com_okc_ptr->mIsLeftArmInitialized == false)
+        {
+            com_okc_ptr->left_filter->SetStateTarget(com_okc_ptr->mLeftCurrentJoint, com_okc_ptr->mLeftCurrentJoint);
+            com_okc_ptr->mIsLeftArmInitialized = true;
+        }
+
+
+        // receive the joint command from the main controller
+        if(com_okc_ptr->controller_update == true){
+            for(int i = 0; i <7; i++){
+                com_okc_ptr->mLeftDesiredJoint(i) = com_okc_ptr->jnt_command[i];
+            }
+            com_okc_ptr->left_filter->SetTarget(com_okc_ptr->mLeftDesiredJoint);
+//            std::cout << "new target is set" << std::endl;
+        }
+
+        // do filtering
+        com_okc_ptr->left_filter->Update();
+        com_okc_ptr->left_filter->GetState(com_okc_ptr->mLeftDesiredJoint);
+
+        // send the joint command to the real robot through FRI
         for(int i = 0; i <7; i++){
-            new_pos[i] = pos_act[i];
+            com_okc_ptr->jnt_command[i] = com_okc_ptr->mLeftDesiredJoint(i);
+            new_pos[i] = com_okc_ptr->mLeftDesiredJoint(i);
         }
         com_okc_ptr->controller_update = false;
-        com_okc_ptr->data_available = false;
+
+
+//        if(lCnt%100 == 0){
+//            std::cout << "mLeftCurrentJoint" << std::endl;
+//            for(int i = 0; i <7; i++){ std::cout << com_okc_ptr->mLeftCurrentJoint(i) << " "; }
+//            std::cout << std::endl;
+
+//            std::cout << "mLeftDesiredJoint" << std::endl;
+//            for(int i = 0; i <7; i++){ std::cout << com_okc_ptr->mLeftDesiredJoint(i) << " "; }
+//            std::cout << std::endl;
+//        }
+//        lCnt++;
     }
     return (OKC_OK);
+
+//    if(com_okc_ptr->controller_update == true){
+//        //Todo:use the updated control output
+//        for(int i = 0; i <7; i++){
+//            new_pos[i] = com_okc_ptr->jnt_command[i];
+////            okc_set_axis_stiffness_damping(okc,robot_id,stiff,damp);
+//        }
+//        com_okc_ptr->controller_update = false;
+//        com_okc_ptr->data_available = false;
+//    }
+//    else{
+//        for(int i = 0; i <7; i++){
+//            new_pos[i] = pos_act[i];
+//        }
+//        com_okc_ptr->controller_update = false;
+//        com_okc_ptr->data_available = false;
+//    }
+
 }
 int ComOkc::right_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fri_float_t* new_pos){
     ComOkc *com_okc_ptr = (ComOkc*) priv;
@@ -441,6 +445,19 @@ ComOkc::ComOkc(RobotNameT connectToRobot=kuka_right, \
     if(rn == kuka_right){
         registerCallback(RIGHT_ROBOT_ID);
     }
+
+
+    // initialize filters
+    left_filter  = new CDDynamics( 7, 0.004, 250.0);
+    right_filter  = new CDDynamics(7, 0.004, 250.0);
+
+    mIsLeftArmInitialized = false;
+    mIsRightArmInitialized = false;
+
+    mLeftCurrentJoint.setZero(7);
+    mRightCurrentJoint.setZero(7);
+    mLeftDesiredJoint.setZero(7);
+    mRightDesiredJoint.setZero(7);
 }
 
 void ComOkc::sleep_cycle_time(){

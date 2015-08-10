@@ -1,22 +1,3 @@
-/*
-    This file is part of VTFS--Visuo-Tactile-Force-Servoing.
-
-    VTFS is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
-    (at your option) any later version.
-
-    VTFS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with CBF.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    Copyright 2009, 2010 Qiang Li
-*/
 #ifndef ROBOT_H
 #define ROBOT_H
 
@@ -31,7 +12,7 @@
 #include <kdl/chainiksolvervel_pinv.hpp>
 #include <UtilModule/kdl_to_eigen.h>
 #include <Eigen/Dense>
-#include <ControllerModule/CtrlParam.h>
+#include "ControllerModule/CtrlParam.h"
 #include "ControllerModule/actcontroller.h"
 #include "UtilModule/RebaType.h"
 
@@ -100,6 +81,7 @@ public:
     KDL::JntArray q;
     KDL::Frame pose;
     virtual void get_eef_ft(Eigen::Vector3d&,Eigen::Vector3d&) = 0;
+    ToolNameT toolname;
 protected:
     Eigen::Matrix3d m_init_tm;
     Eigen::Matrix3d m_TM_eigen;

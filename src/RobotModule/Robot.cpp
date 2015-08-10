@@ -8,6 +8,7 @@ Robot::Robot()
     q.resize(7);
     eff_force.setZero();
     eff_torque.setZero();
+    toolname = sensing_pole;
 }
 
 void Robot::set_cart_command(double *c){

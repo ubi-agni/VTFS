@@ -1,4 +1,4 @@
-#include "forceservocontroller.h"
+#include "ControllerModule/forceservocontroller.h"
 #include "TaskModule/forceservotask.h"
 
 void ForceServoController::initForceServoCtrlParam(FORCETaskNameT fnt){
@@ -41,7 +41,7 @@ ForceServoController::ForceServoController(ParameterManager &p) : ActController(
     initForceServoCtrlParam(F_CURVETRACKING);
     llv_f.setZero();
     lov_f.setZero();
-    lv_filter = new TemporalSmoothingFilter<Vec>(10,Average,Vec(0,0,0,0));
+    lv_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
     vel_rec2.open("/tmp/data/vel_rec.txt");
 }
 void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd ft, RobotState* rs){
@@ -49,7 +49,7 @@ void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd
     tst = *(ForceServoTask*)t;
     Eigen::Vector3d rs_lv,v_ratio;
     Eigen::Vector3d est_v_g;
-    Vec filtered_lv;
+    Eigen::Vector3d filtered_lv;
     est_v_g.setZero();
     rs_lv.setZero();
     v_ratio.setZero();
@@ -81,7 +81,7 @@ void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd
     est_v_g = rs->EstRobotEefLVel_Ref(robot);
 
     rs_lv = rs->robot_orien["eef"].transpose()*rs->EstRobotEefLVel_Ref(robot);
-    filtered_lv = lv_filter->push(Vec(rs_lv(0),rs_lv(1),rs_lv(2),1));
+    filtered_lv = lv_filter->push(rs_lv);
 
     if((filtered_lv[0] == 0)&&(filtered_lv[1] == 0)){
         v_ratio.setZero();

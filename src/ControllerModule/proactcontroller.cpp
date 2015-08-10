@@ -1,4 +1,4 @@
-#include "proactcontroller.h"
+#include "ControllerModule/proactcontroller.h"
 #include <cstddef> //for std::ptrdiff_t;
 
 ProActController::ProActController(ParameterManager &p) : ActController(p)

@@ -1,0 +1,20 @@
+<vbox>
+  <button args="Moveto" handle="moveto"/>
+  <button args="local" handle="localcb"/>
+  <button args="global" handle="globalcb"/>
+  <button args="lxp" handle="lxp"/>
+  <button args="lyp" handle="lyp"/>
+  <button args="lzp" handle="lzp"/>
+  <button args="rxp" handle="rxp"/>
+  <button args="ryp" handle="ryp"/>
+  <button args="rzp" handle="rzp"/>
+  <button args="lxn" handle="lxn"/>
+  <button args="lyn" handle="lyn"/>
+  <button args="lzn" handle="lzn"/>
+  <button args="rxn" handle="rxn"/>
+  <button args="ryn" handle="ryn"/>
+  <button args="rzn" handle="rzn"/>
+  <button args="StopMovement" handle="stopmovement"/>
+  <button args="Close Prog" handle="closeprog"/>
+  <image handle="image2"/>
+</vbox>

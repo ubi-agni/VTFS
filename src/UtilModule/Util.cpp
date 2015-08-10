@@ -242,6 +242,10 @@ void global2local(Eigen::Vector3d g, Eigen::Matrix3d M, Eigen::Vector3d &l){
     l = M.transpose() *g;
 }
 
+void local2global(Eigen::Vector3d l, Eigen::Matrix3d M, Eigen::Vector3d &g){
+    g = M*l;
+}
+
 std::pair<Eigen::Vector3d,double> omega_transform(std::pair<Eigen::Vector3d,Eigen::Vector3d> r_ax,Eigen::Matrix3d R_rinit_linit){
     std::pair<Eigen::Vector3d,double> l_ax;
     l_ax.first = R_rinit_linit * r_ax.first;
@@ -278,3 +282,21 @@ extern Eigen::Matrix3d vectortoskew(Eigen::Vector3d v){
     m(0,1) = -1*v(2);
     return m;
 }
+
+//extern Eigen::VectorXd MatrixtoQuaternion(Eigen::Matrix3d m){
+//    Eigen::VectorXd quater;
+//    quater.setZero(4);
+//    doule x,y,z,w;
+
+//    w = sqrt(1.0 + m(0,0) + m(1,1) + m(2,2)) / 2.0;
+//    double w4 = (4.0 * w);
+//    x = (m(2,1) - m(1,2)) / w4 ;
+//    y = (m(0,2) - m(2,0)) / w4 ;
+//    z = (m(1,0) - m(0,1)) / w4 ;
+
+//    quater(0) = w;
+//    quater(1) = x;
+//    quater(2) = y;
+//    quater(3) = z;
+//    return quater;
+//}

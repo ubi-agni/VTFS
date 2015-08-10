@@ -1,22 +1,3 @@
-/*
-    This file is part of VTFS--Visuo-Tactile-Force-Servoing.
-
-    VTFS is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
-    (at your option) any later version.
-
-    VTFS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with CBF.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    Copyright 2009, 2010 Qiang Li
-*/
 #ifndef ACTCONTROLLER_H
 #define ACTCONTROLLER_H
 #include "RobotModule/Robot.h"
@@ -25,8 +6,9 @@
 #include <utility>
 
 #include "UtilModule/msgcontenttype.h"
-#include "ControllerModule/parametermanager.h"
+#include "parametermanager.h"
 #include "RobotModule/RobotState.h"
+#include "TacModule/fingertiptac.h"
 
 class Robot;
 class RobotState;
@@ -37,6 +19,7 @@ public:
     virtual void update_robot_reference(Robot *) = 0;
     virtual void update_robot_reference(Robot *, Task *) = 0;
     virtual void update_robot_reference(Robot *, Task *,myrmex_msg *) = 0;
+    virtual void update_robot_reference(Robot *, Task *,FingertipTac *) = 0;
     virtual void update_robot_reference(Robot *, Task *, Eigen::VectorXd, RobotState* rs) = 0;
     virtual void update_controller_para(Eigen::Vector3d,PROTaskNameT) = 0;
     virtual void update_controller_para(std::pair<Eigen::Vector3d,double>&,PROTaskNameT) = 0;
@@ -48,6 +31,7 @@ public:
     virtual void set_init_TM(Eigen::Matrix3d tm) = 0;
     virtual void get_desired_lv(Robot *, Task *) = 0;
     virtual void get_desired_lv(Robot *, Task *, myrmex_msg *) = 0;
+    virtual void get_desired_lv(Robot *, Task *, FingertipTac *) = 0;
     virtual void get_desired_lv(Robot *, Task *, Eigen::VectorXd kukaft,RobotState*)=0;
     virtual void get_lv(Eigen::Vector3d& lv, Eigen::Vector3d& ov) = 0;
     virtual void set_pm(ParameterManager &p) = 0;

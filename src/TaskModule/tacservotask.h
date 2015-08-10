@@ -1,22 +1,3 @@
-/*
-    This file is part of VTFS--Visuo-Tactile-Force-Servoing.
-
-    VTFS is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
-    (at your option) any later version.
-
-    VTFS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with CBF.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    Copyright 2009, 2010 Qiang Li
-*/
 #ifndef TACSERVOTASK_H
 #define TACSERVOTASK_H
 
@@ -40,11 +21,24 @@ public:
     void get_desired_cp_myrmex(double *cp){cp[0] = desired_cp_myrmex[0];cp[1] = desired_cp_myrmex[1];}
     void get_desired_cf_myrmex(double& cf_myrmex){cf_myrmex = desired_cf_myrmex;}
     void get_desired_cf_kuka(double& cf_kuka){cf_kuka = desired_cf_kuka;}
+    void set_desired_taxel_mid(int);
+    void set_desired_position_mid(Eigen::Vector3d);
+    void get_desired_position_mid(Eigen::Vector3d &);
+    void set_desired_nv_mid(Eigen::Vector3d);
+    void get_desired_nv_mid(Eigen::Vector3d &);
+    void get_desired_taxel_mid(int &id){id = act_taxel_id;}
+    void set_desired_cf_mid(double);
+    void get_desired_cf_mid(double &p){p = taxel_pressure;}
     void switchtotask(TACTaskNameT taskname);
+    void set_taxelfb_type_mid(TacFBType type);
 private:
     double desired_cp_myrmex[2];
     double desired_cf_myrmex;
     double desired_cf_kuka;
+    int act_taxel_id;
+    double taxel_pressure;
+    Eigen::Vector3d desired_cp_mid;
+    Eigen::Vector3d desired_nv_mid;
 };
 
 #endif // TACSERVOTASK_H

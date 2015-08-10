@@ -1,26 +1,12 @@
-/*
-    This file is part of VTFS--Visuo-Tactile-Force-Servoing.
-
-    VTFS is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
-    (at your option) any later version.
-
-    VTFS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with CBF.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    Copyright 2009, 2010 Qiang Li
-*/
 #ifndef TASK_H
 #define TASK_H
 #include <Eigen/Dense>
 #include <vector>
+
+enum TacFBType{
+    TAXEL_NUM = 0,
+    TAXEL_POSITION
+};
 
 enum TACTaskNameT{
     CONTACT_POINT_TRACKING,
@@ -105,10 +91,18 @@ public:
     virtual void set_desired_cp_myrmex(double *) = 0;
     virtual void set_desired_cf_myrmex(double) = 0;
     virtual void set_desired_cf_kuka(double) = 0;
+    virtual void set_desired_taxel_mid(int) = 0;
+    virtual void get_desired_position_mid(Eigen::Vector3d &)=0;
+    virtual void set_desired_position_mid(Eigen::Vector3d) = 0;
+    virtual void get_desired_nv_mid(Eigen::Vector3d &)=0;
+    virtual void set_desired_nv_mid(Eigen::Vector3d) = 0;
+    virtual void set_desired_cf_mid(double) = 0;
+    virtual void set_taxelfb_type_mid(TacFBType type) = 0;
     TaskNameT curtaskname;
     ModalityT mt;
     MoveFrameT mft;
     Eigen::Vector3d velocity_p2p;
+    TacFBType tft;
 protected:
     Eigen::Vector3d desired_p_eigen,initial_p_eigen;
     Eigen::Matrix3d desired_o_eigen;

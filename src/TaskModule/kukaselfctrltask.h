@@ -1,22 +1,3 @@
-/*
-    This file is part of VTFS--Visuo-Tactile-Force-Servoing.
-
-    VTFS is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
-    (at your option) any later version.
-
-    VTFS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with CBF.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    Copyright 2009, 2010 Qiang Li
-*/
 #ifndef KUKASEFLFCTRLTASK_H
 #define KUKASEFLFCTRLTASK_H
 #include "task.h"
@@ -36,9 +17,16 @@ public:
     void set_desired_cp_myrmex(double *){}
     void set_desired_cf_myrmex(double){}
     void set_desired_cf_kuka(double){}
+    void set_desired_taxel_mid(int){}
+    void set_desired_position_mid(Eigen::Vector3d){}
+    void get_desired_position_mid(Eigen::Vector3d &){}
+    void set_desired_nv_mid(Eigen::Vector3d){}
+    void get_desired_nv_mid(Eigen::Vector3d &){}
+    void set_desired_cf_mid(double){}
     void switchtotask(PROTaskNameT p);
     void switchtoglobalframe();
     void switchtolocalframe();
+    void set_taxelfb_type_mid(TacFBType type){}
 };
 
 #endif // KUKASEFLFCTRLTASK_H

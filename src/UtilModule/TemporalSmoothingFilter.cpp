@@ -1,24 +1,10 @@
 #include <UtilModule/TemporalSmoothingFilter.h>
-#include <ICLGeom/GeomDefs.h>
 #include <Eigen/Dense>
 
 template<class T>
 T apply_median_smoothing(std::deque<T> &buffer){
   std::sort(buffer.begin(),buffer.end());
   return buffer[buffer.size()/2];
-}
-template<>
-icl::geom::Vec apply_median_smoothing(std::deque<icl::geom::Vec> &buffer){
-  std::vector<double> buf(buffer.size());
-  icl::geom::Vec result;
-  for(int d=0;d<4;++d){
-    for(size_t i=0;i<buf.size();++i){
-      buf[i] = buffer[i][d];
-    }
-    std::sort(buf.begin(),buf.end());
-    result[d] = buf[buf.size()/2];
-  }
-  return result;
 }
 
 template<>
@@ -73,5 +59,4 @@ T TemporalSmoothingFilter<T>::push(const T &t){
 
 template class TemporalSmoothingFilter<float>;
 template class TemporalSmoothingFilter<double>;
-template class TemporalSmoothingFilter<icl::geom::Vec>;
 template class TemporalSmoothingFilter<Eigen::Vector3d>;

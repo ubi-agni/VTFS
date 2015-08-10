@@ -52,7 +52,7 @@ IF(NOT CMAKE_BUILD_TYPE)
 ENDIF()
 
 # some compiler flags for the different build settings
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++0x -DQT_NO_KEYWORDS")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++0x -DQT_NO_KEYWORDS -DCBF_NDEBUG")
 SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
@@ -60,11 +60,15 @@ SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 # external libs
 #==============================================================================
 
-# search for icl
-find_package(ICL REQUIRED HINTS ${ICL_ROOT})
-add_definitions(${ICL_CFLAGS})
-add_definitions(${ICL_DEFINITIONS})
-include_directories(${ICL_INCLUDE_DIRS})
+
+# search for cd dynamics
+#find_package(cd_dynamics)
+
+## search for icl
+#find_package(ICL REQUIRED HINTS ${ICL_ROOT})
+#add_definitions(${ICL_CFLAGS})
+#add_definitions(${ICL_DEFINITIONS})
+#include_directories(${ICL_INCLUDE_DIRS})
 
 # search for eigen
 find_package(Eigen3 REQUIRED)
@@ -97,12 +101,44 @@ IF(RST_FOUND)
         LINK_DIRECTORIES(${RST_LIBRARY_DIRS})
 ENDIF()
 
+IF("$ENV{ROS_DISTRO}" STREQUAL "")
+    MESSAGE(WARNING "No ROS environment set! Source /vol/nirobots/ros/indigo/setup.bash")
+ELSE()
+    MESSAGE(WARNING "Found ROS environment")
+    SET(ROS_FOUND TRUE)
+ENDIF()
+
+# if ros found
+IF(ROS_FOUND)
+    MESSAGE(STATUS "found ros")
+    ## Find catkin macros and libraries
+    find_package(catkin REQUIRED COMPONENTS
+      tf
+      sensor_msgs
+      roscpp
+      tf_conversions
+    )
+    add_definitions(-DHAVE_ROS)
+    include_directories(${catkin_INCLUDE_DIRS})
+#${catkin_INCLUDE_DIRS}
+#${catkin_LIBRARIES}
+
+ELSE(ROS_FOUND)
+    MESSAGE(STATUS "ros not found....................................")
+ENDIF(ROS_FOUND)
+
+
+
+SET(CDDynamics_ROOT CDDynamics_ROOT CACHE PATH "Root path to cddynamics")
+include_directories("${CDDynamics_ROOT}/include")
+LIST(APPEND CMAKE_INSTALL_RPATH "${CDDynamics_ROOT}/lib")
+
 SET(Openkc_ROOT Openkc_ROOT CACHE PATH "Root path to openkc")
 include_directories("${Openkc_ROOT}/include")
 LIST(APPEND CMAKE_INSTALL_RPATH "${Openkc_ROOT}/lib")
 
-set(CORE_LIBS ${ICL_LIBRARIES} ${CBF_LIBRARIES} ${orocos_kdl_LIBRARIES} 
-"-L${Openkc_ROOT}/lib -lcbf -lopenkcfri -lrt -lpthread -lm -lorocos-kdl" ${RSB_LIBRARIES} ${RST_LIBRARIES} "-Wl,-rpath ${Openkc_ROOT}/lib")
+set(CORE_LIBS ${ICL_LIBRARIES} ${CBF_LIBRARIES} ${orocos_kdl_LIBRARIES} ${catkin_LIBRARIES}
+"-L${Openkc_ROOT}/lib -L${CDDynamics_ROOT}/lib -lcbf -lopenkcfri -lrt -lpthread -lm -lorocos-kdl -lCDDynamics" ${RSB_LIBRARIES} ${RST_LIBRARIES} "-Wl,-rpath ${Openkc_ROOT}/lib -Wl,-rpath ${CDDynamics_ROOT}/lib")
 
 
 #==============================================================================

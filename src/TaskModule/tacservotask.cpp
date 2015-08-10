@@ -6,6 +6,10 @@ TacServoTask::TacServoTask(TACTaskNameT taskname)
     desired_cp_myrmex[0] = 8.0;
     desired_cp_myrmex[1] = 8.0;
     desired_cf_myrmex = 0.1;
+    act_taxel_id = 0;
+    tft = TAXEL_NUM;
+    desired_cp_mid.setZero();
+    desired_nv_mid.setZero();
 }
 void TacServoTask::switchtotask(TACTaskNameT taskname){
     curtaskname.tact = taskname;
@@ -18,4 +22,30 @@ void TacServoTask::set_desired_cp_myrmex(double *cp){
 
 void TacServoTask::set_desired_cf_myrmex(double cf){
     desired_cf_myrmex = cf;
+}
+
+void TacServoTask::set_desired_taxel_mid(int id){
+    act_taxel_id = id;
+}
+
+void TacServoTask::set_desired_cf_mid(double p){
+    taxel_pressure = p;
+}
+
+void TacServoTask::set_taxelfb_type_mid(TacFBType type){
+    tft = type;
+}
+
+void TacServoTask::set_desired_position_mid(Eigen::Vector3d position){
+    desired_cp_mid = position;
+}
+void TacServoTask::get_desired_position_mid(Eigen::Vector3d &position){
+    position = desired_cp_mid;
+}
+
+void TacServoTask::set_desired_nv_mid(Eigen::Vector3d nv){
+    desired_nv_mid = nv;
+}
+void TacServoTask::get_desired_nv_mid(Eigen::Vector3d &nv){
+    nv = desired_nv_mid;
 }

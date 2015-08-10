@@ -16,27 +16,31 @@
 #*********************************************************************
 
 # set all apps
-SET(APPS ApproachTest
-        CQTest
-        KukaCartImpTest
-        RigTFEst
-        CBFTest
-        ExploringTest
-        LeftCurFolForce
-        SelfTouchTest
-        FMTestNoContact
-        LeftKukaTest
-        StiffTest
-        CompositionCtrlTest
-        FollowMotionTest
-        NewComTest
-        test_smoothing_filter
-        ContactTest
-        ICLCartImpTest
-        RightKukaTest
-        TwistFollowTest
-        NewappTest
+SET(APPS
+         ApproachTest
+         TipComTest
+         TipServo
+#        CQTest
+#        KukaCartImpTest
+#        RigTFEst
+#        CBFTest
+#        ExploringTest
+#        LeftCurFolForce
+#        SelfTouchTest
+#        FMTestNoContact
+#        LeftKukaTest
+#        StiffTest
+#        CompositionCtrlTest
+#        FollowMotionTest
+#        NewComTest
+#        test_smoothing_filter
+#        ContactTest
+#        ICLCartImpTest
+#        RightKukaTest
+#        TwistFollowTest
+#        NewappTest
         RemoteGUITest
+        RemoteGuiControl
 #        anotherapp
    )
 
@@ -65,6 +69,7 @@ foreach(APP ${APPS})
     RobotModule
     UtilModule
     LearningModule
+    TacModule
   )
 
 # set app version

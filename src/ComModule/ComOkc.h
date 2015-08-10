@@ -1,22 +1,12 @@
 /*
-    This file is part of VTFS--Visuo-Tactile-Force-Servoing.
-
-    VTFS is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
-    (at your option) any later version.
-
-    VTFS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with CBF.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    Copyright 2009, 2010 Qiang Li
-*/
+ ============================================================================
+ Name        : ComOkc.h
+ Author      : Qiang Li
+ Version     :
+ Copyright   : Copyright Qiang Li, Universität Bielefeld
+ Description : Calibrate front terminal gui the kuka setup in new building
+ ============================================================================
+ */
 
 #ifndef COMOKC_H
 #define COMOKC_H
@@ -29,6 +19,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <sys/time.h>//for program running test(realtime consuming test)
+
+#include "cd_dynamics/CDDynamics.hpp"
 
 #define LEFT_ROBOT_ID   1
 #define RIGHT_ROBOT_ID  2
@@ -80,6 +72,16 @@ private:
     coords_t cpdamping;
     coords_t extft;
 
+    CDDynamics *left_filter;
+    CDDynamics *right_filter;
+
+    Eigen::VectorXd mLeftCurrentJoint;
+    Eigen::VectorXd mRightCurrentJoint;
+    Eigen::VectorXd mLeftDesiredJoint;
+    Eigen::VectorXd mRightDesiredJoint;
+
+    bool mIsLeftArmInitialized;
+    bool mIsRightArmInitialized;
 };
 
 #endif // COMOKC_H
