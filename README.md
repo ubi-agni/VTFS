@@ -5,14 +5,12 @@ includes joint angle, visual, tactile and force. Currently
 this controller has been tested on the Kuka lwr and iCub.
 
 This software has been developed with the generous support of the
-<1> CITEC (Cognitive Interaction Technology - Center of Excellence),
-which is part of the Excellence Initiative of the German Federal
-Government.
-http://www.cit-ec.de/
-<2> DFG SPP 1527
-http://ipvs.informatik.uni-stuttgart.de/mlr/spp-wordpress/projekte/projects-entries/?wcteid=16
-<3> Honda Research Institute, Europe
-http://www.honda-ri.de/tiki-index.php?page=Welcome
+- CITEC (Cognitive Interaction Technology - Center of Excellence),
+  - http://www.cit-ec.de/
+- DFG SPP 1527
+  - http://ipvs.informatik.uni-stuttgart.de/mlr/spp-wordpress/projekte/projects-entries/?wcteid=16
+- Honda Research Institute, Europe
+  - http://www.honda-ri.de/tiki-index.php?page=Welcome
 
 
 
