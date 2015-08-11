@@ -31,10 +31,7 @@ http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6696703&tag=1
 
 - How to get the software
 
-Install the git toolchain on you computer. Then from a console, clone
-this repository:
-
-git://github.com/fps/CBF.git
+Install the git toolchain on you computer. 
 
 You can use e.g. this comand to check the current version of 
 the software into a directory called cbf:
