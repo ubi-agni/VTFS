@@ -40,9 +40,34 @@ many helpful comments and insightful discussions..
 
 - Requirements
 
-  - KDL, for KDL based inverse and forward kinematics
-  - CBF, controller basis framework developed in the Bielefeld University.
+  - C++ compiler
 
+  - BOOST libs
+
+  - Eigen lib, matrix computation
+
+    http://eigen.tuxfamily.org/index.php?title=Main_Page
+
+  - KDL, for KDL based inverse and forward kinematics
+
+           https://github.com/orocos/orocos_kinematics_dynamics
+
+  - CBF, joint level motion generation given the cartesian command computed by this controller
+
+           https://github.com/fps/CBF
+
+  - RSB, data communicate among the destributed computers.
+
+           https://code.cor-lab.org/projects/rsb
+
+- optional requirements
+
+  - ICL, remote GUI for sending robot command 
+
+         http://docs.cor-lab.de//icl-manual/9.2/html/index.html
+  - ROS, rendering robot and connect to the physically simulated robot
+
+         http://www.ros.org/
 
 - Installation
 
