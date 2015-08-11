@@ -60,6 +60,10 @@ many helpful comments and insightful discussions..
 
            https://code.cor-lab.org/projects/rsb
 
+  - Openkc, wrapper lib for kuka lwr fri communication
+
+           https://opensource.cit-ec.de/projects/openkc
+
 - optional requirements
 
   - ICL, remote GUI for sending robot command 

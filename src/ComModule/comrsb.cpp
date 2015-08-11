@@ -1,4 +1,4 @@
-#include "ComModule/comrsb.h"
+#include "comrsb.h"
 #include <UtilModule/kdl_to_eigen.h>
 #include <kdl/frames.hpp>
 

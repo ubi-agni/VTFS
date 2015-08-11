@@ -1,7 +1,7 @@
 #*********************************************************************
 #**                                                                 **
 #** File   : apps/CMakeLists.txt                                    **
-#** Authors: Viktor Richter                                         **
+#** Authors: Qiang Li                                        **
 #**                                                                 **
 #**                                                                 **
 #** GNU LESSER GENERAL PUBLIC LICENSE                               **
@@ -45,13 +45,19 @@ SET(APPS
    )
 
 # add headers
-include_directories("${PROJECT_SOURCE_DIR}/src/")
+include_directories("${PROJECT_SOURCE_DIR}/src/ControllerModule")
+include_directories("${PROJECT_SOURCE_DIR}/src/TaskModule")
+include_directories("${PROJECT_SOURCE_DIR}/src/ComModule")
+include_directories("${PROJECT_SOURCE_DIR}/src/UtilModule")
+include_directories("${PROJECT_SOURCE_DIR}/src/RobotModule")
+include_directories("${PROJECT_SOURCE_DIR}/src/LearningModule")
+include_directories("${PROJECT_SOURCE_DIR}/src/TacModule")
 
-# add icl headers
-include_directories(${ICL_INCLUDE_DIRS})
+## add icl headers
+#include_directories(${ICL_INCLUDE_DIRS})
 
-# add icl defines
-add_definitions(${ICL_DEFINITIONS})
+## add icl defines
+#add_definitions(${ICL_DEFINITIONS})
 
 # create executables
 foreach(APP ${APPS})

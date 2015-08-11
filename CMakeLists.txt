@@ -1,7 +1,7 @@
 #*********************************************************************
 #**                                                                 **
 #** File   : CMakeLists.txt                                         **
-#** Authors: Viktor Richter                                         **
+#** Authors: Qiang Li                                               **
 #**                                                                 **
 #**                                                                 **
 #** GNU LESSER GENERAL PUBLIC LICENSE                               **

@@ -19,18 +19,13 @@
 //#include <agni_utils/tactile_calibration.hpp>
 #endif
 #include <iomanip>
-#include "UtilModule/Timer.h"
-#include "ComModule/comrsb.h"
+#include "Timer.h"
+#include "comrsb.h"
 
 #ifdef HAVE_ROS
 // ROS objects
 ros::NodeHandle *nh;
 #endif
-
-//for rsb(currently icl remote gui communicate with kuka control via rsb)
-#include <rsb/Handler.h>
-#include <rsb/Listener.h>
-#include <rsb/Factory.h>
 
 
 using namespace rsb;

@@ -9,27 +9,22 @@
  ============================================================================
  */
 
-#include "ComModule/ComOkc.h"
-#include "RobotModule/KukaLwr.h"
-#include "RobotModule/Robot.h"
-#include "ControllerModule/proactcontroller.h"
-#include "TaskModule/kukaselfctrltask.h"
-#include "ComModule/comrsb.h"
-#include "UtilModule/Timer.h"
-#include "UtilModule/msgcontenttype.h"
+#include "ComOkc.h"
+#include "KukaLwr.h"
+#include "Robot.h"
+#include "proactcontroller.h"
+#include "kukaselfctrltask.h"
+#include "comrsb.h"
+#include "Timer.h"
+#include "msgcontenttype.h"
 
 //load the parameter which are stored in xml file
 #include "boost/property_tree/ptree.hpp"
 #include "boost/property_tree/xml_parser.hpp"
 #include "boost/foreach.hpp"
-#include "ControllerModule/CtrlParam.h"
-#include "ControllerModule/parametermanager.h"
+#include "CtrlParam.h"
+#include "parametermanager.h"
 #include <mutex>
-
-//for rsb(currently icl remote gui communicate with kuka control via rsb)
-#include <rsb/Handler.h>
-#include <rsb/Listener.h>
-#include <rsb/Factory.h>
 
 using namespace rsb;
 ComRSB *com_rsb;

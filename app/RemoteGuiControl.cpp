@@ -11,18 +11,13 @@
 #include <iostream>
 #include <mutex>
 
-//for rsb(currently icl remote gui communicate with kuka control via rsb)
-#include <rsb/Handler.h>
-#include <rsb/Listener.h>
-#include <rsb/Factory.h>
-
-#include "UtilModule/Timer.h"
-#include "ComModule/comrsb.h"
-#include "UtilModule/msgcontenttype.h"
-#include "ComModule/ComOkc.h"
-#include "RobotModule/KukaLwr.h"
-#include "RobotModule/Robot.h"
-#include "ControllerModule/proactcontroller.h"
+#include "Timer.h"
+#include "comrsb.h"
+#include "msgcontenttype.h"
+#include "ComOkc.h"
+#include "KukaLwr.h"
+#include "Robot.h"
+#include "proactcontroller.h"
 
 #define newP_x -0.1
 #define newP_y 0.4

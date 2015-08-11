@@ -23,26 +23,26 @@
 #include <iomanip>
 
 
-#include "TacModule/fingertiptac.h"
-#include "TacModule/midtacfeature.h"
-#include "UtilModule/Timer.h"
-#include "ComModule/comrsb.h"
-#include "ComModule/ComOkc.h"
-#include "RobotModule/KukaLwr.h"
-#include "RobotModule/Robot.h"
-#include "ControllerModule/proactcontroller.h"
-#include "TaskModule/kukaselfctrltask.h"
-#include "ControllerModule/forceservocontroller.h"
-#include "TaskModule/forceservotask.h"
-#include "ControllerModule/tacservocontroller.h"
-#include "TaskModule/tacservotask.h"
-#include "RobotModule/RobotState.h"
-#include "UtilModule/Util.h"
+#include "fingertiptac.h"
+#include "midtacfeature.h"
+#include "Timer.h"
+#include "comrsb.h"
+#include "ComOkc.h"
+#include "KukaLwr.h"
+#include "Robot.h"
+#include "proactcontroller.h"
+#include "kukaselfctrltask.h"
+#include "forceservocontroller.h"
+#include "forceservotask.h"
+#include "tacservocontroller.h"
+#include "tacservotask.h"
+#include "RobotState.h"
+#include "Util.h"
 #include <fstream>
 #include <mutex>
 
 //for feature extact from teensyfingertip
-#include "TacModule/midtacfeature.h"
+#include "midtacfeature.h"
 
 //teensy fingertip taxel num
 #define TAC_NUM 12
