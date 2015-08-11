@@ -1,0 +1,13 @@
+VTFS installation instruction
+
+1) install CBF in:  /vol/famula/stable/share/cbf0.2
+2) install Openkc in: /vol/nirobots
+3) install RSB RSC RST in: /vol/famula/stable/share/rs...
+4) install EIGEN
+5) install orocos_kdl [part of ros] in: /vol/famula/stable/share/orocos_kdl
+6  install CDDynamics in: /vol/nirobots/ros/indigo
+
+
+optional installation:
+1) install ROS
+2) install ICL in: /vol/nivision/lib/cmake/ICL

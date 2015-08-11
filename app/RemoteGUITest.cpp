@@ -8,19 +8,12 @@
  ============================================================================
  */
 #include <stdlib.h>
-
 #include <iostream>
 
 
-
-//for rsb(currently icl remote gui communicate with kuka control via rsb)
-#include <rsb/Handler.h>
-#include <rsb/Listener.h>
-#include <rsb/Factory.h>
-
-#include "UtilModule/Timer.h"
-#include "ComModule/comrsb.h"
-#include "UtilModule/msgcontenttype.h"
+#include "Timer.h"
+#include "comrsb.h"
+#include "msgcontenttype.h"
 
 using namespace rsb;
 ComRSB *com_rsb;

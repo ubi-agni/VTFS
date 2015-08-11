@@ -1,4 +1,4 @@
-#include "ComModule/ComOkc.h"
+#include "ComOkc.h"
 #include "UtilModule/Util.h"
 #include "cd_dynamics/CDDynamics.hpp"
 
@@ -9,7 +9,6 @@ struct timeval v_last;
 int ComOkc::left_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fri_float_t* new_pos){
     ComOkc *com_okc_ptr = (ComOkc*) priv;
     fri_float_t jnt_pos[7];
-    static int lCnt = 0;
 
     okc_get_jntpos_act(ComOkc::okc,com_okc_ptr->getrobot_id(), jnt_pos);
     okc_get_ft_tcp_est(ComOkc::okc,com_okc_ptr->getrobot_id(), com_okc_ptr->ft);
@@ -61,37 +60,8 @@ int ComOkc::left_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fri
             new_pos[i] = com_okc_ptr->mLeftDesiredJoint(i);
         }
         com_okc_ptr->controller_update = false;
-
-
-//        if(lCnt%100 == 0){
-//            std::cout << "mLeftCurrentJoint" << std::endl;
-//            for(int i = 0; i <7; i++){ std::cout << com_okc_ptr->mLeftCurrentJoint(i) << " "; }
-//            std::cout << std::endl;
-
-//            std::cout << "mLeftDesiredJoint" << std::endl;
-//            for(int i = 0; i <7; i++){ std::cout << com_okc_ptr->mLeftDesiredJoint(i) << " "; }
-//            std::cout << std::endl;
-//        }
-//        lCnt++;
     }
     return (OKC_OK);
-
-//    if(com_okc_ptr->controller_update == true){
-//        //Todo:use the updated control output
-//        for(int i = 0; i <7; i++){
-//            new_pos[i] = com_okc_ptr->jnt_command[i];
-////            okc_set_axis_stiffness_damping(okc,robot_id,stiff,damp);
-//        }
-//        com_okc_ptr->controller_update = false;
-//        com_okc_ptr->data_available = false;
-//    }
-//    else{
-//        for(int i = 0; i <7; i++){
-//            new_pos[i] = pos_act[i];
-//        }
-//        com_okc_ptr->controller_update = false;
-//        com_okc_ptr->data_available = false;
-//    }
 
 }
 int ComOkc::right_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fri_float_t* new_pos){

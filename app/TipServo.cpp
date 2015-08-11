@@ -365,10 +365,10 @@ void ros_publisher()
         marker.pose.position.x = ftt->data.fingertip_tac_position.at((int)tac_index)(0)/1000;
         marker.pose.position.y = ftt->data.fingertip_tac_position.at((int)tac_index)(1)/1000;
         marker.pose.position.z = ftt->data.fingertip_tac_position.at((int)tac_index)(2)/1000;
-        //        std::cout<<"fingertip tacxel position "<<(int)tac_index<< "is "\
-        //                <<ftt->data.fingertip_tac_position.at((int)tac_index)(0)<<","\
-        //                  <<ftt->data.fingertip_tac_position.at((int)tac_index)(1)<<","\
-        //                    <<ftt->data.fingertip_tac_position.at((int)tac_index)(2)<<std::endl;
+        /*        std::cout<<"fingertip tacxel position "<<(int)tac_index<< "is "\
+                        <<ftt->data.fingertip_tac_position.at((int)tac_index)(0)<<","\
+                         <<ftt->data.fingertip_tac_position.at((int)tac_index)(1)<<","\
+                            <<ftt->data.fingertip_tac_position.at((int)tac_index)(2)<<std::endl;*/
         mutex_tac.unlock();
         marker.pose.orientation.x = 0.0;
         marker.pose.orientation.y = 0.0;
@@ -905,7 +905,7 @@ void run_leftarm(){
         get_mid_info();
         //using all kinds of controllers to update the reference
         mutex_act.lock();
-        for(int i = 0; i < left_ac_vec.size();i++){
+        for(unsigned int i = 0; i < left_ac_vec.size();i++){
             if(left_task_vec[i]->mt == JOINTS)
                 left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i]);
             if(left_task_vec[i]->mt == FORCE){

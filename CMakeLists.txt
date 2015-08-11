@@ -75,6 +75,7 @@ find_package(Eigen3 REQUIRED)
 if(EIGEN3_FOUND)
         include_directories(${EIGEN3_INCLUDE_DIR})
 endif()
+MESSAGE(STATUS ${EIGEN3_INCLUDE_DIR})
 
 find_package(CBF REQUIRED HINTS ${CBF_ROOT})
 include_directories(${CBF_INCLUDE_DIRS})

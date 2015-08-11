@@ -44,7 +44,7 @@ public:
   ) {
     //! First we find the closest reference vector
     CBF::Float min_dist = std::numeric_limits<CBF::Float>::max();
-    unsigned int min_index = 0;
+    unsigned int min_index;
     min_index=0;
     //std::cout  << "[SquarePotential]: sizes: " << references[0].size() << " " << input.size() << std::endl;
 
@@ -61,8 +61,7 @@ public:
     }
     CBF_DEBUG("min_index " << min_index)
 
-    //! The gradient of a square function is just negative of
-    //! input - reference..
+    //! The gradient of a square function is just negative of input - reference..
     result.resize(input.size());
 
     for (unsigned int i = 0; i < input.size(); ++i) {

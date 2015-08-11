@@ -69,7 +69,6 @@ Eigen::MatrixXd FingertipTac::readMatrix(const char *fn){
     }
 
     infile.close();
-//    std::cout<<"row cols are "<<rows<<","<<cols<<std::endl;
     rows--;
 
     // Populate matrix with numbers.
@@ -77,8 +76,6 @@ Eigen::MatrixXd FingertipTac::readMatrix(const char *fn){
     for (int i = 0; i < rows; i++)
         for (int j = 0; j < cols; j++)
             result(i,j) = buff[ cols*i+j ];
-//    std::cout<<"result are "<<result<<std::endl;
-
     return result;
 }
 
@@ -187,9 +184,6 @@ Eigen::Vector3d FingertipTac::get_Center_position(int areanum){
 FingertipTac::FingertipTac(int num)
 {
     data.tac_num = num;
-//    data.fingertip_tac_position.resize(num);
-//    data.fingertip_tac_nv.resize(num);
-//    data.fingertip_tac_pressure.resize(num);
     init_taxelmap();
     pos.setZero();
     nv.setZero();
@@ -212,7 +206,6 @@ void FingertipTac::init_taxelmap(){
         std::cout<<"nv row "<<position_mat.row(i)<<std::endl;
         data.fingertip_tac_position.push_back(position_mat.row(i).transpose());
     }
-//    std::cout<<"tacindex are "<<data.fingertip_tac_position.at(2)<<std::endl;
 }
 
 void FingertipTac::est_cop(tac_data t_data){
@@ -222,39 +215,17 @@ void FingertipTac::est_cop(tac_data t_data){
     get_act_taxelId(t_data);
     act_taxel_num = act_Ids.size();
     if(act_taxel_num > 0){
-//        std::cout<<"p actived taxel num is "<<act_taxel_num<<std::endl;
         press.setZero(act_taxel_num);
         weighted_press.setZero(act_taxel_num);
-//        std::cout<<"p pressure are ";
         for(int i = 0; i < act_taxel_num; i++){
             press[i] = data.fingertip_tac_pressure[act_Ids[i]];
-//            std::cout<<data.fingertip_tac_pressure[act_Ids[i]]<<",";
         }
-//        std::cout<<std::endl;
         press_sum = press.sum();
         weighted_press = press/press_sum;
-//        std::cout<<"p pressure weight are ";
-//        for(int i = 0; i < act_taxel_num; i++){
-//            std::cout<<weighted_press[i]<<",";
-//        }
-//        std::cout<<std::endl;
-//        std::cout<<"p taxel id ";
-//        for(int i = 0; i < act_taxel_num; i++){
-//            std::cout<<act_Ids[i]<<",";
-//        }
-//        std::cout<<std::endl;
-
-
         for(int i = 0; i < act_taxel_num; i++){
-//            std::cout<<"p taxel position "<<act_Ids[i]<<" ";
             pos_sum += weighted_press[i] * data.fingertip_tac_position[act_Ids[i]];
-//            std::cout<<data.fingertip_tac_position[act_Ids[i]](0)<<","\
-//                           <<data.fingertip_tac_position[act_Ids[i]](1)<<","\
-//                            <<data.fingertip_tac_position[act_Ids[i]](2)<<std::endl;
         }
-//        std::cout<<std::endl;
         pos = pos_sum;
-//        std::cout<<"pos is "<<pos(0)<<","<<pos(1)<<","<<pos(2)<<std::endl;
     }
     else{
         pos.setZero();

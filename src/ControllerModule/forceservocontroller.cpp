@@ -1,4 +1,4 @@
-#include "forceservocontroller.h"
+#include "ControllerModule/forceservocontroller.h"
 #include "TaskModule/forceservotask.h"
 
 void ForceServoController::initForceServoCtrlParam(FORCETaskNameT fnt){
