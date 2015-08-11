@@ -46,7 +46,7 @@ many helpful comments and insightful discussions..
 
   - Eigen lib, matrix computation
 
-    http://eigen.tuxfamily.org/index.php?title=Main_Page
+           http://eigen.tuxfamily.org/index.php?title=Main_Page
 
   - KDL, for KDL based inverse and forward kinematics
 
@@ -64,10 +64,11 @@ many helpful comments and insightful discussions..
 
   - ICL, remote GUI for sending robot command 
 
-         http://docs.cor-lab.de//icl-manual/9.2/html/index.html
+           http://docs.cor-lab.de//icl-manual/9.2/html/index.html
+
   - ROS, rendering robot and connect to the physically simulated robot
 
-         http://www.ros.org/
+           http://www.ros.org/
 
 - Installation
 
