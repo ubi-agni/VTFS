@@ -6,10 +6,15 @@ this controller has been tested on the Kuka lwr and iCub.
 
 - This software has been developed with the generous support of the
   - CITEC (Cognitive Interaction Technology - Center of Excellence),
+
                http://www.cit-ec.de/
+
   - DFG SPP 1527
+
                http://ipvs.informatik.uni-stuttgart.de/mlr/spp-wordpress/projekte/projects-entries/?wcteid=16
+
   - Honda Research Institute, Europe
+
                http://www.honda-ri.de/tiki-index.php?page=Welcome
 
 
