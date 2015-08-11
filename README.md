@@ -24,7 +24,7 @@ Dr. Robert Haschke and Prof. Dr. Helge Ritter of the
 Neuroinformatics Group at Bielefeld University for their 
 many helpful comments and insightful discussions..
 
-http://www.ni.techfak.uni-bielefeld.de
+           http://www.ni.techfak.uni-bielefeld.de
 
 - Literature
 
