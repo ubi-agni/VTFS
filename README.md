@@ -30,7 +30,7 @@ http://www.ni.techfak.uni-bielefeld.de
   - Install the git toolchain on you computer. 
   - You can use e.g. this comand to check the current version of the software into a directory called cbf:
 
-git clone https://github.com/liqiang1980/VTFS.git
+           git clone https://github.com/liqiang1980/VTFS.git
 
 - Requirements
 
