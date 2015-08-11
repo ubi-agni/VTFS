@@ -22,17 +22,13 @@ many helpful comments and insightful discussions..
 http://www.ni.techfak.uni-bielefeld.de
 
 - Literature
-
-See e.g.
-http://www.roboticsproceedings.org/rss09/p45.html
-http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6696703&tag=1
+  - http://www.roboticsproceedings.org/rss09/p45.html
+  - http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6696703&tag=1
 
 - How to get the software
 
-Install the git toolchain on you computer. 
-
-You can use e.g. this comand to check the current version of 
-the software into a directory called cbf:
+  - Install the git toolchain on you computer. 
+  - You can use e.g. this comand to check the current version of the software into a directory called cbf:
 
 git clone https://github.com/liqiang1980/VTFS.git
 
