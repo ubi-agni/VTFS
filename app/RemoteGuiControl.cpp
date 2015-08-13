@@ -134,5 +134,5 @@ int main(int argc, char** argv) {
     while(!StopFlag){
     }
     thrd_getMsg.stop();
-    return 1;
+    return 0;
 }

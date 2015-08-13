@@ -63,5 +63,5 @@ int main(int argc, char** argv) {
     }
     std::cout<<"stop is clicked!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
     thrd_getMsg.stop();
-    return 1;
+    return 0;
 }

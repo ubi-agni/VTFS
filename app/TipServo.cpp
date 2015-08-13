@@ -994,7 +994,7 @@ int main(int argc, char* argv[])
     #ifdef HAVE_ROS
     thrd_rospublisher.stop();
     #endif
-    return 1;
+    return 0;
 }
 
 
