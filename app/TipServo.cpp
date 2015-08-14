@@ -22,7 +22,6 @@
 #endif
 #include <iomanip>
 
-
 #include "fingertiptac.h"
 #include "midtacfeature.h"
 #include "Timer.h"
@@ -80,26 +79,22 @@ kuka_msg left_kuka_msg;
 #define newO_y M_PI/2;
 #define newO_z 0.0;
 
-
 double initP_x,initP_y,initP_z;
 double initO_x,initO_y,initO_z;
 
 //using mutex locking controller ptr while it is switching.
 std::mutex mutex_act, mutex_force,mutex_tac;
-
 //estimated force/torque from fri
 Eigen::Vector3d estkukaforce,estkukamoment;
 Eigen::Vector3d filtered_force;
 Eigen::VectorXd ft;
 TemporalSmoothingFilter<Eigen::Vector3d>* cf_filter;
-
 //initialize fingertip instance
 FingertipTac *ftt;
 uint32_t marker_shape;
 ToolNameT tn;
 bool vmt;
 float tac_index;
-
 
 bool StopFlag;
 
@@ -278,16 +273,12 @@ void updateadmittance_cb(boost::shared_ptr<std::string> data){
 //    mutex_act.unlock();
 }
 
-
-
 void markerarray_cb(boost::shared_ptr<std::string> data){
     if((*data == "true"))
         vmt = true;
-    else{
+    else
         vmt = false;
-    }
 }
-
 
 void tacindex_cb(boost::shared_ptr<std::string> data){
    tac_index = std::stoi(*data);
@@ -296,8 +287,7 @@ void tacindex_cb(boost::shared_ptr<std::string> data){
 #ifdef HAVE_ROS
 // receive Tactile data from UBI Fingertips
 void
-recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg)
-{
+recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg){
     // for first sensor each taxel
     //Todo: clear data and all estimated value;
     mutex_tac.lock();
@@ -315,41 +305,38 @@ recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg)
 //    std::cout<<std::endl;
     mutex_tac.unlock();
 }
-
 #endif
 
 
 #ifdef HAVE_ROS
 void run(){
     ros::Rate r(100);
-    while (ros::ok())
-    {
+    while (ros::ok()){
       r.sleep();
       ros::spinOnce();
     }
 }
 
-void ros_publisher()
-{
-
+void ros_publisher(){
     //prepare joint state data
-    for(unsigned int i=0 ; i< 7;++i)
-    {
+    for(unsigned int i=0 ; i< 7;++i){
         //there is a arm name changed because the confliction between openkc and kukas in rviz
         js.position[i]=0;
         js.position[i+7]=left_rs->JntPosition_mea[i];
-
     }
 
     js.header.stamp=ros::Time::now();
+    bool contact_f = false;
+    mutex_tac.lock();
+    contact_f = ftt->isContact(ftt->data);
+    mutex_tac.unlock();
 
     // Publish the marker
-    if ((marker_pub.getNumSubscribers() >= 1))
-    {
+    if ((marker_pub.getNumSubscribers() >= 1)){
         //prepare marker info
         visualization_msgs::Marker marker;
         // Set the frame ID and timestamp.  See the TF tutorials for information on these.
-        marker.header.frame_id = "/rh_ffdistal";
+        marker.header.frame_id = "/lh_ffdistal";
         marker.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
@@ -369,7 +356,14 @@ void ros_publisher()
                         <<ftt->data.fingertip_tac_position.at((int)tac_index)(0)<<","\
                          <<ftt->data.fingertip_tac_position.at((int)tac_index)(1)<<","\
                             <<ftt->data.fingertip_tac_position.at((int)tac_index)(2)<<std::endl;*/
-        mutex_tac.unlock();
+        // Set the color -- be sure to set alpha to something non-zero!
+        marker.color.r = 0.0f;
+        marker.color.g = 1.0f;
+        marker.color.b = 0.0f;
+        if(contact_f == true)
+            marker.color.a = 1.0;
+        else
+            marker.color.a = 0.0;
         marker.pose.orientation.x = 0.0;
         marker.pose.orientation.y = 0.0;
         marker.pose.orientation.z = 0.0;
@@ -380,26 +374,17 @@ void ros_publisher()
         marker.scale.y = .002;
         marker.scale.z = .002;
 
-        // Set the color -- be sure to set alpha to something non-zero!
-        marker.color.r = 0.0f;
-        marker.color.g = 1.0f;
-        marker.color.b = 0.0f;
-        marker.color.a = 1.0;
-
         marker.lifetime = ros::Duration();
         marker_pub.publish(marker);
-
     }
 
     //publish the actived taxel
-    if ((act_taxel_pub.getNumSubscribers() >= 1))
-    {
-        bool contact_f = false;
+    if ((act_taxel_pub.getNumSubscribers() >= 1)){
+        visualization_msgs::Marker act_taxel;
         Eigen::Vector3d taxel_g, taxel_temp;
         taxel_g.setZero();
         taxel_temp.setZero();
         mutex_tac.lock();
-        contact_f = ftt->isContact(ftt->data);
         if(contact_f == true){
             int taxId;
             Eigen::Vector3d taxel_p;
@@ -412,11 +397,17 @@ void ros_publisher()
                          left_rs->robot_orien["eef"],taxel_temp);
             taxel_g = left_rs->robot_position["eef"] + taxel_temp;
         }
+        // Set the color -- be sure to set alpha to something non-zero!
+        act_taxel.color.r = 0.0f;
+        act_taxel.color.g = 0.0f;
+        act_taxel.color.b = ftt->pressure;
+        if(contact_f == true)
+            act_taxel.color.a = 1.0;
+        else
+            act_taxel.color.a = 0.0;
         mutex_tac.unlock();
 
-        visualization_msgs::Marker act_taxel;
-
-        act_taxel.header.frame_id = "kuka_frame";
+        act_taxel.header.frame_id = "frame";
         act_taxel.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
@@ -439,26 +430,18 @@ void ros_publisher()
         act_taxel.scale.y = .002;
         act_taxel.scale.z = .002;
 
-        // Set the color -- be sure to set alpha to something non-zero!
-        act_taxel.color.r = 0.0f;
-        act_taxel.color.g = 0.0f;
-        act_taxel.color.b = ftt->pressure;
-        act_taxel.color.a = 1.0;
-
         act_taxel.lifetime = ros::Duration();
-        if(contact_f == true)
-            act_taxel_pub.publish(act_taxel);
+        act_taxel_pub.publish(act_taxel);
     }
     //publish the actived taxel normal vector
     if(act_taxel_nv_pub.getNumSubscribers() >= 1){
-        bool contact_f = false;
+        visualization_msgs::Marker act_taxel_nv;
         Eigen::Vector3d taxel_g, taxel_temp,taxel_nv_g,nv_endp;
         taxel_g.setZero();
         taxel_temp.setZero();
         taxel_nv_g.setZero();
         nv_endp.setZero();
         mutex_tac.lock();
-        contact_f = ftt->isContact(ftt->data);
         if(contact_f == true){
             int taxId;
             Eigen::Vector3d taxel_p,taxel_nv;
@@ -476,11 +459,17 @@ void ros_publisher()
                          left_rs->robot_orien["eef"],taxel_nv_g);
             nv_endp = taxel_g + taxel_nv_g;
         }
+        // Set the color -- be sure to set alpha to something non-zero!
+        act_taxel_nv.color.r = 0.0f;
+        act_taxel_nv.color.g = 0.0f;
+        act_taxel_nv.color.b = 1.0f;
+        if(contact_f == true)
+            act_taxel_nv.color.a = 1.0;
+        else
+            act_taxel_nv.color.a = 0.0;
         mutex_tac.unlock();
 
-        visualization_msgs::Marker act_taxel_nv;
-
-        act_taxel_nv.header.frame_id = "kuka_frame";
+        act_taxel_nv.header.frame_id = "frame";
         act_taxel_nv.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
@@ -490,7 +479,6 @@ void ros_publisher()
         act_taxel_nv.type = visualization_msgs::Marker::ARROW;
         // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
         act_taxel_nv.action = visualization_msgs::Marker::ADD;
-
 
         act_taxel_nv.points.resize(2);
         act_taxel_nv.points[0].x = taxel_g(0);
@@ -506,27 +494,17 @@ void ros_publisher()
         act_taxel_nv.scale.y = .001;
         act_taxel_nv.scale.z = .001;
 
-        // Set the color -- be sure to set alpha to something non-zero!
-        act_taxel_nv.color.r = 0.0f;
-        act_taxel_nv.color.g = 0.0f;
-        act_taxel_nv.color.b = 1.0f;
-        act_taxel_nv.color.a = 1.0;
-
         act_taxel_nv.lifetime = ros::Duration();
-        if(contact_f == true){
-            act_taxel_nv_pub.publish(act_taxel_nv);
-        }
+        act_taxel_nv_pub.publish(act_taxel_nv);
     }
 
     //publish the actived position
-    if ((act_marker_pub.getNumSubscribers() >= 1))
-    {
-        bool contact_f = false;
+    if ((act_marker_pub.getNumSubscribers() >= 1)){
+        visualization_msgs::Marker act_marker;
         Eigen::Vector3d taxel_g, taxel_temp;
         taxel_g.setZero();
         taxel_temp.setZero();
         mutex_tac.lock();
-        contact_f = ftt->isContact(ftt->data);
         if(contact_f == true){
             ftt->est_ct_info(ftt->data);
             local2global(ftt->pos/1000,\
@@ -535,11 +513,17 @@ void ros_publisher()
             TDataRecord<<taxel_g(0)<<","<<taxel_g(1)<<","<<taxel_g(2)<<std::endl;
         }
         cp = taxel_g;
+        // Set the color -- be sure to set alpha to something non-zero!
+        act_marker.color.r = ftt->pressure;
+        act_marker.color.g = 0.0f;
+        act_marker.color.b = 0.0f;
+        if(contact_f == true)
+            act_marker.color.a = 1.0;
+        else
+            act_marker.color.a = 0;
         mutex_tac.unlock();
 
-        visualization_msgs::Marker act_marker;
-
-        act_marker.header.frame_id = "kuka_frame";
+        act_marker.header.frame_id = "frame";
         act_marker.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
@@ -562,26 +546,18 @@ void ros_publisher()
         act_marker.scale.y = .002;
         act_marker.scale.z = .002;
 
-        // Set the color -- be sure to set alpha to something non-zero!
-        act_marker.color.r = ftt->pressure;
-        act_marker.color.g = 0.0f;
-        act_marker.color.b = 0.0f;
-        act_marker.color.a = 1.0;
-
         act_marker.lifetime = ros::Duration();
-        if(contact_f == true)
-            act_marker_pub.publish(act_marker);
+        act_marker_pub.publish(act_marker);
     }
     //publish the actived normal vector
     if(act_marker_nv_pub.getNumSubscribers() >= 1){
-        bool contact_f = false;
+        visualization_msgs::Marker act_marker_nv;
         Eigen::Vector3d taxel_g, taxel_temp,taxel_nv_g,nv_endp;
         taxel_g.setZero();
         taxel_temp.setZero();
         taxel_nv_g.setZero();
         nv_endp.setZero();
         mutex_tac.lock();
-        contact_f = ftt->isContact(ftt->data);
         if(contact_f == true){
             ftt->est_ct_info(ftt->data);
             local2global(ftt->pos/1000,\
@@ -590,12 +566,18 @@ void ros_publisher()
             local2global(ftt->nv/100,\
                          left_rs->robot_orien["eef"],taxel_nv_g);
             nv_endp = taxel_g + taxel_nv_g;
+            // Set the color -- be sure to set alpha to something non-zero!
+            act_marker_nv.color.r = 1.0f;
+            act_marker_nv.color.g = 0.0f;
+            act_marker_nv.color.b = 0.0f;
+            if(contact_f == true)
+                act_marker_nv.color.a = 1.0;
+            else
+                act_marker_nv.color.a = 0;
         }
         mutex_tac.unlock();
 
-        visualization_msgs::Marker act_marker_nv;
-
-        act_marker_nv.header.frame_id = "kuka_frame";
+        act_marker_nv.header.frame_id = "frame";
         act_marker_nv.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
@@ -605,7 +587,6 @@ void ros_publisher()
         act_marker_nv.type = visualization_msgs::Marker::ARROW;
         // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
         act_marker_nv.action = visualization_msgs::Marker::ADD;
-
 
         act_marker_nv.points.resize(2);
         act_marker_nv.points[0].x = taxel_g(0);
@@ -621,16 +602,8 @@ void ros_publisher()
         act_marker_nv.scale.y = .001;
         act_marker_nv.scale.z = .001;
 
-        // Set the color -- be sure to set alpha to something non-zero!
-        act_marker_nv.color.r = 1.0f;
-        act_marker_nv.color.g = 0.0f;
-        act_marker_nv.color.b = 0.0f;
-        act_marker_nv.color.a = 1.0;
-
         act_marker_nv.lifetime = ros::Duration();
-        if(contact_f == true){
-            act_marker_nv_pub.publish(act_marker_nv);
-        }
+        act_marker_nv_pub.publish(act_marker_nv);
     }
 
     // Publish the markerarray
@@ -647,7 +620,7 @@ void ros_publisher()
         for ( int i = 0; i < 12; i++)
         {
             //publish the taxel position
-            marker_array_msg.markers[i].header.frame_id = "/kuka_frame";
+            marker_array_msg.markers[i].header.frame_id = "/frame";
             marker_array_msg.markers[i].header.stamp = ros::Time::now();
             marker_array_msg.markers[i].ns = "KukaRos";
             marker_array_msg.markers[i].id = i;
@@ -674,9 +647,8 @@ void ros_publisher()
             marker_array_msg.markers[i].color.g = 1.0;
             marker_array_msg.markers[i].color.b = 0.0;
 
-
             //publish taxel normal vector
-            marker_nvarray_msg.markers[i].header.frame_id = "kuka_frame";
+            marker_nvarray_msg.markers[i].header.frame_id = "frame";
             marker_nvarray_msg.markers[i].header.stamp = ros::Time::now();
             marker_nvarray_msg.markers[i].ns = "KukaRos";
             marker_nvarray_msg.markers[i].id = i;
@@ -688,13 +660,6 @@ void ros_publisher()
                          left_rs->robot_orien["eef"],taxel_nv_g);
             nv_endp = taxel_g + taxel_nv_g;
             mutex_tac.unlock();
-//            marker_nvarray_msg.markers[i].pose.position.x = taxel_g(0);
-//            marker_nvarray_msg.markers[i].pose.position.y = taxel_g(1);
-//            marker_nvarray_msg.markers[i].pose.position.z = taxel_g(2);
-//            marker_nvarray_msg.markers[i].pose.orientation.x = 0.0;
-//            marker_nvarray_msg.markers[i].pose.orientation.y = 0.0;
-//            marker_nvarray_msg.markers[i].pose.orientation.z = 0.0;
-//            marker_nvarray_msg.markers[i].pose.orientation.w = 1.0;
             marker_nvarray_msg.markers[i].points.resize(2);
             marker_nvarray_msg.markers[i].points[0].x = taxel_g(0);
             marker_nvarray_msg.markers[i].points[0].y = taxel_g(1);
@@ -715,32 +680,9 @@ void ros_publisher()
         marker_array_pub.publish(marker_array_msg);
         marker_nvarray_pub.publish(marker_nvarray_msg);
     }
-    //create a ROS tf object and fill it orientation only currently
-    //tf::Matrix3x3 tfR;
-    //tf::Transform transform;
-    //    pose_tm = right_rs->robot_orien["eef"];
-    //    // left kuka
-    //    tf::matrixEigenToTF (pose_tm, tfR);
-    //    transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)));
-    //    transform.setBasis(tfR);
-
-    //    //broadcast this transform to ROS relative to world
-    //    br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "kukaLeftEndEffector"));
-
-    //    // right kuka
-    //    pose_tm = left_rs->robot_orien["eef"];
-    //    tf::matrixEigenToTF (pose_tm, tfR);
-    //    transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)));
-    //    transform.setBasis(tfR);
-
-    //    //broadcast this transform to ROS relative to world
-    //    br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "kukaRightEndEffector"));
-
     // send a joint_state
     jsPub.publish(js);
-
     ros::spinOnce();
-
 }
 
 #endif
@@ -881,7 +823,6 @@ void get_mid_info(){
     }
     mutex_tac.unlock();
 }
-
 
 
 void run_leftarm(){
