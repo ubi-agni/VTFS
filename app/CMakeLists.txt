@@ -20,6 +20,7 @@ SET(APPS
          ApproachTest
          TipComTest
          TipServo
+         TipInfoEst
 #        CQTest
 #        KukaCartImpTest
 #        RigTFEst

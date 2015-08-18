@@ -58,6 +58,7 @@ ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,act_taxel_pub,act_taxel_nv_pub;
 #endif
 std::ofstream TDataRecord;
+std::ofstream Tposition;
 
 ComOkc *com_okc;
 Robot *kuka_left_arm;
@@ -209,7 +210,13 @@ void tip_taxel_rolling_cb(boost::shared_ptr<std::string> data){
     left_task_vec.push_back(new TacServoTask(left_taskname.tact));
     left_task_vec.back()->mt = TACTILE;
     left_task_vec.back()->set_desired_cf_mid(TAC_F);
-    left_task_vec.back()->set_desired_taxel_mid((int)tac_index);
+    //using the sepcified taxel as the desired point
+//    left_task_vec.back()->set_desired_taxel_mid((int)tac_index);
+    //using the specified position
+    left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+    //compute the desired cp on fingertip-Area I
+    left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+    left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
     mutex_act.unlock();
     std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
 }
@@ -298,11 +305,11 @@ recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg){
 //    std::cout << std::fixed;
     for(size_t j = 0; j < msg->tactiles[0].distal.size(); ++j) {
         press_val= 1.0-(msg->tactiles[0].distal[j]/1023.0);
-        if(press_val < 0.05) press_val = 0.0;
+        if(press_val < MID_THRESHOLD) press_val = 0.0;
         ftt->data.fingertip_tac_pressure.push_back(press_val);
 //        std::cout<<std::setprecision(5)<<press_val<<"\t";
     }
-//    std::cout<<std::endl;
+    std::cout<<std::endl;
     mutex_tac.unlock();
 }
 #endif
@@ -310,7 +317,7 @@ recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg){
 
 #ifdef HAVE_ROS
 void run(){
-    ros::Rate r(100);
+    ros::Rate r(500);
     while (ros::ok()){
       r.sleep();
       ros::spinOnce();
@@ -318,6 +325,7 @@ void run(){
 }
 
 void ros_publisher(){
+    std::cout<<"robot pub start"<<std::endl;
     //prepare joint state data
     for(unsigned int i=0 ; i< 7;++i){
         //there is a arm name changed because the confliction between openkc and kukas in rviz
@@ -352,6 +360,7 @@ void ros_publisher(){
         marker.pose.position.x = ftt->data.fingertip_tac_position.at((int)tac_index)(0)/1000;
         marker.pose.position.y = ftt->data.fingertip_tac_position.at((int)tac_index)(1)/1000;
         marker.pose.position.z = ftt->data.fingertip_tac_position.at((int)tac_index)(2)/1000;
+        mutex_tac.unlock();
         /*        std::cout<<"fingertip tacxel position "<<(int)tac_index<< "is "\
                         <<ftt->data.fingertip_tac_position.at((int)tac_index)(0)<<","\
                          <<ftt->data.fingertip_tac_position.at((int)tac_index)(1)<<","\
@@ -681,8 +690,9 @@ void ros_publisher(){
         marker_nvarray_pub.publish(marker_nvarray_msg);
     }
     // send a joint_state
+    std::cout<<"robot pub end"<<std::endl;
     jsPub.publish(js);
-    ros::spinOnce();
+//    ros::spinOnce();
 }
 
 #endif
@@ -817,6 +827,7 @@ void get_mid_info(){
         //compute the slope of accumulated tactile linear feature
         slope = mtf->getSlope(cp.transpose());
         ftt->get_slope(left_rs->robot_orien["eef"].transpose()*slope);
+        Tposition<<ftt->pos[0]<<","<<ftt->pos[1]<<","<<ftt->pos[2]<<std::endl;
     }
     else{
         ftt->slope_clear();
@@ -879,6 +890,7 @@ int main(int argc, char* argv[])
     //for data recording
     std::string data_f ("/tmp/data/");
     TDataRecord.open((data_f+std::string("points.txt")).c_str());
+    Tposition.open((data_f+std::string("position.txt")).c_str());
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);
         nh = new ros::NodeHandle();
@@ -901,7 +913,7 @@ int main(int argc, char* argv[])
     //start ros run thread
     Timer thrd_rosrun(run);
     thrd_rosrun.setSingleShot(false);
-    thrd_rosrun.setInterval(Timer::Interval(100));
+    thrd_rosrun.setInterval(Timer::Interval(1));
     thrd_rosrun.start(true);
     #endif
 

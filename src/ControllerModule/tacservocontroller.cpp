@@ -64,12 +64,12 @@ TacServoController::TacServoController(ParameterManager &p) : ActController(p)
 //    {
 //        std::cout<<"creat folder failed"<<std::endl;
 //    }
-//    int temp;
-//    if ((temp = mkdir("/dev/shm/debug",0777)) != 0) {
-//        fprintf(stderr, "ERROR %d: unable to mkdir; %s\n", errno, strerror(errno));
-//    }
-//    std::string data_f ("/dev/shm/debug/");
-//    ctrl_debug.open((data_f+std::string("ctrl_debug.txt")).c_str());
+    int temp;
+    if ((temp = mkdir("/dev/shm/debug",0777)) != 0) {
+        fprintf(stderr, "ERROR %d: unable to mkdir; %s\n", errno, strerror(errno));
+    }
+    std::string data_f ("/dev/shm/debug/");
+    ctrl_debug.open((data_f+std::string("ctrl_debug.txt")).c_str());
 }
 
 
@@ -95,7 +95,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
     int act_id;
     double desiredf;
     Eigen::Vector3d desired_cp,desired_nv;
-    //robot current state
+    //robot desired state(contact taxel and contact pressrue)
     tst.get_desired_taxel_mid(act_id);
     tst.get_desired_cf_mid(desiredf);
     /*strategy I*/
@@ -103,32 +103,15 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
     //between the deviation of tactile info and finger-eef frame infinite tiny
     //movement have to be defined according to the contact area.
      /*strategy II*/
-//    if(midfb->isContact(midfb->data) == true){
-//        desired_cp = midfb->data.fingertip_tac_position.at(act_id);
-//        deltais(0) = desired_cp[0] - midfb->pos[0];
-//        deltais(2) = desired_cp[2] - midfb->pos[2];
-//    }
-//    else{
-//        deltais(0) = 0;
-//        deltais(2) = 0;
-//        deltais_int.setZero();
-//    }
-//    deltais(1) =  desiredf - midfb->pressure;
-//    //!this two value can be updated by other feedback in future
-//    deltais(3) = 0;
-//    deltais(4) = 0;
-//    deltais(5) = 0;
-
-
+    Eigen::Vector3d ctc_nv,ctc_nv_normalize;
+    Eigen::Vector3d des_nv_normalize;
+    ctc_nv.setZero();
+    ctc_nv_normalize.setZero();
+    desired_nv.setZero();
+    des_nv_normalize.setZero();
     if(midfb->isContact(midfb->data) == true){
-        Eigen::Vector3d ctc_nv;
-        Eigen::Vector3d des_nv_normaize,ctc_nv_normalize;
-        desired_nv.setZero();
-        des_nv_normaize.setZero();
-        ctc_nv_normalize.setZero();
         double deltaf;
         deltaf = desiredf - midfb->pressure;
-        ctc_nv.setZero();
         ctc_nv = midfb->nv;
         if(t->curtaskname.tact == CONTACT_FORCE_TRACKING){
             deltais(0) = deltaf*ctc_nv(0);
@@ -145,11 +128,11 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
                 t->get_desired_nv_mid(desired_nv);
             }
 
-            des_nv_normaize = desired_nv.normalized();
+            des_nv_normalize = desired_nv.normalized();
             ctc_nv_normalize = ctc_nv.normalized();
             std::cout<<"dot product is"<<std::endl;
-            std::cout<<des_nv_normaize.dot(ctc_nv_normalize)<<std::endl;
-            if(des_nv_normaize.dot(ctc_nv_normalize)>=0.5){
+            std::cout<<des_nv_normalize.dot(ctc_nv_normalize)<<std::endl;
+            if(des_nv_normalize.dot(ctc_nv_normalize)>=0.5){
                 deltais(0) = midfb->pos[0] - desired_cp(0);
                 deltais(1) = midfb->pos[1] - desired_cp(1);
                 deltais(2) = midfb->pos[2] - desired_cp(2);
@@ -167,11 +150,11 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
                 t->get_desired_position_mid(desired_cp);
                 t->get_desired_nv_mid(desired_nv);
             }
-            des_nv_normaize = desired_nv.normalized();
+            des_nv_normalize = desired_nv.normalized();
             ctc_nv_normalize = ctc_nv.normalized();
             std::cout<<"dot product is"<<std::endl;
-            std::cout<<des_nv_normaize.dot(ctc_nv_normalize)<<std::endl;
-            if(des_nv_normaize.dot(ctc_nv_normalize)>=0.5){
+            std::cout<<des_nv_normalize.dot(ctc_nv_normalize)<<std::endl;
+            if(des_nv_normalize.dot(ctc_nv_normalize)>=0.5){
                 deltais(0) = midfb->pos[0] - desired_cp(0);
                 deltais(1) = midfb->pos[1] - desired_cp(1);
                 deltais(2) = midfb->pos[2] - desired_cp(2);
@@ -200,15 +183,11 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             deltais(0) = desired_cp(0) - midfb->pos[0];
             deltais(1) = 0;
             deltais(2) = desired_cp(2) - midfb->pos[2];
-            std::cout<<"deltais before"<<std::endl;
-            std::cout<<deltais<<std::endl;
-            std::cout<<"fdev before"<<std::endl;
-            std::cout<<deltaf*ctc_nv<<std::endl;
+            ctrl_debug<<desired_cp(0)<<","<<midfb->pos[0]<<","<<desired_cp(2)<<","<<midfb->pos[2]<<",";
             for(int i = 0; i < 3; i++){
                 deltais(i) = deltais(i) + (50.0)*deltaf*ctc_nv(i);
             }
-            std::cout<<"deltais after"<<std::endl;
-            std::cout<<deltais<<std::endl;
+            ctrl_debug<<deltais(0)<<","<<deltais(1)<<","<<deltais(2)<<","<<deltaf<<","<<midfb->act_taxel_num<<std::endl;
         }
     }
     else{
@@ -243,14 +222,9 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
     lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
     if(midfb->isContact(midfb->data) == true){
         Eigen::Vector3d rot_nv;
-        Eigen::Vector3d ctc_nv;
-        Eigen::Vector3d des_nv_normaize,ctc_nv_normalize;
         rot_nv.setZero();
-        desired_nv.setZero();
-        des_nv_normaize.setZero();
-        ctc_nv_normalize.setZero();
-        if((t->curtaskname.tact == CONTACT_POINT_TRACKING)||(t->curtaskname.tact == CONTACT_POINT_FORCE_TRACKING)||(t->curtaskname.tact == COVER_OBJECT_SURFACE)||(t->curtaskname.tact == LINEAR_TRACKING)){
-            ctc_nv.setZero();
+        if((t->curtaskname.tact == CONTACT_POINT_TRACKING)||(t->curtaskname.tact == CONTACT_POINT_FORCE_TRACKING)||\
+                (t->curtaskname.tact == COVER_OBJECT_SURFACE)||(t->curtaskname.tact == LINEAR_TRACKING)){
             ctc_nv = midfb->nv;
             if(t->tft == TAXEL_NUM){
                 desired_nv = midfb->data.fingertip_tac_nv.at(act_id);
@@ -260,20 +234,21 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             }
             //rolling components
             rot_nv = desired_nv.cross(ctc_nv);
-            des_nv_normaize = desired_nv.normalized();
+            des_nv_normalize = desired_nv.normalized();
             ctc_nv_normalize = ctc_nv.normalized();
-            lov_tac = lov_tac + 0.05*(1-(des_nv_normaize.dot(ctc_nv_normalize)))*rot_nv;
+            lov_tac = lov_tac + 0.05*(1-(des_nv_normalize.dot(ctc_nv_normalize)))*rot_nv;
             //twist component, only use x z component of slope to compute the deviation angle between current estimated linear and z axis
-            double comp_x, comp_z,comp_y,l_feature;
-            comp_x = midfb->slope(0);
-            comp_y = midfb->slope(1);
-            comp_z = midfb->slope(2);
-            l_feature = comp_x / comp_z;
-            if((fabs(comp_x)>= 1e-5)&&(fabs(comp_y)>= 1e-5)&&(fabs(comp_z)>= 1e-5)){
-                lov_tac(1) = lov_tac(1) + (-0.01) * l_feature;
+            //only superimposing twist motion while following the cable.
+            if(t->curtaskname.tact == LINEAR_TRACKING){
+                double comp_x, comp_z,comp_y,l_feature;
+                comp_x = midfb->slope(0);
+                comp_y = midfb->slope(1);
+                comp_z = midfb->slope(2);
+                l_feature = comp_x / comp_z;
+                if((fabs(comp_x)>= 1e-5)&&(fabs(comp_y)>= 1e-5)&&(fabs(comp_z)>= 1e-5)){
+                    lov_tac(1) = lov_tac(1) + (-0.01) * l_feature;
+                }
             }
-
-
         }
     }
 //    std::cout<<"lov_tac are "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;

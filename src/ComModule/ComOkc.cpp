@@ -17,6 +17,7 @@ int ComOkc::left_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fri
         com_okc_ptr->jnt_position_act[i] = pos_act[i];
         com_okc_ptr->jnt_position_mea[i] = jnt_pos[i];
     }
+//    std::cout<<"controller updated2"<<std::endl;
     // feed back data from FRI is available
     com_okc_ptr->data_available = true;
 

@@ -3,6 +3,8 @@
 #include <fstream>
 #include <string>
 
+
+
 Eigen::Matrix3d GenerateLF(Eigen::Vector3d nv){
     //normalize the z vector
     Eigen::Vector3d x_nm,y_nm,z_nm;
@@ -322,7 +324,7 @@ int FingertipTac::find_near_taxelid(tac_data t_data){
 void FingertipTac::get_act_taxelId(tac_data t_data){
     act_Ids.clear();
     for(int i = 0; i < t_data.tac_num; i++){
-        if(t_data.fingertip_tac_pressure[i] >= 0.1){
+        if(t_data.fingertip_tac_pressure[i] >= MID_THRESHOLD){
             act_Ids.push_back(i);
         }
     }

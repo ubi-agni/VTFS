@@ -4,6 +4,8 @@
 #include <vector>
 #include <iostream>
 
+#define MID_THRESHOLD 0.02
+
 enum ContactAreaT{
     NoContact,
     Area1,
