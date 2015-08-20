@@ -55,7 +55,10 @@ void get_mid_info(){
         for(int i = 0; i < ftt->act_taxel_num; i++)
             std::cout<<ftt->act_Ids[i]<<",";
         std::cout<<" ]"<<std::endl;
-        std::cout<<"est pressure is "<< ftt->pressure<<std::endl;
+        std::cout<<"est pressure is "<< ftt->pressure<<"[ ";
+        for(int i = 0; i < ftt->act_taxel_num; i++)
+            std::cout<<ftt->data.fingertip_tac_pressure[ftt->act_Ids[i]]<<",";
+        std::cout<<" ]"<<std::endl;
 
     }
     else{

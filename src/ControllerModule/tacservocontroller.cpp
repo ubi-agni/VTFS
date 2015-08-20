@@ -180,12 +180,12 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             else{
                 t->get_desired_position_mid(desired_cp);
             }
-            deltais(0) = desired_cp(0) - midfb->pos[0];
+            deltais(0) =  midfb->pos[0] - desired_cp(0);
             deltais(1) = 0;
-            deltais(2) = desired_cp(2) - midfb->pos[2];
+            deltais(2) = midfb->pos[2] - desired_cp(2);
             ctrl_debug<<desired_cp(0)<<","<<midfb->pos[0]<<","<<desired_cp(2)<<","<<midfb->pos[2]<<",";
             for(int i = 0; i < 3; i++){
-                deltais(i) = deltais(i) + (50.0)*deltaf*ctc_nv(i);
+                deltais(i) = deltais(i);
             }
             ctrl_debug<<deltais(0)<<","<<deltais(1)<<","<<deltais(2)<<","<<deltaf<<","<<midfb->act_taxel_num<<std::endl;
         }
@@ -209,16 +209,31 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
 //    std::cout<<Kop[tst.curtaskname.tact]<<std::endl;
 //    std::cout<<"kpp: "<<std::endl;
 //    std::cout<<Kpp[tst.curtaskname.tact]<<std::endl;
-//    std::cout<<"tjkm: "<<std::endl;
-//    std::cout<<tjkm[tst.curtaskname.tact]<<std::endl;
+    std::cout<<"tjkm: "<<std::endl;
+    std::cout<<tjkm[tst.curtaskname.tact]<<std::endl;
 //    std::cout<<"sm: "<<std::endl;
 //    std::cout<<sm[tst.curtaskname.tact]<<std::endl;
 
     deltape = Kpp[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais + \
             Kpi[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais_int + \
             Kpd[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * (deltais - deltais_old);
-//    std::cout<<"deltapa are "<<deltape<<std::endl;
-    llv_tac = deltape.head(3);
+    std::cout<<"deltapa are "<<deltape<<std::endl;
+    if((t->curtaskname.tact == COVER_OBJECT_SURFACE)||(t->curtaskname.tact == LINEAR_TRACKING)){
+        if(midfb->isContact(midfb->data) == true){
+            double deltaf;
+            deltaf = desiredf - midfb->pressure;
+            for(int i = 0; i < 3; i++){
+                llv_tac(i) =  deltape(i) + (0.025)*deltaf*ctc_nv(i);
+            }
+        }
+        else{
+            llv_tac.setZero();
+        }
+    }
+    if((t->curtaskname.tact == CONTACT_FORCE_TRACKING)||(t->curtaskname.tact == CONTACT_POINT_FORCE_TRACKING)){
+        llv_tac = deltape.head(3);
+    }
+
     lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
     if(midfb->isContact(midfb->data) == true){
         Eigen::Vector3d rot_nv;

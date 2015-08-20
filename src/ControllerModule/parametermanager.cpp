@@ -77,9 +77,14 @@ void ParameterManager::load(TACTaskNameT tnt,ptree pt){
         tac_task_ctrl_param[tnt].kop(i,i) =pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+"."+map_name_dim2[i]+".kp");
         tac_task_ctrl_param[tnt].ttjkm(i,i) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm"+map_name_dim3[i]);
     }
-    tac_task_ctrl_param[tnt].ttjkm(3,1) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e33");
-    tac_task_ctrl_param[tnt].ttjkm(4,0) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e44");
-    tac_task_ctrl_param[tnt].ttjkm(5,5) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e55");
+    //for myrmex sensor
+//    tac_task_ctrl_param[tnt].ttjkm(3,1) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e33");
+//    tac_task_ctrl_param[tnt].ttjkm(4,0) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e44");
+//    tac_task_ctrl_param[tnt].ttjkm(5,5) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e55");
+    //for mid tactile sensor
+    tac_task_ctrl_param[tnt].ttjkm(3,2) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e33");
+    tac_task_ctrl_param[tnt].ttjkm(4,1) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e44");
+    tac_task_ctrl_param[tnt].ttjkm(5,0) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e55");
 }
 
 void ParameterManager::load(FORCETaskNameT fnt,ptree pt){

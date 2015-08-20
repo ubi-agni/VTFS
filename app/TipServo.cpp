@@ -157,7 +157,7 @@ void tip_exploring_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
-    left_taskname.prot = RLZP;
+    left_taskname.prot = RLZN;
     left_ac_vec.push_back(new ProActController(*pm));
     left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
     left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
@@ -195,7 +195,12 @@ void tip_cablefollow_cb(boost::shared_ptr<std::string> data){
     left_task_vec.push_back(new TacServoTask(left_taskname.tact));
     left_task_vec.back()->mt = TACTILE;
     left_task_vec.back()->set_desired_cf_mid(TAC_F);
-    left_task_vec.back()->set_desired_taxel_mid((int)tac_index);
+//    left_task_vec.back()->set_desired_taxel_mid((int)tac_index);
+    //using the specified position
+    left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+    //compute the desired cp on fingertip-Area I
+    left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+    left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
@@ -325,7 +330,6 @@ void run(){
 }
 
 void ros_publisher(){
-    std::cout<<"robot pub start"<<std::endl;
     //prepare joint state data
     for(unsigned int i=0 ; i< 7;++i){
         //there is a arm name changed because the confliction between openkc and kukas in rviz
@@ -690,7 +694,6 @@ void ros_publisher(){
         marker_nvarray_pub.publish(marker_nvarray_msg);
     }
     // send a joint_state
-    std::cout<<"robot pub end"<<std::endl;
     jsPub.publish(js);
 //    ros::spinOnce();
 }

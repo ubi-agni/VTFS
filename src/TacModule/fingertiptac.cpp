@@ -273,7 +273,8 @@ void FingertipTac::est_pressure(tac_data t_data){
         sum_press_act += press[i];
     }
     if(act_taxel_num != 0){
-        pressure = sum_press_act / act_taxel_num;
+//        pressure = sum_press_act / act_taxel_num;
+        pressure = sum_press_act;
     }
     else{
         pressure = 0;
