@@ -47,9 +47,13 @@ recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg)
     // for first sensor each taxel
     std::cout <<"0"<<"\t"<<"1"<<"\t"<<"2"<<"\t"<<"3"<<"\t"<<"4"<<"\t"<<"5"<<"\t"<<"6"<<"\t"<<"7"<<"\t"<<"8"<<"\t"<<"9"<<"\t"<<"10"<<"\t"<<"11"<<"\t"<<std::endl;
     std::cout << std::fixed;
+//    for(size_t j = 0; j < msg->tactiles[0].distal.size(); ++j) {
+//        val= 1.0-(msg->tactiles[0].distal[j]/1023.0); //agni::tactileCalibration(msg->tactiles[0].distal[j], 1024, agni::UBI0);
+//        std::cout<<std::setprecision(5)<<val<<"\t";
+//    }
     for(size_t j = 0; j < msg->tactiles[0].distal.size(); ++j) {
-        val= 1.0-(msg->tactiles[0].distal[j]/1023.0); //agni::tactileCalibration(msg->tactiles[0].distal[j], 1024, agni::UBI0);
-        std::cout<<std::setprecision(5)<<val<<"\t";
+        val= msg->tactiles[0].distal[j]; //agni::tactileCalibration(msg->tactiles[0].distal[j], 1024, agni::UBI0);
+        std::cout<<(int)val<<"\t";
     }
     std::cout<<std::endl;
 }

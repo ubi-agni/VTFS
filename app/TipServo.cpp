@@ -157,7 +157,7 @@ void tip_exploring_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
-    left_taskname.prot = RLZN;
+    left_taskname.prot = RLXN;
     left_ac_vec.push_back(new ProActController(*pm));
     left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
     left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
