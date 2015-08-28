@@ -11,7 +11,6 @@ Eigen::Vector3d euler2axisangle(Eigen::Vector3d la,Eigen::Matrix3d tm){
 Eigen::Vector3d g_euler2axisangle(Eigen::Vector3d la,Eigen::Matrix3d tm){
 	Eigen::Vector3d CtrlAxisAngle;
 	Eigen::Matrix3d DesiredMatrix;
-// 	std::cout<<"la are "<<la(0)<<","<<la(1)<<","<<la(2)<<std::endl;
 	DesiredMatrix = g_euler2tm(la,tm);
 	CtrlAxisAngle = tm2axisangle(DesiredMatrix);
 	return CtrlAxisAngle;
@@ -49,6 +48,7 @@ Eigen::Matrix3d euler2tm(Eigen::Vector3d la,Eigen::Matrix3d tm){
 	DeltaMatrix_y(2,2) = cos(DeltaBeta);
 	
 	DesiredMatrix = tm * DeltaMatrix_z * DeltaMatrix_y * DeltaMatrix_x;
+
 	return DesiredMatrix;
 }
 

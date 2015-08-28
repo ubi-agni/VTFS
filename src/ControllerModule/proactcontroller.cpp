@@ -119,7 +119,7 @@ void ProActController::update_robot_reference(Robot *robot, Task *t){
     }
     if(t->mft == LOCAL){
         get_desired_lv(robot,t);
-        limit_eef_euler(get_euler_limit());
+//        limit_eef_euler(get_euler_limit());
 //        std::cout<<"lv before in proservo "<<llv<<std::endl;
 //        std::cout<<lov<<std::endl;
         llv = llv + llv_pro;

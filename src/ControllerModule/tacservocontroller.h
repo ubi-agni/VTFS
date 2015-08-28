@@ -58,7 +58,7 @@ public:
     Eigen::VectorXd delta_obj_old;
     Eigen::VectorXd delta_obj_int_o;
     Eigen::VectorXd delta_obj_old_o;
-    std::ofstream ctrl_debug;
+    std::ofstream ctrl_debug,ctrl_debug2;
 };
 
 #endif // TACSERVOCONTROLLER_H

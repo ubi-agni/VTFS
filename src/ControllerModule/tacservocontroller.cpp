@@ -70,6 +70,7 @@ TacServoController::TacServoController(ParameterManager &p) : ActController(p)
     }
     std::string data_f ("/dev/shm/debug/");
     ctrl_debug.open((data_f+std::string("ctrl_debug.txt")).c_str());
+    ctrl_debug2.open((data_f+std::string("ctrl_debug2.txt")).c_str());
 }
 
 
@@ -209,15 +210,15 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
 //    std::cout<<Kop[tst.curtaskname.tact]<<std::endl;
 //    std::cout<<"kpp: "<<std::endl;
 //    std::cout<<Kpp[tst.curtaskname.tact]<<std::endl;
-    std::cout<<"tjkm: "<<std::endl;
-    std::cout<<tjkm[tst.curtaskname.tact]<<std::endl;
+//    std::cout<<"tjkm: "<<std::endl;
+//    std::cout<<tjkm[tst.curtaskname.tact]<<std::endl;
 //    std::cout<<"sm: "<<std::endl;
 //    std::cout<<sm[tst.curtaskname.tact]<<std::endl;
 
     deltape = Kpp[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais + \
             Kpi[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais_int + \
             Kpd[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * (deltais - deltais_old);
-    std::cout<<"deltapa are "<<deltape<<std::endl;
+//    std::cout<<"deltapa are "<<deltape<<std::endl;
     if((t->curtaskname.tact == COVER_OBJECT_SURFACE)||(t->curtaskname.tact == LINEAR_TRACKING)){
         if(midfb->isContact(midfb->data) == true){
             double deltaf;
@@ -225,6 +226,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             for(int i = 0; i < 3; i++){
                 llv_tac(i) =  deltape(i) + (0.025)*deltaf*ctc_nv(i);
             }
+            ctrl_debug2<<deltape(0)<<","<<deltape(1)<<","<<deltape(2)<<","<<deltape(3)<<","<<deltape(4)<<","<<deltape(5)<<",";
         }
         else{
             llv_tac.setZero();
@@ -251,7 +253,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             rot_nv = desired_nv.cross(ctc_nv);
             des_nv_normalize = desired_nv.normalized();
             ctc_nv_normalize = ctc_nv.normalized();
-            lov_tac = lov_tac + 0.05*(1-(des_nv_normalize.dot(ctc_nv_normalize)))*rot_nv;
+            lov_tac = lov_tac + 5*(1-(des_nv_normalize.dot(ctc_nv_normalize)))*rot_nv;
             //twist component, only use x z component of slope to compute the deviation angle between current estimated linear and z axis
             //only superimposing twist motion while following the cable.
             if(t->curtaskname.tact == LINEAR_TRACKING){
@@ -259,14 +261,13 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
                 comp_x = midfb->slope(0);
                 comp_y = midfb->slope(1);
                 comp_z = midfb->slope(2);
-                l_feature = comp_x / comp_z;
+                l_feature = atan(comp_x / comp_z);
                 if((fabs(comp_x)>= 1e-5)&&(fabs(comp_y)>= 1e-5)&&(fabs(comp_z)>= 1e-5)){
-                    lov_tac(1) = lov_tac(1) + (-0.01) * l_feature;
+                    lov_tac(1) = lov_tac(1) + (-0.05) * l_feature;
                 }
             }
         }
     }
-//    std::cout<<"lov_tac are "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
     limit_vel(get_llv_limit(),llv_tac,lov_tac);
     deltais_old = deltais;
 }
@@ -284,6 +285,7 @@ void TacServoController::update_robot_reference(Robot *robot, Task *t,FingertipT
 //    std::cout<<lov<<std::endl;
     local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
                     lov,p_target,o_target);
+//    ctrl_debug2<<o_target(0)<<","<<o_target(1)<<","<<o_target(2)<<std::endl;
     for (int i=0; i < 3; i++){
         cart_command[i] = p_target(i);
         cart_command[i+3] = o_target(i);
