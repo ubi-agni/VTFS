@@ -425,8 +425,14 @@ void KukaLwr::initCbf (){
 
             CBF::FloatVector vmins = CBF::FloatVector::Constant(7, -limit);
             CBF::FloatVector vmaxs = CBF::FloatVector::Constant(7,  limit);
-            vmins(5) = M_PI* (-150.0 / 180.0);
-            vmaxs(5) = M_PI* (150.0/ 180.0);
+//            vmins(5) = M_PI* (-150.0 / 180.0);
+//            vmaxs(5) = M_PI* (150.0/ 180.0);
+            vmins(1) = M_PI* (-110.0 / 180.0);
+            vmaxs(1) = M_PI* (110.0/ 180.0);
+            vmins(3) = M_PI* (-110.0 / 180.0);
+            vmaxs(3) = M_PI* (110.0/ 180.0);
+            vmins(5) = M_PI* (-110.0 / 180.0);
+            vmaxs(5) = M_PI* (110.0/ 180.0);
 
             std::vector<ConvergenceCriterionPtr> vConvergenceCriteria = boost::assign::list_of
                     (ConvergenceCriterionPtr(new TaskSpaceDistanceThreshold(0.001)))
@@ -444,7 +450,7 @@ void KukaLwr::initCbf (){
                                                                   CombinationStrategyPtr(new AddingStrategy())));
 
             std::vector<CBF::SubordinateControllerPtr> vSubOrdinateControllers;
-            // 		vSubOrdinateControllers.push_back(subordinateControllerP);
+//            vSubOrdinateControllers.push_back(subordinateControllerP);
 
             // create the composite potential
             xyzSquarePotential = CBF::SquarePotentialPtr(new CBF::SquarePotential(3,0.008));

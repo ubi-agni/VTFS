@@ -186,6 +186,9 @@ Eigen::Vector3d FingertipTac::get_Center_position(int areanum){
 FingertipTac::FingertipTac(int num)
 {
     data.tac_num = num;
+    data.fingertip_tac_pressure.resize(num, 0.0);
+    data.fingertip_tac_nv.resize(num, Eigen::Vector3d(0,0,0));
+    data.fingertip_tac_position.resize(num, Eigen::Vector3d(0,0,0));
     init_taxelmap();
     pos.setZero();
     nv.setZero();
@@ -204,9 +207,9 @@ void FingertipTac::init_taxelmap(){
     position_mat = readMatrix("fingertip_taxel_position.txt");
 
     for(int i = 0; i < 12; i++){
-        data.fingertip_tac_nv.push_back(nv_mat.row(i).transpose());
+        data.fingertip_tac_nv.at(i) = nv_mat.row(i).transpose();
         std::cout<<"nv row "<<position_mat.row(i)<<std::endl;
-        data.fingertip_tac_position.push_back(position_mat.row(i).transpose());
+        data.fingertip_tac_position.at(i) = position_mat.row(i).transpose();
     }
 }
 

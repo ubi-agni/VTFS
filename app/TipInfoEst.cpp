@@ -72,17 +72,17 @@ void
 recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg)
 {
     double press_val=0;
-    ftt->clear_data();
     Eigen::Vector3d pos_val,nv_val;
 
     // for first sensor each taxel
     std::cout <<"0"<<"\t"<<"1"<<"\t"<<"2"<<"\t"<<"3"<<"\t"<<"4"<<"\t"<<"5"<<"\t"<<"6"<<"\t"<<"7"<<"\t"<<"8"<<"\t"<<"9"<<"\t"<<"10"<<"\t"<<"11"<<"\t"<<std::endl;
     std::cout << std::fixed;
+    ROS_ASSERT(ftt->data.fingertip_tac_pressure.size() == msg->tactiles[0].distal.size());
     for(size_t j = 0; j < msg->tactiles[0].distal.size(); ++j) {
 //        val= 1.0-(msg->tactiles[0].distal[j]/1023.0); //agni::tactileCalibration(msg->tactiles[0].distal[j], 1024, agni::UBI0);
         press_val= 1.0-(msg->tactiles[0].distal[j]/1023.0);
         if(press_val < MID_THRESHOLD) press_val = 0.0;
-        ftt->data.fingertip_tac_pressure.push_back(press_val);
+        ftt->data.fingertip_tac_pressure[j] = press_val;
         std::cout<<std::setprecision(5)<<press_val<<"\t";
     }
     std::cout<<std::endl;

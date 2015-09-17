@@ -57,7 +57,6 @@ ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,act_taxel_pub,act_taxel_nv_pub;
 #endif
-std::ofstream TDataRecord;
 std::ofstream Tposition;
 
 ComOkc *com_okc;
@@ -101,8 +100,10 @@ bool StopFlag;
 
 //for moving tactile pattern extaction
 MidTacFeature *mtf;
-//estimated contact point position
-Eigen::Vector3d cp;
+//estimated contact point position, normal direction
+Eigen::Vector3d cp_g,cendp_g,cnv_g;
+//estimated contact taxel posion and normal direction
+Eigen::Vector3d c_taxel_p_l,c_taxel_nv_l,c_taxel_p_g,c_taxel_endp_g,c_taxel_nv_g;
 
 void closeprog_cb(boost::shared_ptr<std::string> data){
     StopFlag = true;
@@ -303,15 +304,15 @@ recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg){
     // for first sensor each taxel
     //Todo: clear data and all estimated value;
     mutex_tac.lock();
-    ftt->clear_data();
     double press_val;
     Eigen::Vector3d pos_val,nv_val;
 //    std::cout <<"0"<<"\t"<<"1"<<"\t"<<"2"<<"\t"<<"3"<<"\t"<<"4"<<"\t"<<"5"<<"\t"<<"6"<<"\t"<<"7"<<"\t"<<"8"<<"\t"<<"9"<<"\t"<<"10"<<"\t"<<"11"<<"\t"<<std::endl;
 //    std::cout << std::fixed;
+    ROS_ASSERT(ftt->data.fingertip_tac_pressure.size() == msg->tactiles[0].distal.size());
     for(size_t j = 0; j < msg->tactiles[0].distal.size(); ++j) {
         press_val= 1.0-(msg->tactiles[0].distal[j]/1023.0);
         if(press_val < MID_THRESHOLD) press_val = 0.0;
-        ftt->data.fingertip_tac_pressure.push_back(press_val);
+        ftt->data.fingertip_tac_pressure[j] = press_val;
 //        std::cout<<std::setprecision(5)<<press_val<<"\t";
     }
 //    std::cout<<std::endl;
@@ -394,22 +395,7 @@ void ros_publisher(){
     //publish the actived taxel
     if ((act_taxel_pub.getNumSubscribers() >= 1)){
         visualization_msgs::Marker act_taxel;
-        Eigen::Vector3d taxel_g, taxel_temp;
-        taxel_g.setZero();
-        taxel_temp.setZero();
         mutex_tac.lock();
-        if(contact_f == true){
-            int taxId;
-            Eigen::Vector3d taxel_p;
-            taxel_p.setZero();
-            taxId = ftt->est_ct_taxelId(ftt->data);
-            for(int i = 0; i < 3; i ++){
-                taxel_p(i) = ftt->data.fingertip_tac_position.at(taxId)(i);
-            }
-            local2global(taxel_p/1000,\
-                         left_rs->robot_orien["eef"],taxel_temp);
-            taxel_g = left_rs->robot_position["eef"] + taxel_temp;
-        }
         // Set the color -- be sure to set alpha to something non-zero!
         act_taxel.color.r = 0.0f;
         act_taxel.color.g = 0.0f;
@@ -430,9 +416,9 @@ void ros_publisher(){
         act_taxel.type = visualization_msgs::Marker::CUBE;
         // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
         act_taxel.action = visualization_msgs::Marker::ADD;
-        act_taxel.pose.position.x = taxel_g(0);
-        act_taxel.pose.position.y = taxel_g(1);
-        act_taxel.pose.position.z = taxel_g(2);
+        act_taxel.pose.position.x = c_taxel_p_g(0);
+        act_taxel.pose.position.y = c_taxel_p_g(1);
+        act_taxel.pose.position.z = c_taxel_p_g(2);
         act_taxel.pose.orientation.x = 0.0;
         act_taxel.pose.orientation.y = 0.0;
         act_taxel.pose.orientation.z = 0.0;
@@ -449,29 +435,7 @@ void ros_publisher(){
     //publish the actived taxel normal vector
     if(act_taxel_nv_pub.getNumSubscribers() >= 1){
         visualization_msgs::Marker act_taxel_nv;
-        Eigen::Vector3d taxel_g, taxel_temp,taxel_nv_g,nv_endp;
-        taxel_g.setZero();
-        taxel_temp.setZero();
-        taxel_nv_g.setZero();
-        nv_endp.setZero();
         mutex_tac.lock();
-        if(contact_f == true){
-            int taxId;
-            Eigen::Vector3d taxel_p,taxel_nv;
-            taxel_p.setZero();
-            taxel_nv.setZero();
-            taxId = ftt->est_ct_taxelId(ftt->data);
-            for(int i = 0; i < 3; i ++){
-                taxel_p(i) = ftt->data.fingertip_tac_position.at(taxId)(i);
-                taxel_nv(i) = ftt->data.fingertip_tac_nv.at(taxId)(i);
-            }
-            local2global(taxel_p/1000,\
-                         left_rs->robot_orien["eef"],taxel_temp);
-            taxel_g = left_rs->robot_position["eef"] + taxel_temp;
-            local2global(taxel_nv/100,\
-                         left_rs->robot_orien["eef"],taxel_nv_g);
-            nv_endp = taxel_g + taxel_nv_g;
-        }
         // Set the color -- be sure to set alpha to something non-zero!
         act_taxel_nv.color.r = 0.0f;
         act_taxel_nv.color.g = 0.0f;
@@ -494,13 +458,13 @@ void ros_publisher(){
         act_taxel_nv.action = visualization_msgs::Marker::ADD;
 
         act_taxel_nv.points.resize(2);
-        act_taxel_nv.points[0].x = taxel_g(0);
-        act_taxel_nv.points[0].y = taxel_g(1);
-        act_taxel_nv.points[0].z = taxel_g(2);
+        act_taxel_nv.points[0].x = c_taxel_p_g(0);
+        act_taxel_nv.points[0].y = c_taxel_p_g(1);
+        act_taxel_nv.points[0].z = c_taxel_p_g(2);
 
-        act_taxel_nv.points[1].x = nv_endp(0);
-        act_taxel_nv.points[1].y = nv_endp(1);
-        act_taxel_nv.points[1].z = nv_endp(2);
+        act_taxel_nv.points[1].x = c_taxel_endp_g(0);
+        act_taxel_nv.points[1].y = c_taxel_endp_g(1);
+        act_taxel_nv.points[1].z = c_taxel_endp_g(2);
 
         // Set the scale of the marker -- 1x1x1 here means 1m on a side
         act_taxel_nv.scale.x = .001;
@@ -514,18 +478,7 @@ void ros_publisher(){
     //publish the actived position
     if ((act_marker_pub.getNumSubscribers() >= 1)){
         visualization_msgs::Marker act_marker;
-        Eigen::Vector3d taxel_g, taxel_temp;
-        taxel_g.setZero();
-        taxel_temp.setZero();
         mutex_tac.lock();
-        if(contact_f == true){
-            ftt->est_ct_info(ftt->data);
-            local2global(ftt->pos/1000,\
-                         left_rs->robot_orien["eef"],taxel_temp);
-            taxel_g = left_rs->robot_position["eef"] + taxel_temp;
-            TDataRecord<<taxel_g(0)<<","<<taxel_g(1)<<","<<taxel_g(2)<<std::endl;
-        }
-        cp = taxel_g;
         // Set the color -- be sure to set alpha to something non-zero!
         act_marker.color.r = ftt->pressure;
         act_marker.color.g = 0.0f;
@@ -546,9 +499,9 @@ void ros_publisher(){
         act_marker.type = visualization_msgs::Marker::CUBE;
         // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
         act_marker.action = visualization_msgs::Marker::ADD;
-        act_marker.pose.position.x = taxel_g(0);
-        act_marker.pose.position.y = taxel_g(1);
-        act_marker.pose.position.z = taxel_g(2);
+        act_marker.pose.position.x = cp_g(0);
+        act_marker.pose.position.y = cp_g(1);
+        act_marker.pose.position.z = cp_g(2);
         act_marker.pose.orientation.x = 0.0;
         act_marker.pose.orientation.y = 0.0;
         act_marker.pose.orientation.z = 0.0;
@@ -565,29 +518,15 @@ void ros_publisher(){
     //publish the actived normal vector
     if(act_marker_nv_pub.getNumSubscribers() >= 1){
         visualization_msgs::Marker act_marker_nv;
-        Eigen::Vector3d taxel_g, taxel_temp,taxel_nv_g,nv_endp;
-        taxel_g.setZero();
-        taxel_temp.setZero();
-        taxel_nv_g.setZero();
-        nv_endp.setZero();
         mutex_tac.lock();
-        if(contact_f == true){
-            ftt->est_ct_info(ftt->data);
-            local2global(ftt->pos/1000,\
-                         left_rs->robot_orien["eef"],taxel_temp);
-            taxel_g = left_rs->robot_position["eef"] + taxel_temp;
-            local2global(ftt->nv/100,\
-                         left_rs->robot_orien["eef"],taxel_nv_g);
-            nv_endp = taxel_g + taxel_nv_g;
-            // Set the color -- be sure to set alpha to something non-zero!
-            act_marker_nv.color.r = 1.0f;
-            act_marker_nv.color.g = 0.0f;
-            act_marker_nv.color.b = 0.0f;
-            if(contact_f == true)
-                act_marker_nv.color.a = 1.0;
-            else
-                act_marker_nv.color.a = 0;
-        }
+        // Set the color -- be sure to set alpha to something non-zero!
+        act_marker_nv.color.r = 1.0f;
+        act_marker_nv.color.g = 0.0f;
+        act_marker_nv.color.b = 0.0f;
+        if(contact_f == true)
+            act_marker_nv.color.a = 1.0;
+        else
+            act_marker_nv.color.a = 0;
         mutex_tac.unlock();
 
         act_marker_nv.header.frame_id = "frame";
@@ -602,13 +541,13 @@ void ros_publisher(){
         act_marker_nv.action = visualization_msgs::Marker::ADD;
 
         act_marker_nv.points.resize(2);
-        act_marker_nv.points[0].x = taxel_g(0);
-        act_marker_nv.points[0].y = taxel_g(1);
-        act_marker_nv.points[0].z = taxel_g(2);
+        act_marker_nv.points[0].x = cp_g(0);
+        act_marker_nv.points[0].y = cp_g(1);
+        act_marker_nv.points[0].z = cp_g(2);
 
-        act_marker_nv.points[1].x = nv_endp(0);
-        act_marker_nv.points[1].y = nv_endp(1);
-        act_marker_nv.points[1].z = nv_endp(2);
+        act_marker_nv.points[1].x = cendp_g(0);
+        act_marker_nv.points[1].y = cendp_g(1);
+        act_marker_nv.points[1].z = cendp_g(2);
 
         // Set the scale of the marker -- 1x1x1 here means 1m on a side
         act_marker_nv.scale.x = .001;
@@ -757,9 +696,16 @@ void init(){
     estkukaforce.setZero();
     estkukamoment.setZero();
     cf_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
-    int len = 5;
+    int len = 50;
     mtf = new MidTacFeature(len);
-    cp.setZero();
+    cp_g.setZero();
+    cendp_g.setZero();
+    cnv_g.setZero();
+    c_taxel_nv_l.setZero();
+    c_taxel_p_l.setZero();
+    c_taxel_nv_g.setZero();
+    c_taxel_p_g.setZero();
+    c_taxel_endp_g.setZero();
     //register cb function
     com_rsb->register_external("/foo/moveto",button_moveto);
     com_rsb->register_external("/foo/tip_force",button_tip_force);
@@ -821,18 +767,40 @@ void init(){
 void get_mid_info(){
     bool contact_f = false;
     Eigen::Vector3d slope;
+    Eigen::Vector3d l2g_temp;
     slope.setZero();
+    l2g_temp.setZero();
     mutex_tac.lock();
     contact_f = ftt->isContact(ftt->data);
     if(contact_f == true){
         int taxId;
         taxId = ftt->est_ct_taxelId(ftt->data);
         ftt->contactarea = ftt->WhichArea(taxId);
+        //estimate contact taxel position, normal vector
+        for(int i = 0; i < 3; i ++){
+            c_taxel_p_l(i) = ftt->data.fingertip_tac_position.at(taxId)(i);
+            c_taxel_nv_l(i) = ftt->data.fingertip_tac_nv.at(taxId)(i);
+        }
+        local2global(c_taxel_p_l/1000,\
+                     left_rs->robot_orien["eef"],l2g_temp);
+        c_taxel_p_g = left_rs->robot_position["eef"] + l2g_temp;
+        local2global(c_taxel_nv_l/100,\
+                     left_rs->robot_orien["eef"],l2g_temp);
+        c_taxel_endp_g = c_taxel_p_g + l2g_temp;
+        //estimate contact point position, normal vector
+        ftt->est_ct_info(ftt->data);
+        local2global(ftt->pos/1000,\
+                     left_rs->robot_orien["eef"],l2g_temp);
+        cp_g = left_rs->robot_position["eef"] + l2g_temp;
+        local2global(ftt->nv/100,\
+                     left_rs->robot_orien["eef"],l2g_temp);
+        cendp_g = cp_g + l2g_temp;
+
         //compute the slope of accumulated tactile linear feature
-        slope = mtf->getSlope(cp.transpose());
+        slope = mtf->getSlope(cp_g.transpose());
         ftt->get_slope(left_rs->robot_orien["eef"].transpose()*slope);
         Tposition<<slope[0]<<","<<slope[1]<<","<<slope[2]<<","\
-                          <<cp[0]<<","<<cp[1]<<","<<cp[2]<<std::endl;
+                          <<cp_g[0]<<","<<cp_g[1]<<","<<cp_g[2]<<std::endl;
     }
     else{
         ftt->slope_clear();
@@ -894,7 +862,6 @@ int main(int argc, char* argv[])
 {
     //for data recording
     std::string data_f ("/tmp/");
-    TDataRecord.open((data_f+std::string("points.txt")).c_str());
     Tposition.open((data_f+std::string("position.txt")).c_str());
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);

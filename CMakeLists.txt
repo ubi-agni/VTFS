@@ -105,7 +105,7 @@ ENDIF()
 IF("$ENV{ROS_DISTRO}" STREQUAL "")
     MESSAGE(WARNING "No ROS environment set! Source /vol/nirobots/ros/indigo/setup.bash")
 ELSE()
-    MESSAGE(WARNING "Found ROS environment")
+    MESSAGE(STATUS "Found ROS environment")
     SET(ROS_FOUND TRUE)
 ENDIF()
 
