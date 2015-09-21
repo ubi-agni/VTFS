@@ -68,63 +68,55 @@ int ComOkc::left_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fri
 int ComOkc::right_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fri_float_t* new_pos){
     ComOkc *com_okc_ptr = (ComOkc*) priv;
     fri_float_t jnt_pos[7];
-    struct timeval v_cur, v_old;
-    long long intervaltime;
+
     okc_get_jntpos_act(ComOkc::okc,com_okc_ptr->getrobot_id(),jnt_pos);
     okc_get_ft_tcp_est(ComOkc::okc,com_okc_ptr->getrobot_id(), com_okc_ptr->ft);
+
     for(int i = 0; i <7; i++){
         com_okc_ptr->jnt_position_act[i] = pos_act[i];
         com_okc_ptr->jnt_position_mea[i] = jnt_pos[i];
     }
+    // feed back data from FRI is available
+    com_okc_ptr->data_available = true;
+
     if (OKC_OK != okc_is_robot_in_command_mode(com_okc_ptr->okc,com_okc_ptr->robot_id)){
+        //monitor mode
         for(int i = 0; i <7; i++){
             new_pos[i] = jnt_pos[i];
         }
-
-//        std::cout<<"right fri offset ";
-//        for (int i = 0; i < LBR_MNJ; i++)
-//        {
-//            std::cout<<ComOkc::okc->robot_data[com_okc_ptr->getrobot_id()].cmdJntPosFriOffset[i]<<",";
-//        }
-//        std::cout<<std::endl;
-
-//        std::cout<<"right cmdjntpos ";
-//        for (int i = 0; i < LBR_MNJ; i++)
-//        {
-//            std::cout<<ComOkc::okc->robot_data[com_okc_ptr->getrobot_id()].cmdJntPos[i]<<",";
-//        }
-//        std::cout<<std::endl;
-
-        return (OKC_OK);
-    }
-    intervaltime = 0;
-    if(gettimeofday(&v_old,NULL)){
-        std::cout<<"gettimeofday function error at the current time"<<std::endl;
-    }
-//    std::cout<<"time difference for two sampling step is "<<timeval_diff(NULL,&v_old,&v_last)<<std::endl;
-    v_last = v_old;
-    com_okc_ptr->data_available = true;
-    while((intervaltime < 1500)&&(com_okc_ptr->controller_update == false)){
-        if(gettimeofday(&v_cur,NULL)){
-            std::cout<<"gettimeofday function error at the current time"<<std::endl;
-        }
-        intervaltime = timeval_diff(NULL,&v_cur,&v_old);
-    }
-//    std::cout<<"out of the cycling and updata flag "<<intervaltime<<","<<com_okc_ptr->controller_update<<std::endl;
-    if(com_okc_ptr->controller_update == true){
-        //Todo:use the updated control output
-        for(int i = 0; i <7; i++){
-            new_pos[i] = com_okc_ptr->jnt_command[i];
-        }
-        com_okc_ptr->controller_update = false;
-        com_okc_ptr->data_available = false;
     }
     else{
+        // command mode
+        for(int i=0; i<7; i++ ) com_okc_ptr->mRightCurrentJoint(i) = jnt_pos[i];
+
+        // initialize filter
+        if(com_okc_ptr->mIsRightArmInitialized == false)
+        {
+            com_okc_ptr->right_filter->SetStateTarget(com_okc_ptr->mRightCurrentJoint, com_okc_ptr->mRightCurrentJoint);
+            com_okc_ptr->mIsRightArmInitialized = true;
+        }
+
+
+        // receive the joint command from the main controller
+        if(com_okc_ptr->controller_update == true){
+            for(int i = 0; i <7; i++){
+                com_okc_ptr->mRightDesiredJoint(i) = com_okc_ptr->jnt_command[i];
+            }
+            com_okc_ptr->right_filter->SetTarget(com_okc_ptr->mRightDesiredJoint);
+//            std::cout << "new target is set" << std::endl;
+        }
+
+        // do filtering
+        com_okc_ptr->right_filter->Update();
+        com_okc_ptr->right_filter->GetState(com_okc_ptr->mRightDesiredJoint);
+
+        // send the joint command to the real robot through FRI
         for(int i = 0; i <7; i++){
-            new_pos[i] = pos_act[i];
+            com_okc_ptr->jnt_command[i] = com_okc_ptr->mRightDesiredJoint(i);
+            new_pos[i] = com_okc_ptr->mRightDesiredJoint(i);
         }
         com_okc_ptr->controller_update = false;
-        com_okc_ptr->data_available = false;
+
     }
     return (OKC_OK);
 }
