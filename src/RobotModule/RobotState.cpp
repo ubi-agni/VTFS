@@ -85,7 +85,7 @@ void RobotState::updated(Robot *r){
         r->worldToToolFkSolver->JntToCart(r->q,r->pose,10);
         robot_position["robot_eef"] = kdl2eigen_position(r->pose);
         robot_orien["robot_eef"] = kdl2eigen_orien(r->pose);
-        r->worldToToolFkSolver->JntToCart(r->q,r->pose,12);
+        r->worldToToolFkSolver->JntToCart(r->q,r->pose,13);
         robot_position["eef"] = kdl2eigen_position(r->pose);
         robot_orien["eef"] = kdl2eigen_orien(r->pose);
         gen_hm(robot_orien["eef"],robot_position["eef"],cur_hm);
