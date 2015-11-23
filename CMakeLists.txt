@@ -118,23 +118,23 @@ set(CORE_LIBS ${ICL_LIBRARIES} ${CBF_LIBRARIES} ${orocos_kdl_LIBRARIES} ${catkin
 
 #==============================================================================
 
-message(STATUS "Looking for doxygen")
-find_program(DOXYGEN_BIN NAMES doxygen)
-if(NOT "${DOXYGEN_BIN}" STREQUAL "DOXYGEN_BIN-NOTFOUND")
-  message(STATUS "found Doxygen, a documentation can be built with 'make doc'")
-  add_custom_target(doc
-    COMMAND ${DOXYGEN_BIN} ${PROJECT_BINARY_DIR}/Doxyfile
-    COMMENT "Creating html and tex documentation in doc/"
-  )
-  install(
-    DIRECTORY ${PROJECT_BINARY_DIR}/doc/html
-    DESTINATION "share/doc/${PROJECT_NAME}/"
-    DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ WORLD_EXECUTE OWNER_EXECUTE GROUP_EXECUTE
-    FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE
- )
-else()
-  message(STATUS "  doxygen not found, documentation will not be available")
-endif()
+# message(STATUS "Looking for doxygen")
+# find_program(DOXYGEN_BIN NAMES doxygen)
+# if(NOT "${DOXYGEN_BIN}" STREQUAL "DOXYGEN_BIN-NOTFOUND")
+#   message(STATUS "found Doxygen, a documentation can be built with 'make doc'")
+#   add_custom_target(doc
+#     COMMAND ${DOXYGEN_BIN} ${PROJECT_BINARY_DIR}/Doxyfile
+#     COMMENT "Creating html and tex documentation in doc/"
+#   )
+#   install(
+#     DIRECTORY ${PROJECT_BINARY_DIR}/doc/html
+#     DESTINATION "share/doc/${PROJECT_NAME}/"
+#     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ WORLD_EXECUTE OWNER_EXECUTE GROUP_EXECUTE
+#     FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE
+#  )
+# else()
+#   message(STATUS "  doxygen not found, documentation will not be available")
+# endif()
 
 configure_file(
   "${PROJECT_SOURCE_DIR}/Doxyfile.in"
