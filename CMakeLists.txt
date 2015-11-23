@@ -31,14 +31,8 @@ SET(BUILD_SHARED_LIBS TRUE)
 #************************************************************************
 #  RPath settings                                                       *
 #************************************************************************
-SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-IF("${isSystemDir}" STREQUAL "-1")
-   SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-ENDIF("${isSystemDir}" STREQUAL "-1")
 
 # some output
 message(STATUS "")
@@ -59,10 +53,6 @@ SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 #==============================================================================
 # external libs
 #==============================================================================
-
-
-# search for cd dynamics
-#find_package(cd_dynamics)
 
 ## search for icl
 #find_package(ICL REQUIRED HINTS ${ICL_ROOT})
@@ -130,17 +120,17 @@ ENDIF(ROS_FOUND)
 
 
 
-SET(CDDynamics_ROOT CDDynamics_ROOT CACHE PATH "Root path to cddynamics")
-include_directories("${CDDynamics_ROOT}/include")
-LIST(APPEND CMAKE_INSTALL_RPATH "${CDDynamics_ROOT}/lib")
+find_package(cd_dynamics REQUIRED)
+include_directories("${cd_dynamics_INCLUDE_DIRS}")
 
-SET(Openkc_ROOT Openkc_ROOT CACHE PATH "Root path to openkc")
-include_directories("${Openkc_ROOT}/include")
-LIST(APPEND CMAKE_INSTALL_RPATH "${Openkc_ROOT}/lib")
+find_library(OPENKC_LIB openkcfri HINTS /vol/nirobots/lib)
+find_file(OPENKC_INCLUDE fri_okc_comm.h HINTS /vol/nirobots/include)
+get_filename_component(OPENKC_INCLUDE_DIRS ${OPENKC_INCLUDE} PATH)
+message("*** ${OPENKC_LIB} ${OPENKC_INCLUDE_DIRS}")
+include_directories("${OPENKC_INCLUDE_DIRS}")
 
 set(CORE_LIBS ${ICL_LIBRARIES} ${CBF_LIBRARIES} ${orocos_kdl_LIBRARIES} ${catkin_LIBRARIES}
-"-L${Openkc_ROOT}/lib -L${CDDynamics_ROOT}/lib -lcbf -lopenkcfri -lrt -lpthread -lm -lorocos-kdl -lCDDynamics" ${RSB_LIBRARIES} ${RST_LIBRARIES} "-Wl,-rpath ${Openkc_ROOT}/lib -Wl,-rpath ${CDDynamics_ROOT}/lib")
-
+  ${RSB_LIBRARIES} ${RST_LIBRARIES} ${cd_dynamics_LIBRARIES} ${OPENKC_LIB})
 
 #==============================================================================
 
@@ -153,10 +143,10 @@ if(NOT "${DOXYGEN_BIN}" STREQUAL "DOXYGEN_BIN-NOTFOUND")
     COMMENT "Creating html and tex documentation in doc/"
   )
   install(
-    DIRECTORY ${PROJECT_BINARY_DIR}/doc/html 
+    DIRECTORY ${PROJECT_BINARY_DIR}/doc/html
     DESTINATION "share/doc/${PROJECT_NAME}/"
     DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ WORLD_EXECUTE OWNER_EXECUTE GROUP_EXECUTE
-    FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE 
+    FILE_PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE
  )
 else()
   message(STATUS "  doxygen not found, documentation will not be available")
