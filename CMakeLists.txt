@@ -92,45 +92,29 @@ IF(RST_FOUND)
         LINK_DIRECTORIES(${RST_LIBRARY_DIRS})
 ENDIF()
 
-IF("$ENV{ROS_DISTRO}" STREQUAL "")
-    MESSAGE(WARNING "No ROS environment set! Source /vol/nirobots/ros/indigo/setup.bash")
-ELSE()
-    MESSAGE(STATUS "Found ROS environment")
-    SET(ROS_FOUND TRUE)
-ENDIF()
-
-# if ros found
-IF(ROS_FOUND)
-    MESSAGE(STATUS "found ros")
-    ## Find catkin macros and libraries
-    find_package(catkin REQUIRED COMPONENTS
-      tf
-      sensor_msgs
-      roscpp
-      tf_conversions
-    )
-    add_definitions(-DHAVE_ROS)
-    include_directories(${catkin_INCLUDE_DIRS})
-#${catkin_INCLUDE_DIRS}
-#${catkin_LIBRARIES}
-
-ELSE(ROS_FOUND)
-    MESSAGE(STATUS "ros not found....................................")
-ENDIF(ROS_FOUND)
-
-
-
-find_package(cd_dynamics REQUIRED)
-include_directories("${cd_dynamics_INCLUDE_DIRS}")
+## Find catkin macros and libraries
+find_package(catkin QUIET COMPONENTS
+  tf
+  sensor_msgs
+  roscpp
+  tf_conversions
+  cd_dynamics
+  )
+if(catkin_FOUND)
+  # declare this as a catkin package
+  add_definitions(-DHAVE_ROS)
+  include_directories(${catkin_INCLUDE_DIRS})
+else()
+  message(WARNING "ROS environment not found, building without ROS support")
+endif()
 
 find_library(OPENKC_LIB openkcfri HINTS /vol/nirobots/lib)
 find_file(OPENKC_INCLUDE fri_okc_comm.h HINTS /vol/nirobots/include)
 get_filename_component(OPENKC_INCLUDE_DIRS ${OPENKC_INCLUDE} PATH)
-message("*** ${OPENKC_LIB} ${OPENKC_INCLUDE_DIRS}")
 include_directories("${OPENKC_INCLUDE_DIRS}")
 
 set(CORE_LIBS ${ICL_LIBRARIES} ${CBF_LIBRARIES} ${orocos_kdl_LIBRARIES} ${catkin_LIBRARIES}
-  ${RSB_LIBRARIES} ${RST_LIBRARIES} ${cd_dynamics_LIBRARIES} ${OPENKC_LIB})
+  ${RSB_LIBRARIES} ${RST_LIBRARIES} ${OPENKC_LIB})
 
 #==============================================================================
 
