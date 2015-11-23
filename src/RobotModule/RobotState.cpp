@@ -68,7 +68,7 @@ void RobotState::updated(Robot *r){
     }
     if((r->get_robotname() == kuka_left)||((r->get_robotname() == kuka_right))){
         for(int i = 0; i <= 7; i++){
-            r->worldToToolFkSolver->JntToCart(r->q,r->pose,i+3);
+            r->worldToToolFkSolver->JntToCart(r->q,r->pose,i+4);
             robot_position[jntnum2name[i]] = kdl2eigen_position(r->pose);
             robot_orien[jntnum2name[i]] = kdl2eigen_orien(r->pose);
         }
@@ -82,10 +82,13 @@ void RobotState::updated(Robot *r){
         adj_matrix.topRightCorner(3,3) = vectortoskew(robot_position["robot_eef"]) * robot_orien["robot_eef"];
     }
     if((r->get_robotname() == kuka_left)){
-        r->worldToToolFkSolver->JntToCart(r->q,r->pose,10);
+        r->worldToToolFkSolver->JntToCart(r->q,r->pose,11);
         robot_position["robot_eef"] = kdl2eigen_position(r->pose);
         robot_orien["robot_eef"] = kdl2eigen_orien(r->pose);
-        r->worldToToolFkSolver->JntToCart(r->q,r->pose,13);
+        if(r->toolname == sensing_pole)
+            r->worldToToolFkSolver->JntToCart(r->q,r->pose,13);
+        if(r->toolname == teensy_finger)
+            r->worldToToolFkSolver->JntToCart(r->q,r->pose,12);
         robot_position["eef"] = kdl2eigen_position(r->pose);
         robot_orien["eef"] = kdl2eigen_orien(r->pose);
         gen_hm(robot_orien["eef"],robot_position["eef"],cur_hm);
