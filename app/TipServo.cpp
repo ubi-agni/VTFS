@@ -661,6 +661,11 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> slider_tacindex(tacindex_cb);
 
 
+    if(is_file_exist("left_arm_mid_param.xml") == false){
+        std::cout<<"not find the tactile servo controller configure file"<<std::endl;
+        exit(0);
+    }
+
     pm = new ParameterManager("left_arm_mid_param.xml");
     com_okc = new ComOkc(kuka_left,OKC_HOST,OKC_PORT);
     com_okc->connect();

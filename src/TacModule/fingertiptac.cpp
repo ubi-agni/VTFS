@@ -49,7 +49,12 @@ Eigen::MatrixXd FingertipTac::readMatrix(const char *fn){
     double buff[1000000];
 
     // Read numbers from file into buffer.
-    std::ifstream infile;
+    std::ifstream infile(fn);
+    if(infile.good() == false){
+        std::cout<<"tacel configure file is not available"<<std::endl;
+        exit(0);
+    }
+
     infile.open(fn);
     while (! infile.eof())
     {

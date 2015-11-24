@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 #include <kdl/frames.hpp>
 #include <utility>
+#include <fstream>      // std::ifstream
 
 extern Eigen::Vector3d euler2axisangle(Eigen::Vector3d la,Eigen::Matrix3d tm);
 extern Eigen::Vector3d g_euler2axisangle(Eigen::Vector3d la,Eigen::Matrix3d tm);
@@ -26,4 +27,5 @@ extern std::pair<Eigen::Vector3d,double> omega_transform(std::pair<Eigen::Vector
 extern void gen_hm(Eigen::Matrix3d m,Eigen::Vector3d v,Eigen::MatrixXd& hm);
 extern Eigen::Vector3d skewtovector(Eigen::Matrix3d m);
 extern Eigen::Matrix3d vectortoskew(Eigen::Vector3d v);
+extern bool is_file_exist(const char *fileName);
 //extern Eigen::VectorXd MatrixtoQuaternion(Eigen::Matrix3d);

@@ -283,6 +283,12 @@ extern Eigen::Matrix3d vectortoskew(Eigen::Vector3d v){
     return m;
 }
 
+extern bool is_file_exist(const char *fileName)
+{
+    std::ifstream infile(fileName);
+    return infile.good();
+}
+
 //extern Eigen::VectorXd MatrixtoQuaternion(Eigen::Matrix3d m){
 //    Eigen::VectorXd quater;
 //    quater.setZero(4);
