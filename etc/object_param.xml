@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (C) 2006 Marcin Kalicinski
+Distributed under the Boost Software License, Version 1.0.
+See http://www.boost.org/LICENSE_1_0.txt
+-->
+<AdmittanceParams>
+	<PosCtrl>
+		<kp>0.01</kp>
+		<ki>0.00001</ki>
+		<kd>0.00</kd>
+		</PosCtrl>
+	<OrienCtrl>
+	<!--<kp>0.007</kp>
+	<ki>0.0003</ki>
+	<kd>0.0</kd>-->
+		<kp>0.2</kp>
+		<ki>0.0000</ki>
+		<!--  <ki>0</ki>-->
+		<kd>0.000</kd>
+	</OrienCtrl>
+</AdmittanceParams>
