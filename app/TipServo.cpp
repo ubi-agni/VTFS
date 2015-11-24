@@ -12,6 +12,7 @@
 #ifdef HAVE_ROS
 #include <ros/ros.h>
 #include <sr_robot_msgs/UBI0All.h>
+#include <geometry_msgs/WrenchStamped.h>
 //#include <agni_utils/tactile_calibration.hpp>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -88,7 +89,7 @@ double initP_x,initP_y,initP_z;
 double initO_x,initO_y,initO_z;
 
 //using mutex locking controller ptr while it is switching.
-std::mutex mutex_act, mutex_force,mutex_tac;
+std::mutex mutex_act, mutex_force,mutex_tac,mutex_ft;
 //estimated force/torque from fri
 Eigen::Vector3d estkukaforce,estkukamoment;
 Eigen::Vector3d filtered_force;
@@ -323,6 +324,30 @@ recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg){
 //    std::cout<<std::endl;
     mutex_tac.unlock();
 }
+
+// receive FT Sensor data
+void
+recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
+
+    mutex_ft.lock();
+    std::cout <<"Fx"<<"\t"<<"Fy"<<"\t"<<"Fz"<<"\t"<<"Tx"<<"\t"<<"Ty"<<"\t"<<"Tz"<<std::endl;
+    std::cout << msg->wrench.force.x<<"\t"<<msg->wrench.force.y<<"\t"<<msg->wrench.force.z<<"\t"<<msg->wrench.torque.x<<"\t"<<msg->wrench.torque.y<<"\t"<<msg->wrench.torque.z<<std::endl;
+
+    //Eigen::Vector3d pos_val,nv_val;
+//    std::cout <<"0"<<"\t"<<"1"<<"\t"<<"2"<<"\t"<<"3"<<"\t"<<"4"<<"\t"<<"5"<<"\t"<<"6"<<"\t"<<"7"<<"\t"<<"8"<<"\t"<<"9"<<"\t"<<"10"<<"\t"<<"11"<<"\t"<<std::endl;
+//    std::cout << std::fixed;
+    //ROS_ASSERT(ftt->data.fingertip_tac_pressure.size() == msg->tactiles[0].distal.size());
+    /*for(size_t j = 0; j < msg->tactiles[0].distal.size(); ++j) {
+        press_val= 1.0-(msg->tactiles[0].distal[j]/1023.0);
+        if(press_val < MID_THRESHOLD) press_val = 0.0;
+        ftt->data.fingertip_tac_pressure[j] = press_val;
+//        std::cout<<std::setprecision(5)<<press_val<<"\t";
+    }*/
+//    std::cout<<std::endl;
+    mutex_ft.unlock();
+}
+
+
 #endif
 
 
@@ -914,6 +939,11 @@ int main(int argc, char* argv[])
             tacTipSub=nh->subscribe("/lh/teensy/tactile", 1, // buffer size
                                     &recvTipTactile);
         }
+        std::cout<<"Connect to ATI FT sensor"<<std::endl;
+        tacTipSub=nh->subscribe("/ft_sensor/wrench", 1, // buffer size
+                                &recvFT);
+
+
     #endif
     init();
     #ifdef HAVE_ROS
