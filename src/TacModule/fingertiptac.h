@@ -76,7 +76,7 @@ private:
     //sub routine to find the min distance taxel id
     int find_near_taxelid(tac_data t_data);
     void init_taxelmap();
-    Eigen::MatrixXd readMatrix(const char *fn);
+    Eigen::MatrixXd readMatrix(std::string &fn);
 };
 
 #endif // FINGERTIPTAC_H

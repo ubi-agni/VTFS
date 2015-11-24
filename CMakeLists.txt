@@ -144,3 +144,7 @@ configure_file(
 include_directories(src)
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(app)
+
+install(DIRECTORY etc/
+   DESTINATION etc/)
+

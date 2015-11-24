@@ -22,6 +22,11 @@
 #endif
 #include <iomanip>
 
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <iostream>
+
 #include "fingertiptac.h"
 #include "midtacfeature.h"
 #include "Timer.h"
@@ -639,7 +644,29 @@ void ros_publisher(){
 
 #endif
 
+std::string get_selfpath() {
+    char buff[PATH_MAX];
+    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
+    if (len != -1) {
+      buff[len] = '\0';
+
+      std::string path = std::string(buff);
+      //remove exec name
+      std::size_t found = path.find_last_of("/");
+      path = path.substr(0,found);
+      //remove bin
+      found = path.find_last_of("/");
+      path = path.substr(0,found);
+      return path;
+    }
+
+    /* handle error condition */
+}
+
 void init(){
+
+    std::string selfpath = get_selfpath();
+
     ftt = new FingertipTac(12);
     tn = teensy_finger;
     StopFlag = false;
@@ -660,13 +687,16 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> checkb_markerarray(markerarray_cb);
     boost::function<void(boost::shared_ptr<std::string>)> slider_tacindex(tacindex_cb);
 
-
-    if(is_file_exist("left_arm_mid_param.xml") == false){
-        std::cout<<"not find the tactile servo controller configure file"<<std::endl;
-        exit(0);
+    std::string config_filename = selfpath + "/etc/left_arm_mid_param.xml";
+    if(is_file_exist(config_filename.c_str()) == false){
+        config_filename = "left_arm_mid_param.xml";
+        if(is_file_exist(config_filename.c_str()) == false){
+            std::cout<<"not find the tactile servo controller configure file"<<std::endl;
+            exit(0);
+        }
     }
 
-    pm = new ParameterManager("left_arm_mid_param.xml");
+    pm = new ParameterManager(config_filename);
     com_okc = new ComOkc(kuka_left,OKC_HOST,OKC_PORT);
     com_okc->connect();
     kuka_left_arm = new KukaLwr(kuka_left,*com_okc,tn);

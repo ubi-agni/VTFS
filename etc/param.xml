@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (C) 2006 Marcin Kalicinski
+Distributed under the Boost Software License, Version 1.0.
+See http://www.boost.org/LICENSE_1_0.txt
+-->
+<ControlParams>
+	<leftarm>
+		<PosCtrl>
+			<kp>0.0002</kp>
+			<ki>0.00003</ki>
+			<kd>0</kd>
+			</PosCtrl>
+		<ForceCtrl>
+		<!--<kp>0.007</kp>
+		<ki>0.0003</ki>
+		<kd>0.0</kd>-->
+			<kp>0.0002</kp>
+			<ki>0.0000</ki>
+			<!--  <ki>0</ki>-->
+			<kd>0.000</kd>
+		</ForceCtrl>
+	</leftarm>
+
+	<rightarm>
+		<PosCtrl>
+			<kp>0.0002</kp>
+			<ki>0.00003</ki>
+			<kd>0</kd>
+		</PosCtrl>
+		<ForceCtrl>
+			<!--<kp>0.007</kp>
+			<ki>0.0003</ki>
+			<kd>0.0</kd>-->
+			<kp>0.0002</kp>
+			<ki>0.0000</ki>
+			<!--  <ki>0</ki>-->
+			<kd>0.000</kd>
+		</ForceCtrl>
+	</rightarm>
+
+	<object>
+		<PosCtrl>
+			<kp>0.01</kp>
+			<ki>0.00001</ki>
+			<kd>0.00</kd>
+			</PosCtrl>
+		<OrienCtrl>
+		<!--<kp>0.007</kp>
+		<ki>0.0003</ki>
+		<kd>0.0</kd>-->
+			<kp>0.2</kp>
+			<ki>0.0000</ki>
+			<!--  <ki>0</ki>-->
+			<kd>0.000</kd>
+		</OrienCtrl>
+	</object>
+
+	<CompositeCtrl>
+		<P_Xkp>0.1</P_Xkp>
+		<P_Xki>0</P_Xki>
+		<P_Xkd>0</P_Xkd>
+		<P_Ykp>0.1</P_Ykp>
+		<P_Yki>0</P_Yki>
+		<P_Ykd>0</P_Ykd>
+		<P_Zkp>0.1</P_Zkp>
+		<P_Zki>0</P_Zki>
+		<P_Zkd>0</P_Zkd>
+		<F_Xkp>0</F_Xkp>
+		<F_Xki>0</F_Xki>
+		<F_Xkd>0</F_Xkd>
+		<F_Ykp>0</F_Ykp>
+		<F_Yki>0</F_Yki>
+		<F_Ykd>0</F_Ykd>
+		<F_Zkp>-0.001</F_Zkp>
+		<F_Zki>-0.001</F_Zki>
+		<F_Zkd>0</F_Zkd>
+	</CompositeCtrl>
+	<HybridCtrl>
+		<P_Xkp>0.05</P_Xkp>
+		<P_Xki>0</P_Xki>
+		<P_Xkd>0</P_Xkd>
+		<P_Ykp>0.05</P_Ykp>
+		<P_Yki>0</P_Yki>
+		<P_Ykd>0</P_Ykd>
+		<P_Zkp>0.05</P_Zkp>
+		<P_Zki>0</P_Zki>
+		<P_Zkd>0</P_Zkd>
+		<F_Xkp>0</F_Xkp>
+		<F_Xki>0</F_Xki>
+		<F_Xkd>0</F_Xkd>
+		<F_Ykp>0</F_Ykp>
+		<F_Yki>0</F_Yki>
+		<F_Ykd>0</F_Ykd>
+		<F_Zkp>-0.001</F_Zkp>
+		<F_Zki>-0.001</F_Zki>
+		<F_Zkd>0</F_Zkd>
+	</HybridCtrl>
+</ControlParams>
+
+<LeftKukaParams>
+	<stiffness>
+		<a1>500</a1>
+		<a2>500</a2>
+		<e1>500</e1>
+		<a3>500</a3>
+		<a4>500</a4>
+		<a5>500</a5>
+		<a6>500</a6>
+	</stiffness>
+	<damping>
+		<a1>0.2</a1>
+		<a2>0.2</a2>
+		<e1>0.2</e1>
+		<a3>0.2</a3>
+		<a4>0.2</a4>
+		<a5>0.2</a5>
+		<a6>0.2</a6>
+	</damping>
+</LeftKukaParams>
+
+<RightKukaParams>
+	<stiffness>
+		<a1>500</a1>
+		<a2>500</a2>
+		<e1>500</e1>
+		<a3>500</a3>
+		<a4>500</a4>
+		<a5>500</a5>
+		<a6>500</a6>
+	</stiffness>
+	<damping>
+		<a1>0.2</a1>
+		<a2>0.2</a2>
+		<e1>0.2</e1>
+		<a3>0.2</a3>
+		<a4>0.2</a4>
+		<a5>0.2</a5>
+		<a6>0.2</a6>
+	</damping>
+</RightKukaParams>

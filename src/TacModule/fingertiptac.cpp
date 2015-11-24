@@ -4,6 +4,11 @@
 #include <string>
 
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <iostream>
+
+
 
 Eigen::Matrix3d GenerateLF(Eigen::Vector3d nv){
     //normalize the z vector
@@ -44,19 +49,25 @@ void FingertipTac::slope_clear(){
     slope.setZero();
 }
 
-Eigen::MatrixXd FingertipTac::readMatrix(const char *fn){
+Eigen::MatrixXd FingertipTac::readMatrix(std::string &fn){
     int cols = 0, rows = 0;
     double buff[1000000];
-
+    std::string filename = fn;
     // Read numbers from file into buffer.
-    std::ifstream infile(fn);
+    std::ifstream infile;
+    infile.open(filename.c_str());
     if(infile.good() == false){
-        std::cout<<"tacel configure file is not available"<<std::endl;
-        exit(0);
+        //find it locally now
+        std::size_t found = filename.find_last_of("/");
+        filename = filename.substr(found+1);
+        infile.open(filename.c_str());
+        if(infile.good() == false){
+            std::cout<<"taxel configure file "<<filename<<" is not available"<< std::endl;
+            exit(0);
+        }
     }
 
-    infile.open(fn);
-    while (! infile.eof())
+    while (!infile.eof())
     {
         std::string line;
         getline(infile, line);
@@ -71,11 +82,11 @@ Eigen::MatrixXd FingertipTac::readMatrix(const char *fn){
 
         if (cols == 0)
             cols = temp_cols;
-
         rows++;
     }
 
     infile.close();
+
     rows--;
 
     // Populate matrix with numbers.
@@ -208,8 +219,28 @@ void FingertipTac::init_taxelmap(){
     nv_mat.setZero(12,3);
     position_mat.setZero(12,3);
 
-    nv_mat = readMatrix("fingertip_taxel_nv.txt");
-    position_mat = readMatrix("fingertip_taxel_position.txt");
+    // get full path
+    char buff[PATH_MAX];
+    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
+    std::string path = "";
+    if (len != -1) {
+        buff[len] = '\0';
+        path = std::string(buff);
+        //remove exec name
+        std::size_t found = path.find_last_of("/");
+        path = path.substr(0,found);
+        //remove bin
+        found = path.find_last_of("/");
+        path = path.substr(0,found);
+
+    }
+
+    std::string config_filename_nv = path + "/etc/fingertip_taxel_nv.txt";
+    std::string config_filename_pos = path + "/etc/fingertip_taxel_position.txt";
+    nv_mat = readMatrix(config_filename_nv);
+    position_mat = readMatrix(config_filename_pos);
+
+     std::cout << "Loaded config" << std::endl;
 
     for(int i = 0; i < 12; i++){
         data.fingertip_tac_nv.at(i) = nv_mat.row(i).transpose();
