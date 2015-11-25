@@ -45,6 +45,7 @@
 #include "Util.h"
 #include <fstream>
 #include <mutex>
+#include "gamaft.h"
 
 //for feature extact from teensyfingertip
 #include "midtacfeature.h"
@@ -63,7 +64,7 @@ ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,act_taxel_pub,act_taxel_nv_pub;
 #endif
-std::ofstream Tposition;
+std::ofstream Tposition,Tft;
 
 ComOkc *com_okc;
 Robot *kuka_left_arm;
@@ -76,6 +77,7 @@ RsbDataType rdtleftkuka;
 ParameterManager* pm;
 RobotState *left_rs;
 kuka_msg left_kuka_msg;
+gamaFT *ft_gama;
 
 #define newP_x -0.1
 #define newP_y 0.4
@@ -103,6 +105,8 @@ bool vmt;
 float tac_index;
 
 bool StopFlag;
+TemporalSmoothingFilter<Eigen::Vector3d>* gama_f_filter;
+TemporalSmoothingFilter<Eigen::Vector3d>* gama_t_filter;
 
 //for moving tactile pattern extaction
 MidTacFeature *mtf;
@@ -276,8 +280,15 @@ void ftcalib_cb(boost::shared_ptr<std::string> data){
     kuka_left_arm->calibForce(1000);
 }
 
+void gamaftcalib_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"calibrate gama ft sensor is actived"<<std::endl;
+    ft_gama->calibFT(500);
+}
+
 void brake_cb(boost::shared_ptr<std::string> data){
+
     com_okc->start_brake();
+
 }
 
 void nobrake_cb(boost::shared_ptr<std::string> data){
@@ -330,20 +341,27 @@ void
 recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
 
     mutex_ft.lock();
-    std::cout <<"Fx"<<"\t"<<"Fy"<<"\t"<<"Fz"<<"\t"<<"Tx"<<"\t"<<"Ty"<<"\t"<<"Tz"<<std::endl;
-    std::cout << msg->wrench.force.x<<"\t"<<msg->wrench.force.y<<"\t"<<msg->wrench.force.z<<"\t"<<msg->wrench.torque.x<<"\t"<<msg->wrench.torque.y<<"\t"<<msg->wrench.torque.z<<std::endl;
-
-    //Eigen::Vector3d pos_val,nv_val;
-//    std::cout <<"0"<<"\t"<<"1"<<"\t"<<"2"<<"\t"<<"3"<<"\t"<<"4"<<"\t"<<"5"<<"\t"<<"6"<<"\t"<<"7"<<"\t"<<"8"<<"\t"<<"9"<<"\t"<<"10"<<"\t"<<"11"<<"\t"<<std::endl;
-//    std::cout << std::fixed;
-    //ROS_ASSERT(ftt->data.fingertip_tac_pressure.size() == msg->tactiles[0].distal.size());
-    /*for(size_t j = 0; j < msg->tactiles[0].distal.size(); ++j) {
-        press_val= 1.0-(msg->tactiles[0].distal[j]/1023.0);
-        if(press_val < MID_THRESHOLD) press_val = 0.0;
-        ftt->data.fingertip_tac_pressure[j] = press_val;
-//        std::cout<<std::setprecision(5)<<press_val<<"\t";
-    }*/
-//    std::cout<<std::endl;
+//    std::cout <<"Fx"<<"\t"<<"Fy"<<"\t"<<"Fz"<<"\t"<<"Tx"<<"\t"<<"Ty"<<"\t"<<"Tz"<<std::endl;
+//    std::cout << msg->wrench.force.x<<"\t"<<msg->wrench.force.y<<"\t"<<msg->wrench.force.z<<"\t"<<msg->wrench.torque.x<<"\t"<<msg->wrench.torque.y<<"\t"<<msg->wrench.torque.z<<std::endl;
+    Eigen::Vector3d filtered_gama_f,filtered_gama_t;
+    filtered_gama_f.setZero();
+    filtered_gama_t.setZero();
+    ft_gama->raw_ft_f(0) = msg->wrench.force.x;
+    ft_gama->raw_ft_f(1) = msg->wrench.force.y;
+    ft_gama->raw_ft_f(2) = msg->wrench.force.z;
+    ft_gama->raw_ft_t(0) = msg->wrench.torque.x;
+    ft_gama->raw_ft_t(1) = msg->wrench.torque.y;
+    ft_gama->raw_ft_t(2) = msg->wrench.torque.z;
+    ft_gama->calib_ft_f = ft_gama->raw_ft_f - ft_gama->mean_ft_f;
+    ft_gama->calib_ft_t = ft_gama->raw_ft_t - ft_gama->mean_ft_t;
+    filtered_gama_f = gama_f_filter->push(ft_gama->calib_ft_f);
+    filtered_gama_t = gama_t_filter->push(ft_gama->calib_ft_t);
+    Tft<< ft_gama->calib_ft_f(0)<<","<<ft_gama->calib_ft_f(1)\
+       <<","<<ft_gama->calib_ft_f(2)<<","<<ft_gama->calib_ft_t(0)\
+      <<","<<ft_gama->calib_ft_t(1)<<","<<ft_gama->calib_ft_t(2)<<","\
+     <<filtered_gama_f(0)<<","<<filtered_gama_f(1)\
+    <<","<<filtered_gama_f(2)<<","<<filtered_gama_t(0)\
+   <<","<<filtered_gama_t(1)<<","<<filtered_gama_t(2)<<std::endl;
     mutex_ft.unlock();
 }
 
@@ -684,6 +702,10 @@ std::string get_selfpath() {
       path = path.substr(0,found);
       return path;
     }
+    else{
+        std::cout<<"get exacutable file path failaure"<<std::endl;
+        exit(0);
+    }
 
     /* handle error condition */
 }
@@ -691,6 +713,7 @@ std::string get_selfpath() {
 void init(){
 
     std::string selfpath = get_selfpath();
+    ft_gama = new gamaFT;
 
     ftt = new FingertipTac(12);
     tn = teensy_finger;
@@ -704,6 +727,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_exploring(tip_exploring_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_moveto(moveto_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_ftcalib(ftcalib_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_gamaftcalib(gamaftcalib_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_follow(tip_cablefollow_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
@@ -756,6 +780,8 @@ void init(){
     estkukaforce.setZero();
     estkukamoment.setZero();
     cf_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
+    gama_f_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
+    gama_t_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
     int len = 50;
     mtf = new MidTacFeature(len);
     cp_g.setZero();
@@ -774,6 +800,7 @@ void init(){
     com_rsb->register_external("/foo/tip_taxel_rolling",button_tip_taxel_rolling);
     com_rsb->register_external("/foo/tip_exploring",button_tip_exploring);
     com_rsb->register_external("/foo/ftcalib",button_ftcalib);
+    com_rsb->register_external("/foo/gamaftcalib",button_gamaftcalib);
     com_rsb->register_external("/foo/tip_follow",button_tip_follow);
     com_rsb->register_external("/foo/brake",button_brake);
     com_rsb->register_external("/foo/nobrake",button_nobrake);
@@ -923,6 +950,7 @@ int main(int argc, char* argv[])
     //for data recording
     std::string data_f ("/tmp/");
     Tposition.open((data_f+std::string("position.txt")).c_str());
+    Tft.open((data_f+std::string("ft.txt")).c_str());
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);
         nh = new ros::NodeHandle();

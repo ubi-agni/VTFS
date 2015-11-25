@@ -1,5 +1,6 @@
 <vbox>
   <button args="Moveto" handle="moveto"/>
+  <button args="gamaftcalib" handle="gamaftcalib"/>
   <button args="tip_force" handle="tip_force"/>
   <button args="tip_tactile" handle="tip_tactile"/>
   <button args="tip_taxel_sliding" handle="tip_taxel_sliding"/>

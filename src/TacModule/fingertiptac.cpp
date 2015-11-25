@@ -53,6 +53,7 @@ Eigen::MatrixXd FingertipTac::readMatrix(std::string &fn){
     int cols = 0, rows = 0;
     double buff[1000000];
     std::string filename = fn;
+    std::cout<<"filename is "<<filename<<std::endl;
     // Read numbers from file into buffer.
     std::ifstream infile;
     infile.open(filename.c_str());
