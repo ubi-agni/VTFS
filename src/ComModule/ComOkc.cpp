@@ -29,6 +29,7 @@ int ComOkc::left_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fri
         for(int i = 0; i <7; i++){
             new_pos[i] = jnt_pos[i];
         }
+        com_okc_ptr->controller_update = false;
     }
     else{
         // command mode
@@ -84,6 +85,7 @@ int ComOkc::right_okcAxisAbsCallback (void* priv, const fri_float_t* pos_act, fr
         for(int i = 0; i <7; i++){
             new_pos[i] = jnt_pos[i];
         }
+        com_okc_ptr->controller_update = false;
     }
     else{
         // command mode

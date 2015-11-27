@@ -37,11 +37,13 @@ void gamaFT::calibFT(int sample_num){
         sample_f.col(i) = raw_ft_f;
         sample_t.col(i) = raw_ft_t;
         usleep(10000);
-        std::cout<<"data count is "<<i<<std::endl;
+        std::cout<<"data count is "<<i<<","<<sample_f.col(i)(0)<<","<<sample_f.col(i)(1)<<","<<sample_f.col(i)(2)<<std::endl;
     }
     //caculate the mean
     for(int i= 0 ; i < 3; i++){
         mean_ft_f(i) = sample_f.row(i).mean();
+//        std::cout<<"row "<<i<<":"<<std::endl;
+//        std::cout<<sample_f.row(i)<<std::endl;
         mean_ft_t(i) = sample_t.row(i).mean();
         mean_f.row(i) = mean_ft_f(i) * Eigen::Vector3d::Ones(1,sample_num);
         mean_t.row(i) = mean_ft_t(i) * Eigen::Vector3d::Ones(1,sample_num);
@@ -54,8 +56,8 @@ void gamaFT::calibFT(int sample_num){
     std_t_2 = std_t.cwiseProduct(std_t);
 
     for(int i = 0; i < 3; i++){
-        std_ft_f(i) = sqrt(std_f_2.row(i).sum())/(sample_num-1);
-        std_ft_t(i) = sqrt(std_t_2.row(i).sum())/(sample_num-1);
+        std_ft_f(i) = sqrt(std_f_2.row(i).sum()/sample_num);
+        std_ft_t(i) = sqrt(std_t_2.row(i).sum()/sample_num);
     }
     std::cout<<"force mean is "<<mean_ft_f<<std::endl;
     std::cout<<"torque mean is "<<mean_ft_t<<std::endl;

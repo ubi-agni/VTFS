@@ -84,11 +84,14 @@ gamaFT *ft_gama;
 #define newP_z 0.30
 
 #define newO_x 0.0
-#define newO_y M_PI/2;
+#define newO_y M_PI;
 #define newO_z 0.0;
+
 
 double initP_x,initP_y,initP_z;
 double initO_x,initO_y,initO_z;
+Eigen::Vector3d tool_vec_g;
+
 
 //using mutex locking controller ptr while it is switching.
 std::mutex mutex_act, mutex_force,mutex_tac,mutex_ft;
@@ -283,6 +286,8 @@ void ftcalib_cb(boost::shared_ptr<std::string> data){
 void gamaftcalib_cb(boost::shared_ptr<std::string> data){
     std::cout<<"calibrate gama ft sensor is actived"<<std::endl;
     ft_gama->calibFT(500);
+    tool_vec_g = left_rs->robot_orien["robot_eef"]*ft_gama->mean_ft_f;
+    std::cout<<"tool bias: "<<left_rs->robot_orien["robot_eef"]*ft_gama->mean_ft_f<<std::endl;
 }
 
 void brake_cb(boost::shared_ptr<std::string> data){
@@ -336,6 +341,7 @@ recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg){
     mutex_tac.unlock();
 }
 
+int counter_t = 0;
 // receive FT Sensor data
 void
 recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
@@ -347,15 +353,30 @@ recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
     filtered_gama_f.setZero();
     filtered_gama_t.setZero();
     ft_gama->raw_ft_f(0) = msg->wrench.force.x;
-    ft_gama->raw_ft_f(1) = msg->wrench.force.y;
+    ft_gama->raw_ft_f(1) = msg->wrench.force.y-0.1;
     ft_gama->raw_ft_f(2) = msg->wrench.force.z;
     ft_gama->raw_ft_t(0) = msg->wrench.torque.x;
     ft_gama->raw_ft_t(1) = msg->wrench.torque.y;
     ft_gama->raw_ft_t(2) = msg->wrench.torque.z;
-    ft_gama->calib_ft_f = ft_gama->raw_ft_f - ft_gama->mean_ft_f;
-    ft_gama->calib_ft_t = ft_gama->raw_ft_t - ft_gama->mean_ft_t;
+
+
+    //get rid of tool-pokingstick gravity
+    ft_gama->raw_ft_f = ft_gama->raw_ft_f + left_rs->robot_orien["robot_eef"].transpose()*(-1)*tool_vec_g;
+    counter_t ++;
+    Eigen::Vector3d tmp;
+    tmp.setZero();
+
+    ft_gama->calib_ft_f = ft_gama->raw_ft_f;
+    ft_gama->calib_ft_t = ft_gama->raw_ft_t;
     filtered_gama_f = gama_f_filter->push(ft_gama->calib_ft_f);
     filtered_gama_t = gama_t_filter->push(ft_gama->calib_ft_t);
+
+//    if(counter_t%500==0){
+////        tmp = left_rs->robot_orien["robot_eef"].transpose()*tool_vec_g;
+////        std::cout<<"projected value: "<<tmp(0)<<","<<tmp(1)<<","<<tmp(2)<<std::endl;
+//        std::cout<<"estimated contact force: "<<filtered_gama_f(0)<<","<<filtered_gama_f(1)<<","<<filtered_gama_f(2)<<std::endl;
+//    }
+
     Tft<< ft_gama->calib_ft_f(0)<<","<<ft_gama->calib_ft_f(1)\
        <<","<<ft_gama->calib_ft_f(2)<<","<<ft_gama->calib_ft_t(0)\
       <<","<<ft_gama->calib_ft_t(1)<<","<<ft_gama->calib_ft_t(2)<<","\
@@ -714,6 +735,7 @@ void init(){
 
     std::string selfpath = get_selfpath();
     ft_gama = new gamaFT;
+    tool_vec_g.setZero();
 
     ftt = new FingertipTac(12);
     tn = teensy_finger;
