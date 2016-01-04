@@ -62,7 +62,7 @@ sensor_msgs::JointState js;
 ros::Publisher jsPub;
 ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
-ros::Publisher act_marker_pub,act_marker_nv_pub,act_taxel_pub,act_taxel_nv_pub;
+ros::Publisher act_marker_pub,act_marker_nv_pub,gamma_force_marker_pub,act_taxel_pub,act_taxel_nv_pub;
 #endif
 std::ofstream Tposition,Tft;
 
@@ -110,6 +110,8 @@ float tac_index;
 bool StopFlag;
 TemporalSmoothingFilter<Eigen::Vector3d>* gama_f_filter;
 TemporalSmoothingFilter<Eigen::Vector3d>* gama_t_filter;
+
+bool start_taccalib_rec;
 
 //for moving tactile pattern extaction
 MidTacFeature *mtf;
@@ -290,10 +292,13 @@ void gamaftcalib_cb(boost::shared_ptr<std::string> data){
     std::cout<<"tool bias: "<<left_rs->robot_orien["robot_eef"]*ft_gama->mean_ft_f<<std::endl;
 }
 
+
+void taccalib_rec_cb(boost::shared_ptr<std::string> data){
+    start_taccalib_rec = true;
+}
+
 void brake_cb(boost::shared_ptr<std::string> data){
-
     com_okc->start_brake();
-
 }
 
 void nobrake_cb(boost::shared_ptr<std::string> data){
@@ -371,18 +376,31 @@ recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
     filtered_gama_f = gama_f_filter->push(ft_gama->calib_ft_f);
     filtered_gama_t = gama_t_filter->push(ft_gama->calib_ft_t);
 
-//    if(counter_t%500==0){
-////        tmp = left_rs->robot_orien["robot_eef"].transpose()*tool_vec_g;
-////        std::cout<<"projected value: "<<tmp(0)<<","<<tmp(1)<<","<<tmp(2)<<std::endl;
-//        std::cout<<"estimated contact force: "<<filtered_gama_f(0)<<","<<filtered_gama_f(1)<<","<<filtered_gama_f(2)<<std::endl;
-//    }
-
-    Tft<< ft_gama->calib_ft_f(0)<<","<<ft_gama->calib_ft_f(1)\
-       <<","<<ft_gama->calib_ft_f(2)<<","<<ft_gama->calib_ft_t(0)\
-      <<","<<ft_gama->calib_ft_t(1)<<","<<ft_gama->calib_ft_t(2)<<","\
-     <<filtered_gama_f(0)<<","<<filtered_gama_f(1)\
-    <<","<<filtered_gama_f(2)<<","<<filtered_gama_t(0)\
-   <<","<<filtered_gama_t(1)<<","<<filtered_gama_t(2)<<std::endl;
+    if(counter_t%500==0){
+//        tmp = left_rs->robot_orien["robot_eef"].transpose()*tool_vec_g;
+//        std::cout<<"projected value: "<<tmp(0)<<","<<tmp(1)<<","<<tmp(2)<<std::endl;
+        counter_t = 0;
+        std::cout<<"estimated contact force: "<<filtered_gama_f(0)<<","<<filtered_gama_f(1)<<","<<filtered_gama_f(2)<<std::endl;
+    }
+    if(start_taccalib_rec == true){
+        mutex_tac.lock();
+        Eigen::Matrix3d T_eff2tac,I;
+        Eigen::Vector3d euler_angle;
+        Eigen::Vector3d f_tacframe;
+        euler_angle.setZero();
+        f_tacframe.setZero();
+        T_eff2tac.setZero();
+        I.setIdentity();
+        euler_angle(2) = M_PI/2;
+        T_eff2tac = g_euler2tm(euler_angle,I);
+        f_tacframe = T_eff2tac * filtered_gama_f;
+        Tft<<f_tacframe(0)<<","<<f_tacframe(1)<<","<<f_tacframe(2)<<",";
+        Tft<<ftt->data.fingertip_tac_pressure[0]<<","<<ftt->data.fingertip_tac_pressure[1]<<","<<ftt->data.fingertip_tac_pressure[2]<<","\
+                 <<ftt->data.fingertip_tac_pressure[3]<<","<<ftt->data.fingertip_tac_pressure[4]<<","<<ftt->data.fingertip_tac_pressure[5]<<","\
+                 <<ftt->data.fingertip_tac_pressure[6]<<","<<ftt->data.fingertip_tac_pressure[7]<<","<<ftt->data.fingertip_tac_pressure[8]<<","\
+                 <<ftt->data.fingertip_tac_pressure[9]<<","<<ftt->data.fingertip_tac_pressure[10]<<","<<ftt->data.fingertip_tac_pressure[11]<<std::endl;
+        mutex_tac.unlock();
+    }
     mutex_ft.unlock();
 }
 
@@ -627,6 +645,49 @@ void ros_publisher(){
         act_marker_nv_pub.publish(act_marker_nv);
     }
 
+    //publish the gamma force vector
+    if(gamma_force_marker_pub.getNumSubscribers() >= 1){
+        visualization_msgs::Marker gamma_force_marker;
+        mutex_tac.lock();
+        // Set the color -- be sure to set alpha to something non-zero!
+        gamma_force_marker.color.r = 1.0f;
+        gamma_force_marker.color.g = 0.0f;
+        gamma_force_marker.color.b = 0.0f;
+        if(contact_f == true)
+            gamma_force_marker.color.a = 1.0;
+        else
+            gamma_force_marker.color.a = 0;
+        mutex_tac.unlock();
+
+        gamma_force_marker.header.frame_id = "frame";
+        gamma_force_marker.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        gamma_force_marker.ns = "KukaRos";
+        gamma_force_marker.id = 0;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        gamma_force_marker.type = visualization_msgs::Marker::ARROW;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        gamma_force_marker.action = visualization_msgs::Marker::ADD;
+
+        gamma_force_marker.points.resize(2);
+        gamma_force_marker.points[0].x = cp_g(0);
+        gamma_force_marker.points[0].y = cp_g(1);
+        gamma_force_marker.points[0].z = cp_g(2);
+
+        gamma_force_marker.points[1].x = cendp_g(0);
+        gamma_force_marker.points[1].y = cendp_g(1);
+        gamma_force_marker.points[1].z = cendp_g(2);
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        gamma_force_marker.scale.x = .001;
+        gamma_force_marker.scale.y = .001;
+        gamma_force_marker.scale.z = .001;
+
+        gamma_force_marker.lifetime = ros::Duration();
+        gamma_force_marker_pub.publish(gamma_force_marker);
+    }
+
     // Publish the markerarray
     if ((marker_array_pub.getNumSubscribers() >= 1)||(marker_nvarray_pub.getNumSubscribers() >= 1)){
         visualization_msgs::MarkerArray marker_array_msg;
@@ -736,6 +797,7 @@ void init(){
     std::string selfpath = get_selfpath();
     ft_gama = new gamaFT;
     tool_vec_g.setZero();
+    start_taccalib_rec = false;
 
     ftt = new FingertipTac(12);
     tn = teensy_finger;
@@ -750,6 +812,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_moveto(moveto_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_ftcalib(ftcalib_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_gamaftcalib(gamaftcalib_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_taccalib_rec(taccalib_rec_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_follow(tip_cablefollow_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
@@ -823,6 +886,7 @@ void init(){
     com_rsb->register_external("/foo/tip_exploring",button_tip_exploring);
     com_rsb->register_external("/foo/ftcalib",button_ftcalib);
     com_rsb->register_external("/foo/gamaftcalib",button_gamaftcalib);
+    com_rsb->register_external("/foo/taccalib_rec",button_taccalib_rec);
     com_rsb->register_external("/foo/tip_follow",button_tip_follow);
     com_rsb->register_external("/foo/brake",button_brake);
     com_rsb->register_external("/foo/nobrake",button_nobrake);
@@ -861,6 +925,7 @@ void init(){
     marker_nvarray_pub = nh->advertise<visualization_msgs::MarkerArray>("vis_marker_nv_array", 2);
     act_marker_pub = nh->advertise<visualization_msgs::Marker>("act_marker", 2);
     act_marker_nv_pub = nh->advertise<visualization_msgs::Marker>("act_marker_nv", 2);
+    gamma_force_marker_pub = nh->advertise<visualization_msgs::Marker>("gamma_force_marker", 2);
     act_taxel_pub = nh->advertise<visualization_msgs::Marker>("act_taxel", 2);
     act_taxel_nv_pub = nh->advertise<visualization_msgs::Marker>("act_taxel_nv", 2);
 
@@ -976,7 +1041,7 @@ int main(int argc, char* argv[])
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);
         nh = new ros::NodeHandle();
-        ros::Subscriber	tacTipSub;
+        ros::Subscriber	tacTipSub,GammaFtSub;
         if (argc > 1){
             std::cout<<"set hand by user"<<std::endl;
             std::string handname(argv[1]);
@@ -990,7 +1055,7 @@ int main(int argc, char* argv[])
                                     &recvTipTactile);
         }
         std::cout<<"Connect to ATI FT sensor"<<std::endl;
-        tacTipSub=nh->subscribe("/ft_sensor/wrench", 1, // buffer size
+        GammaFtSub=nh->subscribe("/ft_sensor/wrench", 1, // buffer size
                                 &recvFT);
 
 
