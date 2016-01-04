@@ -13,6 +13,8 @@ gamaFT::gamaFT()
     mean_ft_t.setZero();
     std_ft_f.setZero();
     std_ft_t.setZero();
+    filtered_gama_f.setZero();
+    filtered_gama_t.setZero();
 }
 
 
