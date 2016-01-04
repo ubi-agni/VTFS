@@ -4,7 +4,7 @@
  Author      : Qiang Li
  Version     :
  Copyright   : Copyright Qiang Li, Universität Bielefeld
- Description : test remote gui application
+ Description : test remote icl gui application
  ============================================================================
  */
 #include <stdlib.h>

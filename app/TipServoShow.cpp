@@ -1,10 +1,10 @@
 /*
  ============================================================================
- Name        : TipServo.cpp
+ Name        : TipServoShow.cpp
  Author      : Qiang Li
  Version     :
  Copyright   : Copyright Qiang Li, Universität Bielefeld
- Description : teensytactile fingertip tactile servoing
+ Description : teensytactile fingertip tactile servoing only for the visualization
  ============================================================================
  */
 

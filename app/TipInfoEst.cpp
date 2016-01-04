@@ -1,11 +1,10 @@
-
 /*
  ============================================================================
- Name        : TipComTest.cpp
+ Name        : TipInfoEst.cpp
  Author      : Qiang Li
  Version     :
  Copyright   : Copyright Qiang Li, Universität Bielefeld
- Description : This is communication test programe to get the raw data from teensy fingertip
+ Description : This is test programe to estimate contact information from teensy fingertip
  ============================================================================
  */
 
