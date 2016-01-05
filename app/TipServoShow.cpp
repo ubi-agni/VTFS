@@ -39,6 +39,7 @@
 #include "Util.h"
 #include <fstream>
 #include <mutex>
+#include "msgcontenttype.h"
 
 //for feature extact from teensyfingertip
 #include "midtacfeature.h"

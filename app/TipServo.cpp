@@ -47,6 +47,7 @@
 #include <mutex>
 #include "gamaft.h"
 #include "RebaType.h"
+#include "msgcontenttype.h"
 
 //for feature extact from teensyfingertip
 #include "midtacfeature.h"
