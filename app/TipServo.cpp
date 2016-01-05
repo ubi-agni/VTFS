@@ -46,6 +46,7 @@
 #include <fstream>
 #include <mutex>
 #include "gamaft.h"
+#include "RebaType.h"
 
 //for feature extact from teensyfingertip
 #include "midtacfeature.h"
@@ -111,7 +112,10 @@ bool StopFlag;
 TemporalSmoothingFilter<Eigen::Vector3d>* gama_f_filter;
 TemporalSmoothingFilter<Eigen::Vector3d>* gama_t_filter;
 
+//flag to record data in order to use gamma ft sensor to calbirate mid tactile fingertip
 bool start_taccalib_rec;
+//define the robot control mode: normal mode vs psudo_gravity_compensation mode
+RobotModeT rmt;
 
 //for moving tactile pattern extaction
 MidTacFeature *mtf;
@@ -256,6 +260,16 @@ void tip_follow_cb(boost::shared_ptr<std::string> data){
     std::cout<<"curve tracking"<<std::endl;
 }
 
+void tip_grav_comp_ctrl_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"switch to psudo_gravity_compasenstation control"<<std::endl;
+    rmt = PsudoGravityCompensation;
+}
+
+void tip_normal_ctrl_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"switch to normal control"<<std::endl;
+    rmt = NormalMode;
+}
+
 
 void moveto_cb(boost::shared_ptr<std::string> data){
     Eigen::Vector3d p,o;
@@ -373,12 +387,12 @@ recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
     ft_gama->filtered_gama_f = gama_f_filter->push(ft_gama->calib_ft_f);
     ft_gama->filtered_gama_t = gama_t_filter->push(ft_gama->calib_ft_t);
 
-    if(counter_t%500==0){
-//        tmp = left_rs->robot_orien["robot_eef"].transpose()*tool_vec_g;
-//        std::cout<<"projected value: "<<tmp(0)<<","<<tmp(1)<<","<<tmp(2)<<std::endl;
-        counter_t = 0;
-        std::cout<<"estimated contact force: "<<ft_gama->filtered_gama_f(0)<<","<<ft_gama->filtered_gama_f(1)<<","<<ft_gama->filtered_gama_f(2)<<std::endl;
-    }
+//    if(counter_t%500==0){
+////        tmp = left_rs->robot_orien["robot_eef"].transpose()*tool_vec_g;
+////        std::cout<<"projected value: "<<tmp(0)<<","<<tmp(1)<<","<<tmp(2)<<std::endl;
+//        counter_t = 0;
+//        std::cout<<"estimated contact force: "<<ft_gama->filtered_gama_f(0)<<","<<ft_gama->filtered_gama_f(1)<<","<<ft_gama->filtered_gama_f(2)<<std::endl;
+//    }
     if(start_taccalib_rec == true){
         mutex_tac.lock();
         Tft<<ft_gama->filtered_gama_f(0)<<","<<ft_gama->filtered_gama_f(1)<<","<<ft_gama->filtered_gama_f(2)<<",";
@@ -782,6 +796,7 @@ std::string get_selfpath() {
 void init(){
 
     std::string selfpath = get_selfpath();
+    rmt = NormalMode;
     ft_gama = new gamaFT;
     tool_vec_g.setZero();
     start_taccalib_rec = false;
@@ -801,6 +816,8 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_gamaftcalib(gamaftcalib_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_taccalib_rec(taccalib_rec_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_follow(tip_cablefollow_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_grav_comp_ctrl(tip_grav_comp_ctrl_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_normal_ctrl(tip_normal_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_updateadmittance(updateadmittance_cb);
@@ -876,6 +893,8 @@ void init(){
     com_rsb->register_external("/foo/gamaftcalib",button_gamaftcalib);
     com_rsb->register_external("/foo/taccalib_rec",button_taccalib_rec);
     com_rsb->register_external("/foo/tip_follow",button_tip_follow);
+    com_rsb->register_external("/foo/tip_grav_comp_ctrl",button_tip_grav_comp_ctrl);
+    com_rsb->register_external("/foo/tip_normal_ctrl",button_tip_normal_ctrl);
     com_rsb->register_external("/foo/brake",button_brake);
     com_rsb->register_external("/foo/nobrake",button_nobrake);
     com_rsb->register_external("/foo/updateadmittance",button_updateadmittance);
@@ -1033,7 +1052,7 @@ void run_leftarm(){
 
         //use CBF to compute the desired joint angle rate
         kuka_left_arm->update_cbf_controller();
-        kuka_left_arm->set_joint_command();
+        kuka_left_arm->set_joint_command(rmt);
         com_okc->controller_update = true;
         com_okc->data_available = false;
     }
