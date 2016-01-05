@@ -84,7 +84,7 @@ gamaFT *ft_gama;
 #define newP_z 0.30
 
 #define newO_x 0.0
-#define newO_y M_PI;
+#define newO_y M_PI/2;
 #define newO_z 0.0;
 
 
@@ -116,7 +116,7 @@ bool start_taccalib_rec;
 //for moving tactile pattern extaction
 MidTacFeature *mtf;
 //estimated contact point position, normal direction
-Eigen::Vector3d cp_g,cendp_g,cnv_g;
+Eigen::Vector3d cp_g,cendp_g,cnv_g,cendp_g_gamma;
 //estimated contact taxel posion and normal direction
 Eigen::Vector3d c_taxel_p_l,c_taxel_nv_l,c_taxel_p_g,c_taxel_endp_g,c_taxel_nv_g;
 
@@ -354,9 +354,6 @@ recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
     mutex_ft.lock();
 //    std::cout <<"Fx"<<"\t"<<"Fy"<<"\t"<<"Fz"<<"\t"<<"Tx"<<"\t"<<"Ty"<<"\t"<<"Tz"<<std::endl;
 //    std::cout << msg->wrench.force.x<<"\t"<<msg->wrench.force.y<<"\t"<<msg->wrench.force.z<<"\t"<<msg->wrench.torque.x<<"\t"<<msg->wrench.torque.y<<"\t"<<msg->wrench.torque.z<<std::endl;
-    Eigen::Vector3d filtered_gama_f,filtered_gama_t;
-    filtered_gama_f.setZero();
-    filtered_gama_t.setZero();
     ft_gama->raw_ft_f(0) = msg->wrench.force.x;
     ft_gama->raw_ft_f(1) = msg->wrench.force.y-0.1;
     ft_gama->raw_ft_f(2) = msg->wrench.force.z;
@@ -373,28 +370,18 @@ recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
 
     ft_gama->calib_ft_f = ft_gama->raw_ft_f;
     ft_gama->calib_ft_t = ft_gama->raw_ft_t;
-    filtered_gama_f = gama_f_filter->push(ft_gama->calib_ft_f);
-    filtered_gama_t = gama_t_filter->push(ft_gama->calib_ft_t);
+    ft_gama->filtered_gama_f = gama_f_filter->push(ft_gama->calib_ft_f);
+    ft_gama->filtered_gama_t = gama_t_filter->push(ft_gama->calib_ft_t);
 
     if(counter_t%500==0){
 //        tmp = left_rs->robot_orien["robot_eef"].transpose()*tool_vec_g;
 //        std::cout<<"projected value: "<<tmp(0)<<","<<tmp(1)<<","<<tmp(2)<<std::endl;
         counter_t = 0;
-        std::cout<<"estimated contact force: "<<filtered_gama_f(0)<<","<<filtered_gama_f(1)<<","<<filtered_gama_f(2)<<std::endl;
+        std::cout<<"estimated contact force: "<<ft_gama->filtered_gama_f(0)<<","<<ft_gama->filtered_gama_f(1)<<","<<ft_gama->filtered_gama_f(2)<<std::endl;
     }
     if(start_taccalib_rec == true){
         mutex_tac.lock();
-        Eigen::Matrix3d T_eff2tac,I;
-        Eigen::Vector3d euler_angle;
-        Eigen::Vector3d f_tacframe;
-        euler_angle.setZero();
-        f_tacframe.setZero();
-        T_eff2tac.setZero();
-        I.setIdentity();
-        euler_angle(2) = M_PI/2;
-        T_eff2tac = g_euler2tm(euler_angle,I);
-        f_tacframe = T_eff2tac * filtered_gama_f;
-        Tft<<f_tacframe(0)<<","<<f_tacframe(1)<<","<<f_tacframe(2)<<",";
+        Tft<<ft_gama->filtered_gama_f(0)<<","<<ft_gama->filtered_gama_f(1)<<","<<ft_gama->filtered_gama_f(2)<<",";
         Tft<<ftt->data.fingertip_tac_pressure[0]<<","<<ftt->data.fingertip_tac_pressure[1]<<","<<ftt->data.fingertip_tac_pressure[2]<<","\
                  <<ftt->data.fingertip_tac_pressure[3]<<","<<ftt->data.fingertip_tac_pressure[4]<<","<<ftt->data.fingertip_tac_pressure[5]<<","\
                  <<ftt->data.fingertip_tac_pressure[6]<<","<<ftt->data.fingertip_tac_pressure[7]<<","<<ftt->data.fingertip_tac_pressure[8]<<","\
@@ -675,9 +662,9 @@ void ros_publisher(){
         gamma_force_marker.points[0].y = cp_g(1);
         gamma_force_marker.points[0].z = cp_g(2);
 
-        gamma_force_marker.points[1].x = cendp_g(0);
-        gamma_force_marker.points[1].y = cendp_g(1);
-        gamma_force_marker.points[1].z = cendp_g(2);
+        gamma_force_marker.points[1].x = cendp_g_gamma(0);
+        gamma_force_marker.points[1].y = cendp_g_gamma(1);
+        gamma_force_marker.points[1].z = cendp_g_gamma(2);
 
         // Set the scale of the marker -- 1x1x1 here means 1m on a side
         gamma_force_marker.scale.x = .001;
@@ -871,6 +858,7 @@ void init(){
     mtf = new MidTacFeature(len);
     cp_g.setZero();
     cendp_g.setZero();
+    cendp_g_gamma.setZero();
     cnv_g.setZero();
     c_taxel_nv_l.setZero();
     c_taxel_p_l.setZero();
@@ -938,7 +926,24 @@ void init(){
 #endif
 }
 
+void get_ft_vis_info(){
+    //this function is only for the computation of force vector visualization for gamma sensor.
+    //located in the contact point detected by mid sensor
+    bool contact_f = false;
+    Eigen::Vector3d l2g_temp;
+    l2g_temp.setZero();
+    mutex_tac.lock();
+    contact_f = ftt->isContact(ftt->data);
+    if(contact_f == true){
+        local2global(ft_gama->filtered_gama_f/100,\
+                     left_rs->robot_orien["eef"],l2g_temp);
+        cendp_g_gamma = cp_g + l2g_temp;
+    }
+    mutex_tac.unlock();
+}
 void get_mid_info(){
+    //computingt the contact information from mid sensor--contact position,estimated
+    //contact force vector, and line feature estimation
     bool contact_f = false;
     Eigen::Vector3d slope;
     Eigen::Vector3d l2g_temp;
@@ -970,6 +975,7 @@ void get_mid_info(){
                      left_rs->robot_orien["eef"],l2g_temp);
         cendp_g = cp_g + l2g_temp;
 
+
         //compute the slope of accumulated tactile linear feature
         slope = mtf->getSlope(cp_g.transpose());
         ftt->get_slope(left_rs->robot_orien["eef"].transpose()*slope);
@@ -1000,8 +1006,10 @@ void run_leftarm(){
 //            ft(i+3) = estkukamoment(i);
 //        }
 //        mutex_force.unlock();
-        //using mid for control
+        //using mid for control, get contact information
         get_mid_info();
+        //get ft visulization information
+        get_ft_vis_info();
         //using all kinds of controllers to update the reference
         mutex_act.lock();
         for(unsigned int i = 0; i < left_ac_vec.size();i++){
