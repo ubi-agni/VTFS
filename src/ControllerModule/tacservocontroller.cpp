@@ -218,7 +218,6 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
     deltape = Kpp[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais + \
             Kpi[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais_int + \
             Kpd[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * (deltais - deltais_old);
-//    std::cout<<"deltapa are "<<deltape<<std::endl;
     if(midfb->isContact(midfb->data) == true){
         if((t->curtaskname.tact == COVER_OBJECT_SURFACE)||(t->curtaskname.tact == LINEAR_TRACKING)){
             if(midfb->isContact(midfb->data) == true){
@@ -243,6 +242,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
 
     lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
     if(midfb->isContact(midfb->data) == true){
+        std::cout<<"before the normal direction control "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
         Eigen::Vector3d rot_nv;
         rot_nv.setZero();
         if((t->curtaskname.tact == CONTACT_POINT_TRACKING)||(t->curtaskname.tact == CONTACT_POINT_FORCE_TRACKING)||\
@@ -256,9 +256,13 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             }
             //rolling components
             rot_nv = desired_nv.cross(ctc_nv);
+            std::cout<<"desured_nv "<<desired_nv(0)<<","<<desired_nv(1)<<","<<desired_nv(2)<<std::endl;
+            std::cout<<"ctc_nv "<<ctc_nv(0)<<","<<ctc_nv(1)<<","<<ctc_nv(2)<<std::endl;
+            std::cout<<"rot_nv "<<rot_nv(0)<<","<<rot_nv(1)<<","<<rot_nv(2)<<std::endl;
             des_nv_normalize = desired_nv.normalized();
             ctc_nv_normalize = ctc_nv.normalized();
             lov_tac = lov_tac + 1*(1-(des_nv_normalize.dot(ctc_nv_normalize)))*rot_nv;
+            std::cout<<"after the normal direction control "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
             ctrl_debug<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<",";
             ctrl_debug<<ctc_nv_normalize(0)<<","<<ctc_nv_normalize(1)<<","<<ctc_nv_normalize(2)<<",";
             //twist component, only use x z component of slope to compute the deviation angle between current estimated linear and z axis

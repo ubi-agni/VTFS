@@ -675,7 +675,7 @@ See http://www.boost.org/LICENSE_1_0.txt
                 <kd>0</kd>
             </y>
             <z>
-                <kp>0.001</kp>
+                <kp>0.005</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </z>
@@ -729,9 +729,9 @@ See http://www.boost.org/LICENSE_1_0.txt
                 <e00>1</e00>
                 <e11>1</e11>
                 <e22>1</e22>
-                <e33>1</e33>
+                <e33>-1</e33>
                 <e44>0</e44>
-                <e55>-1</e55>
+                <e55>1</e55>
             </ttjkm>
             <vtjkm>
                 <e00>1</e00>

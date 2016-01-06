@@ -65,6 +65,7 @@ ros::Publisher jsPub;
 ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,gamma_force_marker_pub,act_taxel_pub,act_taxel_nv_pub;
+ros::Publisher des_ct_marker_pub,des_ct_nv_marker_pub;
 #endif
 std::ofstream Tposition,Tft;
 
@@ -196,7 +197,7 @@ void tip_exploring_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
     left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
     mutex_act.unlock();
-    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+    std::cout<<"tactile servoing for sliding/rolling to the desired point"<<std::endl;
 }
 
 void tip_cablefollow_cb(boost::shared_ptr<std::string> data){
@@ -453,7 +454,7 @@ void ros_publisher(){
         //prepare marker info
         visualization_msgs::Marker marker;
         // Set the frame ID and timestamp.  See the TF tutorials for information on these.
-        marker.header.frame_id = "/lh_ffdistal";
+        marker.header.frame_id = "/rh_ffdistal";
         marker.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
@@ -661,6 +662,92 @@ void ros_publisher(){
         act_marker_nv.lifetime = ros::Duration();
         act_marker_nv_pub.publish(act_marker_nv);
     }
+
+    //publish the desired contact position
+    if ((des_ct_marker_pub.getNumSubscribers() >= 1)){
+        visualization_msgs::Marker des_ct_marker;
+        mutex_tac.lock();
+        // Set the color -- be sure to set alpha to something non-zero!
+        des_ct_marker.color.r = 0.0f;
+        des_ct_marker.color.g = 1.0f;
+        des_ct_marker.color.b = 0.0f;
+        if(contact_f == true)
+            des_ct_marker.color.a = 1.0;
+        else
+            des_ct_marker.color.a = 0;
+        mutex_tac.unlock();
+
+        des_ct_marker.header.frame_id = "/rh_ffdistal";
+        des_ct_marker.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        des_ct_marker.ns = "KukaRos";
+        des_ct_marker.id = 0;
+        des_ct_marker.frame_locked = true;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        des_ct_marker.type = visualization_msgs::Marker::CUBE;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        des_ct_marker.action = visualization_msgs::Marker::ADD;
+        des_ct_marker.pose.position.x = ftt->get_Center_position(1)(0)/1000;
+        des_ct_marker.pose.position.y = ftt->get_Center_position(1)(1)/1000;
+        des_ct_marker.pose.position.z = ftt->get_Center_position(1)(2)/1000;
+        des_ct_marker.pose.orientation.x = 0.0;
+        des_ct_marker.pose.orientation.y = 0.0;
+        des_ct_marker.pose.orientation.z = 0.0;
+        des_ct_marker.pose.orientation.w = 1.0;
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        des_ct_marker.scale.x = .002;
+        des_ct_marker.scale.y = .002;
+        des_ct_marker.scale.z = .002;
+
+        des_ct_marker.lifetime = ros::Duration();
+        des_ct_marker_pub.publish(des_ct_marker);
+    }
+    //publish the desired contact normal vector
+    if(des_ct_nv_marker_pub.getNumSubscribers() >= 1){
+        visualization_msgs::Marker des_ct_nv_marker;
+        mutex_tac.lock();
+        // Set the color -- be sure to set alpha to something non-zero!
+        des_ct_nv_marker.color.r = 0.0f;
+        des_ct_nv_marker.color.g = 1.0f;
+        des_ct_nv_marker.color.b = 0.0f;
+        if(contact_f == true)
+            des_ct_nv_marker.color.a = 1.0;
+        else
+            des_ct_nv_marker.color.a = 0;
+        mutex_tac.unlock();
+
+        des_ct_nv_marker.header.frame_id = "/rh_ffdistal";
+        des_ct_nv_marker.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        des_ct_nv_marker.ns = "KukaRos";
+        des_ct_nv_marker.id = 0;
+        des_ct_nv_marker.frame_locked = true;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        des_ct_nv_marker.type = visualization_msgs::Marker::ARROW;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        des_ct_nv_marker.action = visualization_msgs::Marker::ADD;
+
+        des_ct_nv_marker.points.resize(2);
+        des_ct_nv_marker.points[0].x = ftt->get_Center_position(1)(0)/1000;
+        des_ct_nv_marker.points[0].y = ftt->get_Center_position(1)(1)/1000;
+        des_ct_nv_marker.points[0].z = ftt->get_Center_position(1)(2)/1000;
+
+        des_ct_nv_marker.points[1].x = ftt->get_Center_position(1)(0)/1000 + ftt->get_Center_nv(1)(0)/100;
+        des_ct_nv_marker.points[1].y = ftt->get_Center_position(1)(1)/1000 + ftt->get_Center_nv(1)(1)/100;
+        des_ct_nv_marker.points[1].z = ftt->get_Center_position(1)(2)/1000 + ftt->get_Center_nv(1)(2)/100;
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        des_ct_nv_marker.scale.x = .001;
+        des_ct_nv_marker.scale.y = .001;
+        des_ct_nv_marker.scale.z = .001;
+
+        des_ct_nv_marker.lifetime = ros::Duration();
+        des_ct_nv_marker_pub.publish(des_ct_nv_marker);
+    }
+
 
     //publish the gamma force vector
     if(gamma_force_marker_pub.getNumSubscribers() >= 1){
@@ -955,6 +1042,8 @@ void init(){
     gamma_force_marker_pub = nh->advertise<visualization_msgs::Marker>("gamma_force_marker", 2);
     act_taxel_pub = nh->advertise<visualization_msgs::Marker>("act_taxel", 2);
     act_taxel_nv_pub = nh->advertise<visualization_msgs::Marker>("act_taxel_nv", 2);
+    des_ct_marker_pub = nh->advertise<visualization_msgs::Marker>("des_ct_marker", 2);
+    des_ct_nv_marker_pub = nh->advertise<visualization_msgs::Marker>("des_ct_nv_marker", 2);
 
     jsPub = nh->advertise<sensor_msgs::JointState> ("joint_states", 2);
     ros::spinOnce();
