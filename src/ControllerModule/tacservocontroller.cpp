@@ -1,4 +1,4 @@
-#include "ControllerModule/tacservocontroller.h"
+#include "tacservocontroller.h"
 #include "TaskModule/tacservotask.h"
 #include <sys/stat.h>     //create folder for data record
 
@@ -281,12 +281,12 @@ void TacServoController::update_robot_reference(Robot *robot, Task *t,FingertipT
     p_target.setZero();
     o_target.setZero();
     get_desired_lv(robot,t,midfb);
-//    std::cout<<"lv before in tacservo "<<llv<<std::endl;
-//    std::cout<<lov<<std::endl;
+    std::cout<<"lv before in tacservo "<<llv<<std::endl;
+    std::cout<<lov<<std::endl;
     llv = llv + llv_tac;
     lov = lov + lov_tac;
-//    std::cout<<"lv after in tacservo "<<llv<<std::endl;
-//    std::cout<<lov<<std::endl;
+    std::cout<<"lv after in tacservo "<<llv<<std::endl;
+    std::cout<<lov<<std::endl;
     local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
                     lov,p_target,o_target);
     if(midfb->isContact(midfb->data) == true){

@@ -64,6 +64,7 @@ Eigen::Vector3d MidTacFeature::getSlope(Eigen::Vector3d u){
     for(int i = 0; i < filter_len-1; i++){
         data_m.row(i) = data_m.row(i+1);
     }
+    //data is store in row
     data_m.row(filter_len-1) = u.transpose();
     if(isZerorow() == false){
         covar_m = bsxfun_min(data_m);

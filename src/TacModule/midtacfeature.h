@@ -9,7 +9,9 @@ class MidTacFeature
 public:
     MidTacFeature(Eigen::MatrixXd data,int len);
     MidTacFeature(int len);
+    //assume all dataset are available
     Eigen::MatrixXd getSlope_batch();
+    //assume that slope is obtained while the data is increamentally sampled.
     Eigen::Vector3d getSlope(Eigen::Vector3d u);
 private:
     Eigen::MatrixXd dataset;

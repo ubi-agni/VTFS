@@ -2,6 +2,7 @@
 #include <UtilModule/kdl_to_eigen.h>
 #include <kdl/frames.hpp>
 
+
 std::mutex mutex_lefttac,mutex_righttac,mutex_vis,\
         mutex_pcs,mutex_markerpoints,mutex_gui;
 double right_position3d[3],right_CPnormal[3],\
@@ -117,6 +118,88 @@ void ComRSB::tacpcs_msg_send(tacpcs_msg& msg, std::string tacpart){
     }
     inf_pcs[tacpart]->publish(pcs_msg);
 }
+
+bool ComRSB::tactile_receive(myrmex_msg& msg, std::string tacpart){
+//    switch (tacpart){
+//    case "leftmyrmex":
+//        mutex_lefttac.lock();
+//        msg = left_myrmex;
+//        mutex_lefttac.unlock();
+//        if(is_get_left_tac_msg == true){
+//            is_get_left_tac_msg = false;
+//            return true;
+//        }else{
+//            return false;
+//        }
+//        break;
+//    case "rightmyrmex":
+//        mutex_righttac.lock();
+//        msg = right_myrmex;
+//        mutex_righttac.unlock();
+//        if(is_get_right_tac_msg == true){
+//            is_get_right_tac_msg = false;
+//            return true;
+//        }else{
+//            return false;
+//        }
+//        break;
+//    default:
+//        std::cout<<"the wrong robot tact part is used"<<std::endl;
+//        return false;
+//        break;
+
+//    }
+    if(tacpart == "leftmyrmex"){
+        mutex_lefttac.lock();
+        msg = left_myrmex;
+        mutex_lefttac.unlock();
+        if(is_get_left_tac_msg == true){
+            is_get_left_tac_msg = false;
+            return true;
+        }else{
+            return false;
+        }
+    }
+    if(tacpart == "rightmyrmex"){
+        mutex_righttac.lock();
+        msg = right_myrmex;
+        mutex_righttac.unlock();
+        if(is_get_right_tac_msg == true){
+            is_get_right_tac_msg = false;
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+}
+
+bool ComRSB::fiducialmarker_receive(markered_object_msg & msg){
+    mutex_vis.lock();
+    msg = obj;
+    mutex_vis.unlock();
+    if(is_get_vis_msg == true){
+        is_get_vis_msg = false;
+        return true;
+    }
+    else{
+        return false;
+    }
+
+}
+bool ComRSB::markerpoints_receive(dirt_points_msg& msg){
+    mutex_markerpoints.lock();
+    msg = dirt_ps;
+    mutex_markerpoints.unlock();
+    if(is_get_dirtps_msg == true){
+        is_get_dirtps_msg = false;
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
 
 
 void ComRSB::add_msg(RsbDataType& rdt){

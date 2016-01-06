@@ -56,6 +56,9 @@ class ComRSB : public Com
 {
 public:
     ComRSB();
+    bool tactile_receive(myrmex_msg& msg, std::string tacpart);
+    bool fiducialmarker_receive(markered_object_msg & msg);
+    bool markerpoints_receive(dirt_points_msg& msg);
     void add_msg(RsbDataType& rdt);
     void kuka_msg_send(kuka_msg& msg, std::string tacpart);
     void tacpcs_msg_send(tacpcs_msg& msg, std::string tacpart);

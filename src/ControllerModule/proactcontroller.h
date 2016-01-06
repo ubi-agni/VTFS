@@ -1,6 +1,6 @@
 #ifndef PROACTCONTROLLER_H
 #define PROACTCONTROLLER_H
-#include "ControllerModule/actcontroller.h"
+#include "actcontroller.h"
 #include "RobotModule/Robot.h"
 #include "TaskModule/kukaselfctrltask.h"
 

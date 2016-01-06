@@ -384,6 +384,9 @@ void KukaLwr::initChains(ToolNameT tn){
         if(tn == teensy_finger){
             worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
         }
+        if(tn == tactool){
+            //spp 1st meeting version, nothing is added in the kinematics chain expect robot kinematics.
+        }
     }
     baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
     baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));

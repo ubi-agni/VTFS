@@ -21,7 +21,8 @@ enum RobotNameT{
 
 enum ToolNameT{
     sensing_pole,
-    teensy_finger
+    teensy_finger,
+    tactool
 };
 
 enum MotionDirT{
