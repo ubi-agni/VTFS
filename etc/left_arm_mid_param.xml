@@ -72,7 +72,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rrzp>
         <Rlxn>
-            <kp>-0.002</kp>
+            <kp>-0.01</kp>
             <psm>
                 <e00>1</e00>
                 <e11>0</e11>

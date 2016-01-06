@@ -46,9 +46,13 @@
 #include "gamaft.h"
 #include "RebaType.h"
 #include "msgcontenttype.h"
+#include "pcafeature.h"
+
+#include <deque> //for estimating the normal direction of tool-end
 
 //desired contact pressure
 #define TAC_F 0.5
+#define NV_EST_LEN 500
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -56,7 +60,8 @@ tf::TransformBroadcaster *br;
 sensor_msgs::JointState js;
 ros::Publisher jsPub;
 ros::NodeHandle *nh;
-ros::Publisher gamma_force_marker_pub;
+//ros::Publisher gamma_force_marker_pub;
+ros::Publisher nv_est_marker_pub;
 #endif
 
 ComOkc *com_okc;
@@ -73,6 +78,7 @@ ParameterManager* pm;
 RobotState *left_rs;
 kuka_msg left_kuka_msg;
 gamaFT *ft_gama;
+PCAFeature *pcaf;
 
 #define newP_x -0.1
 #define newP_y 0.4
@@ -106,6 +112,11 @@ TemporalSmoothingFilter<Eigen::Vector3d>* gama_t_filter;
 //define the robot control mode: normal mode vs psudo_gravity_compensation mode
 RobotModeT rmt;
 
+//save the last 500 position of robot end-effector
+std::deque<Eigen::Vector3d> robot_eef_deque;
+bool rec_flag_nv_est;
+Eigen::Vector3d est_tool_nv;
+
 void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
     mutex_tac.lock();
@@ -121,7 +132,7 @@ void closeprog_cb(boost::shared_ptr<std::string> data){
     std::cout<<"The program will be closed"<<std::endl;
 }
 
-void tip_force_cb(boost::shared_ptr<std::string> data){
+void tactool_force_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -135,7 +146,7 @@ void tip_force_cb(boost::shared_ptr<std::string> data){
     std::cout<<"maintain the force"<<std::endl;
 }
 
-void tip_tactile_cb(boost::shared_ptr<std::string> data){
+void tactool_tactile_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -149,7 +160,7 @@ void tip_tactile_cb(boost::shared_ptr<std::string> data){
     std::cout<<"tactile servoing for maintain contact"<<std::endl;
 }
 
-void tip_taxel_sliding_cb(boost::shared_ptr<std::string> data){
+void tactool_taxel_sliding_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -164,7 +175,7 @@ void tip_taxel_sliding_cb(boost::shared_ptr<std::string> data){
 }
 
 
-void tip_exploring_cb(boost::shared_ptr<std::string> data){
+void tactool_exploring_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -185,7 +196,7 @@ void tip_exploring_cb(boost::shared_ptr<std::string> data){
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
 
-void tip_cablefollow_cb(boost::shared_ptr<std::string> data){
+void tactool_cablefollow_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -206,7 +217,7 @@ void tip_cablefollow_cb(boost::shared_ptr<std::string> data){
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
 
-void tip_taxel_rolling_cb(boost::shared_ptr<std::string> data){
+void tactool_taxel_rolling_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -221,14 +232,31 @@ void tip_taxel_rolling_cb(boost::shared_ptr<std::string> data){
 }
 
 
-void tip_grav_comp_ctrl_cb(boost::shared_ptr<std::string> data){
+void tactool_grav_comp_ctrl_cb(boost::shared_ptr<std::string> data){
     std::cout<<"switch to psudo_gravity_compasenstation control"<<std::endl;
     rmt = PsudoGravityCompensation;
+    rec_flag_nv_est = true;
 }
 
-void tip_normal_ctrl_cb(boost::shared_ptr<std::string> data){
+void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     std::cout<<"switch to normal control"<<std::endl;
     rmt = NormalMode;
+}
+
+void nv_est_cb(boost::shared_ptr<std::string> data){
+
+}
+
+void col_est_nv(){
+    if((rec_flag_nv_est == true)&&(left_myrmex_msg.contactflag!=true)){
+        robot_eef_deque.push_back(left_rs->robot_position["robot_eef"]);
+        robot_eef_deque.pop_front();
+    }
+    if(left_myrmex_msg.contactflag==true){
+        //estimate normal direction with PCA
+        est_tool_nv = pcaf->getSlope_batch();
+        est_tool_nv.normalize();
+    }
 }
 
 
@@ -277,13 +305,6 @@ void nobrake_cb(boost::shared_ptr<std::string> data){
     com_okc->release_brake();
 }
 
-void updateadmittance_cb(boost::shared_ptr<std::string> data){
-//    mutex_act.lock();
-//    left_taskname.tact = Z_ORIEN_TRACKING;
-//    ac->update_controller_para();
-//    ac->updateTacServoCtrlParam(left_taskname.tact);
-//    mutex_act.unlock();
-}
 
 #ifdef HAVE_ROS
 int counter_t = 0;
@@ -344,6 +365,50 @@ void ros_publisher(){
     }
 
     js.header.stamp=ros::Time::now();
+    //publish the gamma force vector
+    if(nv_est_marker_pub.getNumSubscribers() >= 1){
+        visualization_msgs::Marker nv_est_marker;
+        mutex_tac.lock();
+        // Set the color -- be sure to set alpha to something non-zero!
+        nv_est_marker.color.r = 1.0f;
+        nv_est_marker.color.g = 0.0f;
+        nv_est_marker.color.b = 0.0f;
+        if(left_myrmex_msg.contactflag == true)
+            nv_est_marker.color.a = 1.0;
+        else
+            nv_est_marker.color.a = 0;
+        mutex_tac.unlock();
+
+        nv_est_marker.header.frame_id = "frame";
+        nv_est_marker.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        nv_est_marker.ns = "KukaRos";
+        nv_est_marker.id = 0;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        nv_est_marker.type = visualization_msgs::Marker::ARROW;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        nv_est_marker.action = visualization_msgs::Marker::ADD;
+
+        nv_est_marker.points.resize(2);
+        nv_est_marker.points[0].x = left_rs->robot_position["eef"](0);
+        nv_est_marker.points[0].y = left_rs->robot_position["eef"](1);
+        nv_est_marker.points[0].z = left_rs->robot_position["eef"](2);
+
+        nv_est_marker.points[1].x = left_rs->robot_position["eef"](0)+est_tool_nv(0);
+        nv_est_marker.points[1].y = left_rs->robot_position["eef"](1)+est_tool_nv(1);
+        nv_est_marker.points[1].z = left_rs->robot_position["eef"](2)+est_tool_nv(2);
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        nv_est_marker.scale.x = .001;
+        nv_est_marker.scale.y = .001;
+        nv_est_marker.scale.z = .001;
+
+        nv_est_marker.lifetime = ros::Duration();
+        nv_est_marker_pub.publish(nv_est_marker);
+    }
+
+
     // send a joint_state
     jsPub.publish(js);
 //    ros::spinOnce();
@@ -377,26 +442,30 @@ std::string get_selfpath() {
 void init(){
 
     std::string selfpath = get_selfpath();
+    robot_eef_deque.assign(NV_EST_LEN, Eigen::Vector3d::Zero());
+    pcaf = new PCAFeature(NV_EST_LEN);
+    est_tool_nv.setZero();
+    rec_flag_nv_est = false;
     rmt = NormalMode;
     ft_gama = new gamaFT;
     arm_payload_g.setZero();
     tn = tactool;
     StopFlag = false;
     //declare the cb function
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_force(tip_force_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(tip_tactile_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_sliding(tip_taxel_sliding_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_rolling(tip_taxel_rolling_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_exploring(tip_exploring_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tactool_force(tactool_force_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tactool_tactile(tactool_tactile_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tactool_taxel_sliding(tactool_taxel_sliding_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tactool_taxel_rolling(tactool_taxel_rolling_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tactool_exploring(tactool_exploring_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_moveto(moveto_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_nv_est(nv_est_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_ftcalib(ftcalib_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_gamaftcalib(gamaftcalib_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_follow(tip_cablefollow_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_grav_comp_ctrl(tip_grav_comp_ctrl_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_normal_ctrl(tip_normal_ctrl_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tactool_follow(tactool_cablefollow_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tactool_grav_comp_ctrl(tactool_grav_comp_ctrl_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tactool_normal_ctrl(tactool_normal_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_updateadmittance(updateadmittance_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_closeprog(closeprog_cb);
 
     std::string config_filename = selfpath + "/etc/left_arm_mid_param.xml";
@@ -449,19 +518,19 @@ void init(){
     gama_t_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
     //register cb function
     com_rsb->register_external("/foo/moveto",button_moveto);
-    com_rsb->register_external("/foo/tip_force",button_tip_force);
-    com_rsb->register_external("/foo/tip_tactile",button_tip_tactile);
-    com_rsb->register_external("/foo/tip_taxel_sliding",button_tip_taxel_sliding);
-    com_rsb->register_external("/foo/tip_taxel_rolling",button_tip_taxel_rolling);
-    com_rsb->register_external("/foo/tip_exploring",button_tip_exploring);
+    com_rsb->register_external("/foo/nv_est",button_nv_est);
+    com_rsb->register_external("/foo/tactool_force",button_tactool_force);
+    com_rsb->register_external("/foo/tactool_tactile",button_tactool_tactile);
+    com_rsb->register_external("/foo/tactool_taxel_sliding",button_tactool_taxel_sliding);
+    com_rsb->register_external("/foo/tactool_taxel_rolling",button_tactool_taxel_rolling);
+    com_rsb->register_external("/foo/tactool_exploring",button_tactool_exploring);
     com_rsb->register_external("/foo/ftcalib",button_ftcalib);
     com_rsb->register_external("/foo/gamaftcalib",button_gamaftcalib);
-    com_rsb->register_external("/foo/tip_follow",button_tip_follow);
-    com_rsb->register_external("/foo/tip_grav_comp_ctrl",button_tip_grav_comp_ctrl);
-    com_rsb->register_external("/foo/tip_normal_ctrl",button_tip_normal_ctrl);
+    com_rsb->register_external("/foo/tactool_follow",button_tactool_follow);
+    com_rsb->register_external("/foo/tactool_grav_comp_ctrl",button_tactool_grav_comp_ctrl);
+    com_rsb->register_external("/foo/tactool_normal_ctrl",button_tactool_normal_ctrl);
     com_rsb->register_external("/foo/brake",button_brake);
     com_rsb->register_external("/foo/nobrake",button_nobrake);
-    com_rsb->register_external("/foo/updateadmittance",button_updateadmittance);
     com_rsb->register_external("/foo/closeprog",button_closeprog);
 
 #ifdef HAVE_ROS
@@ -487,6 +556,7 @@ void init(){
     js.effort.resize(14);
 
     js.header.frame_id="frame";
+    nv_est_marker_pub = nh->advertise<visualization_msgs::Marker>("visualization_marker", 2);
 
     jsPub = nh->advertise<sensor_msgs::JointState> ("joint_states", 2);
     ros::spinOnce();
@@ -516,10 +586,8 @@ void run_leftarm(){
 //            ft(i+3) = estkukamoment(i);
 //        }
 //        mutex_force.unlock();
-        //using mid for control, get contact information
-//        get_mid_info();
-        //get ft visulization information
-//        get_ft_vis_info();
+        //collect robot-eef position into a deque for computing the estimating nv
+        col_est_nv();
         //using all kinds of controllers to update the reference
         mutex_act.lock();
         for(unsigned int i = 0; i < left_ac_vec.size();i++){
@@ -532,7 +600,7 @@ void run_leftarm(){
             }
             if(left_task_vec[i]->mt == TACTILE){
                 mutex_tac.lock();
-//                left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],ftt);
+                left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],&left_myrmex_msg);
                 mutex_tac.unlock();
             }
         }
