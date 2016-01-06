@@ -268,6 +268,21 @@ void tip_grav_comp_ctrl_cb(boost::shared_ptr<std::string> data){
 
 void tip_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     std::cout<<"switch to normal control"<<std::endl;
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+
+    //get start point position in cartesian space
+    p(0) = initP_x = left_rs->robot_position["eef"](0);
+    p(1) = initP_y= left_rs->robot_position["eef"](1);
+    p(2) = initP_z= left_rs->robot_position["eef"](2);
+
+    o = tm2axisangle(left_rs->robot_orien["eef"]);
+    initO_x = o(0);
+    initO_y = o(1);
+    initO_z = o(2);
+    left_task_vec.back()->set_desired_p_eigen(p);
+    left_task_vec.back()->set_desired_o_ax(o);
     rmt = NormalMode;
 }
 
