@@ -799,6 +799,9 @@ std::string get_selfpath() {
       //remove bin
       found = path.find_last_of("/");
       path = path.substr(0,found);
+      //remove build
+      found = path.find_last_of("/");
+      path = path.substr(0,found);
       return path;
     }
     else{
@@ -842,6 +845,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> slider_tacindex(tacindex_cb);
 
     std::string config_filename = selfpath + "/etc/left_arm_mid_param.xml";
+    std::cout<<"config file name is: "<<config_filename<<std::endl;
     if(is_file_exist(config_filename.c_str()) == false){
         config_filename = "left_arm_mid_param.xml";
         if(is_file_exist(config_filename.c_str()) == false){

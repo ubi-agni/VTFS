@@ -120,12 +120,12 @@ void ProActController::update_robot_reference(Robot *robot, Task *t){
     if(t->mft == LOCAL){
         get_desired_lv(robot,t);
 //        limit_eef_euler(get_euler_limit());
-        std::cout<<"lv before in proservo "<<llv<<std::endl;
-        std::cout<<lov<<std::endl;
+//        std::cout<<"lv before in proservo "<<llv<<std::endl;
+//        std::cout<<lov<<std::endl;
         llv = llv + llv_pro;
         lov = lov + lov_pro;
-        std::cout<<"lv after in proservo "<<llv<<std::endl;
-        std::cout<<lov<<std::endl;
+//        std::cout<<"lv after in proservo "<<llv<<std::endl;
+//        std::cout<<lov<<std::endl;
         local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
                         lov,p_target,o_target);
     }
