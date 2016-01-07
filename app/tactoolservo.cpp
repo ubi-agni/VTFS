@@ -121,6 +121,8 @@ void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
     mutex_tac.lock();
     com_rsb->tactile_receive(left_myrmex_msg,"leftmyrmex");
+//    std::cout<<"tactile output"<<std::endl;
+//    std::cout<<"myrmex readout "<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
     left_kuka_msg.p = left_rs->robot_position["eef"];
     left_kuka_msg.o = left_rs->robot_orien["eef"];
     left_kuka_msg.ft.setZero(6);
@@ -244,33 +246,38 @@ void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
 }
 
 void nv_est_cb(boost::shared_ptr<std::string> data){
+    pcaf->GetData(robot_eef_deque);
+    est_tool_nv = pcaf->getSlope_batch();
+    est_tool_nv.normalize();
+    rec_flag_nv_est = false;
+    std::cout<<"normal direction is "<<est_tool_nv(0)<<","<<est_tool_nv(1)<<","<<est_tool_nv(2)<<std::endl;
 
 }
 
 void col_est_nv(){
     if((rec_flag_nv_est == true)&&(left_myrmex_msg.contactflag!=true)){
+        std::cout<<"robot trajectory is "<<left_rs->robot_position["robot_eef"](0)<<","\
+                   <<left_rs->robot_position["robot_eef"](1)<<","<<left_rs->robot_position["robot_eef"](2)<<std::endl;
         robot_eef_deque.push_back(left_rs->robot_position["robot_eef"]);
         robot_eef_deque.pop_front();
-    }
-    if(left_myrmex_msg.contactflag==true){
-        //estimate normal direction with PCA
-        est_tool_nv = pcaf->getSlope_batch();
-        est_tool_nv.normalize();
     }
 }
 
 
 void moveto_cb(boost::shared_ptr<std::string> data){
+    rec_flag_nv_est = true;
     Eigen::Vector3d p,o;
     p.setZero();
     o.setZero();
-    p(0) = newP_x;
-    p(1) = newP_y;
-    p(2) = newP_z;
 
-    o(0) = newO_x;
-    o(1) = newO_y;
-    o(2) = newO_z;
+    //get start point position in cartesian space
+    p(0) =  -0.1;
+    p(1) =  left_rs->robot_position["eef"](1);
+    p(2) = left_rs->robot_position["eef"](2);;
+
+    o(0) = 0.0;
+    o(1) = M_PI/2;
+    o(2) = 0.0;
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -373,10 +380,7 @@ void ros_publisher(){
         nv_est_marker.color.r = 1.0f;
         nv_est_marker.color.g = 0.0f;
         nv_est_marker.color.b = 0.0f;
-        if(left_myrmex_msg.contactflag == true)
-            nv_est_marker.color.a = 1.0;
-        else
-            nv_est_marker.color.a = 0;
+        nv_est_marker.color.a = 1.0;
         mutex_tac.unlock();
 
         nv_est_marker.header.frame_id = "frame";
@@ -395,9 +399,9 @@ void ros_publisher(){
         nv_est_marker.points[0].y = left_rs->robot_position["eef"](1);
         nv_est_marker.points[0].z = left_rs->robot_position["eef"](2);
 
-        nv_est_marker.points[1].x = left_rs->robot_position["eef"](0)+est_tool_nv(0);
-        nv_est_marker.points[1].y = left_rs->robot_position["eef"](1)+est_tool_nv(1);
-        nv_est_marker.points[1].z = left_rs->robot_position["eef"](2)+est_tool_nv(2);
+        nv_est_marker.points[1].x = left_rs->robot_position["eef"](0)+est_tool_nv(0)/100;
+        nv_est_marker.points[1].y = left_rs->robot_position["eef"](1)+est_tool_nv(1)/100;
+        nv_est_marker.points[1].z = left_rs->robot_position["eef"](2)+est_tool_nv(2)/100;
 
         // Set the scale of the marker -- 1x1x1 here means 1m on a side
         nv_est_marker.scale.x = .001;
@@ -556,7 +560,7 @@ void init(){
     js.effort.resize(14);
 
     js.header.frame_id="frame";
-    nv_est_marker_pub = nh->advertise<visualization_msgs::Marker>("visualization_marker", 2);
+    nv_est_marker_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker", 2);
 
     jsPub = nh->advertise<sensor_msgs::JointState> ("joint_states", 2);
     ros::spinOnce();

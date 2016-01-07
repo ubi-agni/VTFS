@@ -10,9 +10,9 @@ class PCAFeature
 public:
     PCAFeature(int len);
     Eigen::Vector3d getSlope_batch();
+    void GetData(std::deque<Eigen::Vector3d>);
 private:
     Eigen::MatrixXd dataset;
-    void GetData(std::deque<Eigen::Vector3d>);
     int filter_len;
     Eigen::MatrixXd data_m;
     Eigen::Matrix3d covar_m;
