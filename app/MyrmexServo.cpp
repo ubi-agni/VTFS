@@ -75,6 +75,8 @@ RobotState *right_rs;
 gamaFT *ft_gama;
 PCAFeature *pcaf;
 
+TacSensorType TacST;
+
 #define newP_x 0.2
 #define newP_y 0.3
 #define newP_z 0.30
@@ -147,7 +149,7 @@ void twist_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     right_ac_vec.clear();
     right_task_vec.clear();
-    right_taskname.tact = LINEAR_TRACKING;
+    right_taskname.tact = Z_ORIEN_TRACKING;
     right_ac_vec.push_back(new TacServoController(*pm));
     right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
     right_task_vec.push_back(new TacServoTask(right_taskname.tact));
@@ -277,6 +279,7 @@ void init(){
 
     std::string selfpath = get_selfpath();
     rmt = NormalMode;
+    TacST = Myrmex;
     StopFlag = false;
     //declare the cb function
     boost::function<void(boost::shared_ptr<std::string>)> button_tactile(tactile_cb);
@@ -299,7 +302,7 @@ void init(){
         }
     }
 
-    pm = new ParameterManager(config_filename);
+    pm = new ParameterManager(config_filename,TacST);
     com_okc = new ComOkc(kuka_right,OKC_HOST,OKC_PORT);
     com_okc->connect();
     kuka_right_arm = new KukaLwr(kuka_right,*com_okc,tn);

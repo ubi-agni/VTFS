@@ -61,6 +61,11 @@ enum ContactPositionT{
     eff_tacform
 } ;
 
+enum TacSensorType{
+    Myrmex,
+    MIDtip
+};
+
 // class ctrlpara{
 // public:
 // 	double kp;
