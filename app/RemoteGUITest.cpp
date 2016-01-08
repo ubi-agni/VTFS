@@ -14,6 +14,7 @@
 #include "Timer.h"
 #include "comrsb.h"
 #include "msgcontenttype.h"
+#include "RebaType.h"
 
 using namespace rsb;
 ComRSB *com_rsb;
