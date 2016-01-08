@@ -243,7 +243,7 @@ void ComRSB::add_msg(RsbDataType& rdt){
     case RightMyrmex:
         converterTac = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<TacMsg> > \
                 (new rsb::converter::ProtocolBufferConverter<TacMsg>());
-//        rsb::converter::converterRepository<std::string>()->registerConverter(*converterTac);
+        rsb::converter::converterRepository<std::string>()->registerConverter(*converterTac);
         scope_tac["rightmyrmex"] = new Scope("/right/TacMsg");
         lis_tac["rightmyrmex"] = factory->createListener(*scope_tac["rightmyrmex"]);
         lis_tac["rightmyrmex"]->addHandler(HandlerPtr(new DataFunctionHandler<TacMsg>(handle_righttac)));
