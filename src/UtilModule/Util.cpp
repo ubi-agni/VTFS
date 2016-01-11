@@ -289,6 +289,33 @@ extern bool is_file_exist(const char *fileName)
     return infile.good();
 }
 
+
+
+extern Eigen::Matrix3d gen_ort_basis(Eigen::Vector3d v1){
+    Eigen::Vector3d v2;
+    Eigen::Vector3d v3;
+    Eigen::Matrix3d ort;
+    //ad-hoc way to create orthogonal basis, v1--z, v2--x, v3--y
+    //v1 = [a;b;c]; v2 = u = [0;-c;b]; and v3 = cross(v1,v2);
+    v2.setZero();
+    v3.setZero();
+    ort.setZero();
+    v2(1) = -v1(2);
+    v2(2) = v1(1);
+    if((fabs(v2(0))<1e-5)&&(fabs(v2(1))<1e-5)&&(fabs(v2(2))<1e-5)){
+        std::cout<<"construct orthogonal basis failure"<<std::endl;
+        v3.setZero();
+    }
+    else{
+        v3 = v1.cross(v2);
+    }
+    //construct matrix from vector
+    ort.col(0) = v2;
+    ort.col(1) = v3;
+    ort.col(2) = v1;
+    return ort;
+}
+
 //extern Eigen::VectorXd MatrixtoQuaternion(Eigen::Matrix3d m){
 //    Eigen::VectorXd quater;
 //    quater.setZero(4);

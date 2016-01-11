@@ -28,4 +28,6 @@ extern void gen_hm(Eigen::Matrix3d m,Eigen::Vector3d v,Eigen::MatrixXd& hm);
 extern Eigen::Vector3d skewtovector(Eigen::Matrix3d m);
 extern Eigen::Matrix3d vectortoskew(Eigen::Vector3d v);
 extern bool is_file_exist(const char *fileName);
+//generate orthogonal basis from one vector
+extern Eigen::Matrix3d gen_ort_basis(Eigen::Vector3d v);
 //extern Eigen::VectorXd MatrixtoQuaternion(Eigen::Matrix3d);

@@ -115,7 +115,10 @@ RobotModeT rmt;
 //save the last 500 position of robot end-effector
 std::deque<Eigen::Vector3d> robot_eef_deque;
 bool rec_flag_nv_est;
+bool vis_est_ort;
 Eigen::Vector3d est_tool_nv;
+Eigen::Matrix3d est_tool_ort;
+Eigen::Matrix3d rel_eef_tactool;
 
 void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
@@ -249,9 +252,14 @@ void nv_est_cb(boost::shared_ptr<std::string> data){
     pcaf->GetData(robot_eef_deque);
     est_tool_nv = pcaf->getSlope_batch();
     est_tool_nv.normalize();
+    est_tool_ort = gen_ort_basis(est_tool_nv);
+    //Ttool2eef = Tg2eef * Ttool2g; to this end, the Ttool can be updated by Ttool2g = Teef2g * Ttool2eef;
+    //which is Ttool = Teef * rel_eef_tactool;
+    rel_eef_tactool = left_rs->robot_orien["robot_eef"].transpose() * est_tool_ort;
     rec_flag_nv_est = false;
+    vis_est_ort = true;
     std::cout<<"normal direction is "<<est_tool_nv(0)<<","<<est_tool_nv(1)<<","<<est_tool_nv(2)<<std::endl;
-
+    std::cout<<"orthogonal basis "<<est_tool_ort<<std::endl;
 }
 
 void col_est_nv(){
@@ -412,6 +420,17 @@ void ros_publisher(){
         nv_est_marker_pub.publish(nv_est_marker);
     }
 
+    //create a ROS tf object and fill it orientation only currently
+    //broadcast this transform to ROS relative to world(kuka_endeffector)
+    if(vis_est_ort == true){
+        tf::Matrix3x3 tfR;
+        tf::Transform transform;
+        tf::matrixEigenToTF (est_tool_ort, tfR);
+        transform.setOrigin( tf::Vector3(left_rs->robot_position["eef"](0), left_rs->robot_position["eef"](1), left_rs->robot_position["eef"](2)) );
+        transform.setBasis(tfR);
+        br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
+    }
+
 
     // send a joint_state
     jsPub.publish(js);
@@ -449,7 +468,10 @@ void init(){
     robot_eef_deque.assign(NV_EST_LEN, Eigen::Vector3d::Zero());
     pcaf = new PCAFeature(NV_EST_LEN);
     est_tool_nv.setZero();
+    est_tool_ort.setIdentity();
+    rel_eef_tactool.setIdentity();
     rec_flag_nv_est = false;
+    vis_est_ort = false;
     rmt = NormalMode;
     ft_gama = new gamaFT;
     arm_payload_g.setZero();

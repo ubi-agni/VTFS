@@ -17,12 +17,23 @@ void PCAFeature::GetData(std::deque<Eigen::Vector3d> p){
 Eigen::Vector3d PCAFeature::getSlope_batch(){
     double scale;
     Eigen::Vector3d u_m;
+    Eigen::Vector3d nv_dir;
+    nv_dir.setZero();
     u_m.setZero();
+    //compute the major vector using pca.
     scale = 0.001;
     covar_m = bsxfun_min(data_m);
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(covar_m,Eigen::ComputeThinU | Eigen::ComputeThinV);
     u_m = (-1) * scale * (svd.matrixV().col(0)).transpose();
-    return u_m;
+    //use the hieristic info: normal direction of tool is the same from start point
+    //to end point in the data set
+    nv_dir = data_m.row(data_m.rows()-1) - data_m.row(0);
+    nv_dir.normalize();
+    if(u_m.dot(nv_dir) > 0)
+        return u_m;
+    else{
+        return -1.0 * u_m;
+    }
 }
 
 Eigen::Matrix3d PCAFeature::bsxfun_min(Eigen::MatrixXd used_data){
