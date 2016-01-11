@@ -81,14 +81,12 @@ void ParameterManager::load(TACTaskNameT tnt,ptree pt){
     }
     //for myrmex sensor
     if(tst == Myrmex){
-        std::cout<<"you are using myrmex "<<std::endl;
         tac_task_ctrl_param[tnt].ttjkm(3,1) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e33");
         tac_task_ctrl_param[tnt].ttjkm(4,0) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e44");
         tac_task_ctrl_param[tnt].ttjkm(5,5) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e55");
     }
     //for mid tactile sensor
     if(tst == MIDtip){
-        std::cout<<"you are using midtip "<<std::endl;
         //(3,2) map z deviation in fingertip frame to rotation
         tac_task_ctrl_param[tnt].ttjkm(3,2) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e33");
         //(4,1) map y deviation in fingertip frame to ratation

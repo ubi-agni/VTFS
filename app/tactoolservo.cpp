@@ -452,6 +452,9 @@ std::string get_selfpath() {
       //remove bin
       found = path.find_last_of("/");
       path = path.substr(0,found);
+      //remove build
+      found = path.find_last_of("/");
+      path = path.substr(0,found);
       return path;
     }
     else{

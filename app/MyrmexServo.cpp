@@ -50,7 +50,7 @@
 #include <deque> //for estimating the normal direction of tool-end
 
 //desired contact pressure
-#define TAC_F 0.5
+#define TAC_F 0.3
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -105,8 +105,8 @@ void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
     mutex_tac.lock();
     com_rsb->tactile_receive(right_myrmex_msg,"rightmyrmex");
-    std::cout<<"tactile output"<<std::endl;
-    std::cout<<"myrmex readout "<<right_myrmex_msg.cogx<<","<<right_myrmex_msg.cogy<<std::endl;
+//    std::cout<<"tactile force output "<<right_myrmex_msg.cf<<std::endl;
+//    std::cout<<"myrmex readout "<<right_myrmex_msg.cogx<<","<<right_myrmex_msg.cogy<<std::endl;
     mutex_tac.unlock();
 }
 
@@ -265,6 +265,9 @@ std::string get_selfpath() {
       //remove bin
       found = path.find_last_of("/");
       path = path.substr(0,found);
+      //remove build
+      found = path.find_last_of("/");
+      path = path.substr(0,found);
       return path;
     }
     else{
@@ -276,7 +279,6 @@ std::string get_selfpath() {
 }
 
 void init(){
-
     std::string selfpath = get_selfpath();
     rmt = NormalMode;
     TacST = Myrmex;
@@ -293,7 +295,8 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_closeprog(closeprog_cb);
 
-    std::string config_filename = selfpath + "/etc/right_arm_mid_param.xml";
+    std::string config_filename = selfpath + "/etc/right_arm_param.xml";
+//    std::cout<<"config name is "<<config_filename<<std::endl;
     if(is_file_exist(config_filename.c_str()) == false){
         config_filename = "right_arm_param.xml";
         if(is_file_exist(config_filename.c_str()) == false){
@@ -340,7 +343,7 @@ void init(){
     com_rsb->register_external("/foo/tactile",button_tactile);
     com_rsb->register_external("/foo/taxel_sliding",button_taxel_sliding);
     com_rsb->register_external("/foo/taxel_rolling",button_taxel_rolling);
-    com_rsb->register_external("/foo/twsit",button_twist);
+    com_rsb->register_external("/foo/twist",button_twist);
     com_rsb->register_external("/foo/grav_comp_ctrl",button_grav_comp_ctrl);
     com_rsb->register_external("/foo/normal_ctrl",button_normal_ctrl);
     com_rsb->register_external("/foo/brake",button_brake);
@@ -418,9 +421,8 @@ int main(int argc, char* argv[])
 {
     //for data recording
     std::string data_f ("/tmp/");
-
     #ifdef HAVE_ROS
-        ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);
+        ros::init(argc, argv, "MyrmexServo",ros::init_options::NoSigintHandler);
         nh = new ros::NodeHandle();
     #endif
     init();

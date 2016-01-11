@@ -373,6 +373,7 @@ void TacServoController::update_robot_reference(Robot *robot, Task *t, myrmex_ms
         cart_command[i] = p_target(i);
         cart_command[i+3] = o_target(i);
     }
+    std::cout<<"o_target "<<o_target(0)<<","<<o_target(1)<<","<<o_target(2)<<std::endl;
     for(int i = 0; i < 6; i++)
         robot->set_cart_command(cart_command);
 }
