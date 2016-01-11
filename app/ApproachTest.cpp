@@ -25,6 +25,7 @@
 #include "CtrlParam.h"
 #include "parametermanager.h"
 #include <mutex>
+#include "RebaType.h"
 
 using namespace rsb;
 ComRSB *com_rsb;

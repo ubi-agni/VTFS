@@ -23,6 +23,7 @@ SET(APPS
          TipInfoEst
          tactoolservo
          MyrmexComTest
+         MyrmexServo
 #        CQTest
 #        KukaCartImpTest
 #        RigTFEst

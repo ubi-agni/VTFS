@@ -12,7 +12,7 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with CBF.  If not, see <http://www.gnu.org/licenses/>.
+    along with VTFS.  If not, see <http://www.gnu.org/licenses/>.
 
 
     Copyright 2009, 2010 Qiang Li
@@ -20,8 +20,9 @@
 #ifndef PARAMETERMANAGER_H
 #define PARAMETERMANAGER_H
 
-#include "ControllerModule/CtrlParam.h"
+#include "CtrlParam.h"
 #include "TaskModule/task.h"
+#include "UtilModule/RebaType.h"
 #include <map>
 //load the parameter which are stored in xml file
 #include "boost/property_tree/ptree.hpp"
@@ -33,7 +34,7 @@ class ParameterManager
 {
 public:
     ParameterManager();
-    ParameterManager(const std::string);
+    ParameterManager(const std::string,TacSensorType t=MIDtip);
     std::map<TACTaskNameT, taskctrlpara> tac_task_ctrl_param;
     std::map<VISTaskNameT, taskctrlpara> vis_task_ctrl_param;
     std::map<PROTaskNameT, taskctrlpara> pro_task_ctrl_param;
@@ -51,6 +52,7 @@ private:
     std::map<int,std::string> map_name_dim;
     std::map<int,std::string> map_name_dim2;
     std::map<int,std::string> map_name_dim3;
+    TacSensorType tst;
 };
 
 #endif // PARAMETERMANAGER_H

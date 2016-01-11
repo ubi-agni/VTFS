@@ -1,10 +1,11 @@
 #include "parametermanager.h"
+#include <iostream>
 
 ParameterManager::ParameterManager(){
 
 }
 
-ParameterManager::ParameterManager(const std::string s = "left_arm_param.xml")
+ParameterManager::ParameterManager(const std::string s = "left_arm_param.xml",TacSensorType t)
 {
     map_name_dim[0] = "x";
     map_name_dim[1] = "y";
@@ -52,6 +53,7 @@ ParameterManager::ParameterManager(const std::string s = "left_arm_param.xml")
 
     force_map_task_name[F_MAINTAIN] = "ForceMaintain";
     force_map_task_name[F_CURVETRACKING] = "ForceCurveTracking";
+    tst = t;
 
     loadCtrlParam(s);
 }
@@ -78,16 +80,22 @@ void ParameterManager::load(TACTaskNameT tnt,ptree pt){
         tac_task_ctrl_param[tnt].ttjkm(i,i) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm"+map_name_dim3[i]);
     }
     //for myrmex sensor
-//    tac_task_ctrl_param[tnt].ttjkm(3,1) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e33");
-//    tac_task_ctrl_param[tnt].ttjkm(4,0) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e44");
-//    tac_task_ctrl_param[tnt].ttjkm(5,5) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e55");
+    if(tst == Myrmex){
+        std::cout<<"you are using myrmex "<<std::endl;
+        tac_task_ctrl_param[tnt].ttjkm(3,1) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e33");
+        tac_task_ctrl_param[tnt].ttjkm(4,0) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e44");
+        tac_task_ctrl_param[tnt].ttjkm(5,5) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e55");
+    }
     //for mid tactile sensor
-    //(3,2) map z deviation in fingertip frame to rotation
-    tac_task_ctrl_param[tnt].ttjkm(3,2) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e33");
-    //(4,1) map y deviation in fingertip frame to ratation
-    tac_task_ctrl_param[tnt].ttjkm(4,1) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e44");
-    //(5,0) map x deviation in fingertip frame to ratation
-    tac_task_ctrl_param[tnt].ttjkm(5,0) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e55");
+    if(tst == MIDtip){
+        std::cout<<"you are using midtip "<<std::endl;
+        //(3,2) map z deviation in fingertip frame to rotation
+        tac_task_ctrl_param[tnt].ttjkm(3,2) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e33");
+        //(4,1) map y deviation in fingertip frame to ratation
+        tac_task_ctrl_param[tnt].ttjkm(4,1) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e44");
+        //(5,0) map x deviation in fingertip frame to ratation
+        tac_task_ctrl_param[tnt].ttjkm(5,0) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e55");
+    }
 }
 
 void ParameterManager::load(FORCETaskNameT fnt,ptree pt){

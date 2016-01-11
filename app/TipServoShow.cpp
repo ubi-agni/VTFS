@@ -40,6 +40,7 @@
 #include <fstream>
 #include <mutex>
 #include "msgcontenttype.h"
+#include "RebaType.h"
 
 //for feature extact from teensyfingertip
 #include "midtacfeature.h"

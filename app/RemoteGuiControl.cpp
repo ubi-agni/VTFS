@@ -18,6 +18,7 @@
 #include "KukaLwr.h"
 #include "Robot.h"
 #include "proactcontroller.h"
+#include "RebaType.h"
 
 #define newP_x -0.1
 #define newP_y 0.4
