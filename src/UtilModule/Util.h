@@ -8,6 +8,7 @@
 #include <kdl/frames.hpp>
 #include <utility>
 #include <fstream>      // std::ifstream
+#include <unsupported/Eigen/MatrixFunctions>   //the computation of matrix exponential, be careful, all related function can be updated in future
 
 extern Eigen::Vector3d euler2axisangle(Eigen::Vector3d la,Eigen::Matrix3d tm);
 extern Eigen::Vector3d g_euler2axisangle(Eigen::Vector3d la,Eigen::Matrix3d tm);
@@ -28,6 +29,10 @@ extern void gen_hm(Eigen::Matrix3d m,Eigen::Vector3d v,Eigen::MatrixXd& hm);
 extern Eigen::Vector3d skewtovector(Eigen::Matrix3d m);
 extern Eigen::Matrix3d vectortoskew(Eigen::Vector3d v);
 extern bool is_file_exist(const char *fileName);
+//this function will generate a transform matrix to compute the current homogeneous matrix
+//from the previous HM given by the rotation direction, linear velocity
+//always in one reference frame
+extern Eigen::Matrix4d gen_transform(Eigen::Vector3d omega, Eigen::Vector3d vel, double theta);
 //generate orthogonal basis from one vector
 extern Eigen::Matrix3d gen_ort_basis(Eigen::Vector3d v);
 //extern Eigen::VectorXd MatrixtoQuaternion(Eigen::Matrix3d);

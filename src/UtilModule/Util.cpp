@@ -333,3 +333,15 @@ extern Eigen::Matrix3d gen_ort_basis(Eigen::Vector3d v1){
 //    quater(3) = z;
 //    return quater;
 //}
+
+extern Eigen::Matrix4d gen_transform(Eigen::Vector3d omega, Eigen::Vector3d vel, double theta){
+    //follow mls94(a mathematical introduction to robotic manipulation), page 42;
+    Eigen::Matrix4d transform;
+    Eigen::Matrix3d E;
+    transform.setIdentity();
+    E.setIdentity();
+    transform.block<3,3>(0,0) = (vectortoskew(omega) * theta).exp();
+    transform.block<3,1>(0,3) = (E - (vectortoskew(omega) * theta).exp())*(omega.cross(vel)) + omega * omega.transpose() * vel * theta;
+    return transform;
+
+}
