@@ -31,6 +31,14 @@ public:
     void get_desired_cf_mid(double &p){p = taxel_pressure;}
     void switchtotask(TACTaskNameT taskname);
     void set_taxelfb_type_mid(TacFBType type);
+    //set the desired contact point motion direction while the tactool sliding
+    //on the unknown corner
+    void set_desired_cp_moving_dir(double x, double y);
+    //set the desired rotation range of end-effector in euler representation(in rad)
+    void set_desired_rotation_range(double,double,double);
+    double dir_x;
+    double dir_y;
+    Eigen::Vector3d desired_pose_range;
 private:
     double desired_cp_myrmex[2];
     double desired_cf_myrmex;
@@ -39,6 +47,7 @@ private:
     double taxel_pressure;
     Eigen::Vector3d desired_cp_mid;
     Eigen::Vector3d desired_nv_mid;
+
 };
 
 #endif // TACSERVOTASK_H

@@ -15,16 +15,24 @@ public:
     void update_robot_reference(Robot *);
     //move the object to the desired reference designed by Task
     void update_robot_reference(Robot *, Task *){}
+    //myrmex tactile servo controller
     void update_robot_reference(Robot *, Task *, myrmex_msg *);
+    //mid tactile servo controller
     void update_robot_reference(Robot *, Task *,FingertipTac *);
     void update_robot_reference(Robot *, Task *, Eigen::VectorXd, RobotState*){}
+    //myrmex tool tactile servo controller
+    void update_robot_reference(ManipTool *, Robot *, Task *,myrmex_msg *);
     void update_controller_para(Eigen::Vector3d,PROTaskNameT);
     void update_controller_para(std::pair<Eigen::Vector3d,double>&,PROTaskNameT){}
     void update_controller_para(Eigen::Vector3d vel,Eigen::Vector3d r_vel,PROTaskNameT tnt){}
     void update_controller_para_stiffness();
     void get_desired_lv(Robot *, Task *){}
+    //myrmex tactile servo computing the desired velocity
     void get_desired_lv(Robot *, Task *, myrmex_msg *);
+    //mid tactile servo computing the desird vel
     void get_desired_lv(Robot *, Task *, FingertipTac *);
+    //myrmex tool tactile servo computing the desird vel
+    void get_desired_lv(ManipTool *, Robot *, Task *,myrmex_msg *);
     void get_desired_lv(Robot *, Task *, Eigen::VectorXd kukaft,RobotState*){}
     void updateTacServoCtrlParam(TACTaskNameT);
     void updateProServoCtrlParam(PROTaskNameT tnt){}

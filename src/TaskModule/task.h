@@ -24,8 +24,12 @@ enum TACTaskNameT{
     GUIDE_CONTACT,
     OPENLOOP_FORWARD,
     OPENLOOP_BACKWARD,
-    T_NOCONTROL
+    T_NOCONTROL,
+    LEARN_TACTOOL_CONTACT,
+    LEARN_TACTOOL_SLIDING,
+    LEARN_TACTOOL_ROLLING
 };
+
 
 enum PROTaskNameT{
     RLXP = 0,
@@ -98,6 +102,8 @@ public:
     virtual void set_desired_nv_mid(Eigen::Vector3d) = 0;
     virtual void set_desired_cf_mid(double) = 0;
     virtual void set_taxelfb_type_mid(TacFBType type) = 0;
+    virtual void set_desired_cp_moving_dir(double x, double y) = 0;
+    virtual void set_desired_rotation_range(double,double,double) = 0;
     TaskNameT curtaskname;
     ModalityT mt;
     MoveFrameT mft;

@@ -16,6 +16,7 @@ public:
     void update_robot_reference(Robot *, Task *, myrmex_msg *){}
     void update_robot_reference(Robot *, Task *,FingertipTac *){}
     void update_robot_reference(Robot *, Task *, Eigen::VectorXd, RobotState*);
+    void update_robot_reference(ManipTool *, Robot *, Task *,myrmex_msg *){}
     void update_controller_para(Eigen::Vector3d,PROTaskNameT){}
     void update_controller_para(std::pair<Eigen::Vector3d,double>&,PROTaskNameT){}
     void update_controller_para(Eigen::Vector3d vel,Eigen::Vector3d r_vel,PROTaskNameT tnt){}
@@ -24,6 +25,7 @@ public:
     void get_desired_lv(Robot *, Task *, myrmex_msg *){}
     void get_desired_lv(Robot *, Task *, FingertipTac *){}
     void get_desired_lv(Robot *, Task *, Eigen::VectorXd kukaft,RobotState*);
+    void get_desired_lv(ManipTool *, Robot *, Task *,myrmex_msg *){}
     void updateTacServoCtrlParam(TACTaskNameT){}
     void updateProServoCtrlParam(PROTaskNameT tnt){}
     void updateForceServoCtrlParam(FORCETaskNameT fnt);

@@ -261,7 +261,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             std::cout<<"rot_nv "<<rot_nv(0)<<","<<rot_nv(1)<<","<<rot_nv(2)<<std::endl;
             des_nv_normalize = desired_nv.normalized();
             ctc_nv_normalize = ctc_nv.normalized();
-            lov_tac = lov_tac + 1*(1-(des_nv_normalize.dot(ctc_nv_normalize)))*rot_nv;
+            lov_tac = lov_tac + 0.1*(1-(des_nv_normalize.dot(ctc_nv_normalize)))*rot_nv;
             std::cout<<"after the normal direction control "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
             ctrl_debug<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<",";
             ctrl_debug<<ctc_nv_normalize(0)<<","<<ctc_nv_normalize(1)<<","<<ctc_nv_normalize(2)<<",";
@@ -278,6 +278,9 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
                 }
             }
         }
+    }
+    else{
+
     }
     limit_vel(get_llv_limit(),llv_tac,lov_tac);
     deltais_old = deltais;
@@ -377,6 +380,78 @@ void TacServoController::update_robot_reference(Robot *robot, Task *t, myrmex_ms
     for(int i = 0; i < 6; i++)
         robot->set_cart_command(cart_command);
 }
+
+void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myrmex_msg *tacfb){
+    TacServoTask tst(t->curtaskname.tact);
+    tst = *(TacServoTask*)t;
+    double desiredf;
+    //robot current state
+    tst.get_desired_cf_myrmex(desiredf);
+//    std::cout<<"desired contact p in myrmex "<<desired_cp[0]<<","<<desired_cp[1]<<std::endl;
+    if(tacfb->contactflag == true){
+        deltais(1) = tst.dir_x;
+        deltais(0) = tst.dir_y;
+        deltais(5) = M_PI/2 - tacfb->lineorien;
+    }
+    else{
+        deltais(0) = 0;
+        deltais(1) = 0;
+        deltais(5) = 0;
+        deltais_int.setZero();
+    }
+    deltais(2) =  desiredf - tacfb->cf;
+    //!this two value can be updated by other feedback in future
+    deltais(3) = 0;
+    deltais(4) = 0;
+    deltais_int = deltais_int + deltais;
+//    std::cout<<"desiredis "<<deltais<<std::endl;
+//    std::cout<<"current task name "<<tst.curtaskname.tact<<std::endl;
+//    std::cout<<"kop: "<<std::endl;
+//    std::cout<<Kop[tst.curtaskname.tact]<<std::endl;
+//    std::cout<<"kpp: "<<std::endl;
+//    std::cout<<Kpp[tst.curtaskname.tact]<<std::endl;
+//    std::cout<<"tjkm: "<<std::endl;
+//    std::cout<<tjkm[tst.curtaskname.tact]<<std::endl;
+//    std::cout<<"sm: "<<std::endl;
+//    std::cout<<sm[tst.curtaskname.tact]<<std::endl;
+
+    deltape = Kpp[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais + \
+            Kpi[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais_int + \
+            Kpd[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * (deltais - deltais_old);
+//    std::cout<<"deltapa are "<<deltape<<std::endl;
+    llv_tac = mt->ts.rel_o.transpose() * deltape.head(3);
+    deltape.tail(3) = tst.desired_pose_range;
+    lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
+    limit_vel(get_llv_limit(),llv_tac,lov_tac);
+    deltais_old = deltais;
+
+}
+
+void TacServoController::update_robot_reference(ManipTool *mt, Robot *robot, Task *t,myrmex_msg *tacfb){
+    Eigen::Vector3d o_target,p_target;
+    p_target.setZero();
+    o_target.setZero();
+    get_desired_lv(mt,robot,t,tacfb);
+//    std::cout<<"lv before in tacservo "<<llv<<std::endl;
+//    std::cout<<lov<<std::endl;
+    if(dis_2_vec(mt->ts.init_ctc_x,mt->ts.init_ctc_y,tacfb->cogx,tacfb->cogy)<2){
+        llv = llv + llv_tac;
+        lov = lov + lov_tac;
+    }
+//    std::cout<<"lv after in tacservo "<<llv<<std::endl;
+//    std::cout<<lov<<std::endl;
+    local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
+                    lov,p_target,o_target);
+    for (int i=0; i < 3; i++){
+        cart_command[i] = p_target(i);
+        cart_command[i+3] = o_target(i);
+    }
+    std::cout<<"o_target "<<o_target(0)<<","<<o_target(1)<<","<<o_target(2)<<std::endl;
+    for(int i = 0; i < 6; i++)
+        robot->set_cart_command(cart_command);
+}
+
+
 
 void TacServoController::get_lv(Eigen::Vector3d& lv, Eigen::Vector3d& ov){
     lv = llv_tac;

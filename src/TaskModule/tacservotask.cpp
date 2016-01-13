@@ -10,7 +10,12 @@ TacServoTask::TacServoTask(TACTaskNameT taskname)
     tft = TAXEL_NUM;
     desired_cp_mid.setZero();
     desired_nv_mid.setZero();
+    dir_x = 0;
+    dir_y = 0;
+    desired_pose_range.setZero();
 }
+
+
 void TacServoTask::switchtotask(TACTaskNameT taskname){
     curtaskname.tact = taskname;
 }
@@ -48,4 +53,14 @@ void TacServoTask::set_desired_nv_mid(Eigen::Vector3d nv){
 }
 void TacServoTask::get_desired_nv_mid(Eigen::Vector3d &nv){
     nv = desired_nv_mid;
+}
+
+void TacServoTask::set_desired_cp_moving_dir(double x, double y){
+    dir_x = x;
+    dir_y = y;
+}
+void TacServoTask::set_desired_rotation_range(double r,double p,double y){
+    desired_pose_range(0) = r;
+    desired_pose_range(1) = p;
+    desired_pose_range(2) = y;
 }

@@ -29,6 +29,8 @@ public:
     void set_desired_cf_mid(double){}
     void switchtotask(FORCETaskNameT taskname);
     void set_taxelfb_type_mid(TacFBType type){}
+    void set_desired_cp_moving_dir(double x, double y){}
+    void set_desired_rotation_range(double,double,double){}
 private:
     double desired_cf_kuka;
 };

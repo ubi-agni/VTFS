@@ -9,6 +9,7 @@
 #include "parametermanager.h"
 #include "RobotModule/RobotState.h"
 #include "TacModule/fingertiptac.h"
+#include "RobotModule/maniptool.h"
 
 class Robot;
 class RobotState;
@@ -21,6 +22,7 @@ public:
     virtual void update_robot_reference(Robot *, Task *,myrmex_msg *) = 0;
     virtual void update_robot_reference(Robot *, Task *,FingertipTac *) = 0;
     virtual void update_robot_reference(Robot *, Task *, Eigen::VectorXd, RobotState* rs) = 0;
+    virtual void update_robot_reference(ManipTool *, Robot *, Task *,myrmex_msg *) = 0;
     virtual void update_controller_para(Eigen::Vector3d,PROTaskNameT) = 0;
     virtual void update_controller_para(std::pair<Eigen::Vector3d,double>&,PROTaskNameT) = 0;
     virtual void update_controller_para(Eigen::Vector3d vel,Eigen::Vector3d r_vel,PROTaskNameT tnt) = 0;
@@ -32,6 +34,7 @@ public:
     virtual void get_desired_lv(Robot *, Task *) = 0;
     virtual void get_desired_lv(Robot *, Task *, myrmex_msg *) = 0;
     virtual void get_desired_lv(Robot *, Task *, FingertipTac *) = 0;
+    virtual void get_desired_lv(ManipTool *, Robot *, Task *,myrmex_msg *) = 0;
     virtual void get_desired_lv(Robot *, Task *, Eigen::VectorXd kukaft,RobotState*)=0;
     virtual void get_lv(Eigen::Vector3d& lv, Eigen::Vector3d& ov) = 0;
     virtual void set_pm(ParameterManager &p) = 0;

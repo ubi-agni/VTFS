@@ -47,6 +47,7 @@
 #include "RebaType.h"
 #include "msgcontenttype.h"
 #include "pcafeature.h"
+#include "maniptool.h"
 
 #include <deque> //for estimating the normal direction of tool-end
 
@@ -76,9 +77,12 @@ RsbDataType rdtlefttac;
 myrmex_msg left_myrmex_msg;
 ParameterManager* pm;
 RobotState *left_rs;
-kuka_msg left_kuka_msg;
 gamaFT *ft_gama;
 PCAFeature *pcaf;
+
+//tactool initialization
+ManipTool *mt_ptr;
+RG_Pose init_tool_pose;
 
 #define newP_x -0.1
 #define newP_y 0.4
@@ -126,9 +130,7 @@ void tactileviarsb(){
     com_rsb->tactile_receive(left_myrmex_msg,"leftmyrmex");
 //    std::cout<<"tactile output"<<std::endl;
 //    std::cout<<"myrmex readout "<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
-    left_kuka_msg.p = left_rs->robot_position["eef"];
-    left_kuka_msg.o = left_rs->robot_orien["eef"];
-    left_kuka_msg.ft.setZero(6);
+
     mutex_tac.unlock();
 }
 
@@ -155,12 +157,12 @@ void tactool_tactile_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
-    left_taskname.tact = CONTACT_FORCE_TRACKING;
+    left_taskname.tact = LEARN_TACTOOL_CONTACT;
     left_ac_vec.push_back(new TacServoController(*pm));
     left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
     left_task_vec.push_back(new TacServoTask(left_taskname.tact));
     left_task_vec.back()->mt = TACTILE;
-    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    left_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     mutex_act.unlock();
     std::cout<<"tactile servoing for maintain contact"<<std::endl;
 }
@@ -169,12 +171,12 @@ void tactool_taxel_sliding_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
-    left_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
+    left_taskname.tact = LEARN_TACTOOL_SLIDING;
     left_ac_vec.push_back(new TacServoController(*pm));
     left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
     left_task_vec.push_back(new TacServoTask(left_taskname.tact));
     left_task_vec.back()->mt = TACTILE;
-    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    left_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
@@ -226,12 +228,13 @@ void tactool_taxel_rolling_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
-    left_taskname.tact = COVER_OBJECT_SURFACE;
+    left_taskname.tact = LEARN_TACTOOL_ROLLING;
     left_ac_vec.push_back(new TacServoController(*pm));
     left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
     left_task_vec.push_back(new TacServoTask(left_taskname.tact));
     left_task_vec.back()->mt = TACTILE;
-    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    left_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    left_task_vec.back()->set_desired_rotation_range(0.1,0,0);
     mutex_act.unlock();
     std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
 }
@@ -253,9 +256,17 @@ void nv_est_cb(boost::shared_ptr<std::string> data){
     est_tool_nv = pcaf->getSlope_batch();
     est_tool_nv.normalize();
     est_tool_ort = gen_ort_basis(est_tool_nv);
+    init_tool_pose.o = est_tool_ort;
+    init_tool_pose.p.setZero();
     //Ttool2eef = Tg2eef * Ttool2g; to this end, the Ttool can be updated by Ttool2g = Teef2g * Ttool2eef;
     //which is Ttool = Teef * rel_eef_tactool;
     rel_eef_tactool = left_rs->robot_orien["robot_eef"].transpose() * est_tool_ort;
+    if(left_myrmex_msg.contactflag == true){
+        mt_ptr->ts.init_ctc_x = left_myrmex_msg.cogx;
+        mt_ptr->ts.init_ctc_y = left_myrmex_msg.cogy;
+    }
+    mt_ptr->ts.eef_pose[0] = init_tool_pose;
+    mt_ptr->ts.rel_o = rel_eef_tactool;
     rec_flag_nv_est = false;
     vis_est_ort = true;
     std::cout<<"normal direction is "<<est_tool_nv(0)<<","<<est_tool_nv(1)<<","<<est_tool_nv(2)<<std::endl;
@@ -480,6 +491,10 @@ void init(){
     arm_payload_g.setZero();
     tn = tactool;
     StopFlag = false;
+    //initialize hand-hold manipulation tool--here is a tactile brush
+    mt_ptr = new ManipTool();
+    mt_ptr ->mtt = Tacbrush;
+    mt_ptr->ts.dof_num = 0;
     //declare the cb function
     boost::function<void(boost::shared_ptr<std::string>)> button_tactool_force(tactool_force_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tactool_tactile(tactool_tactile_cb);
@@ -497,16 +512,16 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_closeprog(closeprog_cb);
 
-    std::string config_filename = selfpath + "/etc/left_arm_mid_param.xml";
+    std::string config_filename = selfpath + "/etc/left_arm_param.xml";
     if(is_file_exist(config_filename.c_str()) == false){
-        config_filename = "left_arm_mid_param.xml";
+        config_filename = "left_arm_param.xml";
         if(is_file_exist(config_filename.c_str()) == false){
             std::cout<<"not find the tactile servo controller configure file"<<std::endl;
             exit(0);
         }
     }
 
-    pm = new ParameterManager(config_filename);
+    pm = new ParameterManager(config_filename,Myrmex);
     com_okc = new ComOkc(kuka_left,OKC_HOST,OKC_PORT);
     com_okc->connect();
     kuka_left_arm = new KukaLwr(kuka_left,*com_okc,tn);
@@ -629,7 +644,7 @@ void run_leftarm(){
             }
             if(left_task_vec[i]->mt == TACTILE){
                 mutex_tac.lock();
-                left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],&left_myrmex_msg);
+                left_ac_vec[i]->update_robot_reference(mt_ptr,kuka_left_arm,left_task_vec[i],&left_myrmex_msg);
                 mutex_tac.unlock();
             }
         }
