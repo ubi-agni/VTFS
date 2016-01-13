@@ -345,3 +345,17 @@ extern Eigen::Matrix4d gen_transform(Eigen::Vector3d omega, Eigen::Vector3d vel,
     return transform;
 
 }
+
+extern double dis_2_vec(double x1,double y1,double x2,double y2){
+    Eigen::Vector2d v1,v2,dev_v;
+    v1.setZero();
+    v2.setZero();
+    dev_v.setZero();
+    v1(0) = x1;
+    v1(1) = y1;
+    v2(0) = x2;
+    v2(1) = y2;
+    dev_v = v1-v2;
+    return dev_v.norm();
+
+}

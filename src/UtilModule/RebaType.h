@@ -1,5 +1,11 @@
 #pragma once
 
+#include <Eigen/Dense>
+
+namespace Eigen
+{
+    typedef Eigen::Matrix<double, 6, 1> Vector6d;
+}
 
 enum StopCondT{
 	DEFINED_POSITION = 0,
@@ -65,6 +71,18 @@ enum TacSensorType{
     Myrmex,
     MIDtip
 };
+
+enum ManipuToolT{
+    Notool,
+    Tacbrush
+};
+
+struct RG_Pose{
+    Eigen::Vector3d p;
+    Eigen::Matrix3d o;
+    Eigen::Matrix3d rel_o;
+};
+
 
 // class ctrlpara{
 // public:

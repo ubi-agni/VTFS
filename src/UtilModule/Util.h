@@ -35,4 +35,5 @@ extern bool is_file_exist(const char *fileName);
 extern Eigen::Matrix4d gen_transform(Eigen::Vector3d omega, Eigen::Vector3d vel, double theta);
 //generate orthogonal basis from one vector
 extern Eigen::Matrix3d gen_ort_basis(Eigen::Vector3d v);
+extern double dis_2_vec(double x1,double y1,double x2,double y2);
 //extern Eigen::VectorXd MatrixtoQuaternion(Eigen::Matrix3d);
