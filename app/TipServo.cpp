@@ -55,7 +55,7 @@
 //teensy fingertip taxel num
 #define TAC_NUM 12
 //desired contact pressure
-#define TAC_F 0.5
+#define TAC_F 0.8
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -83,8 +83,8 @@ kuka_msg left_kuka_msg;
 gamaFT *ft_gama;
 
 #define newP_x -0.1
-#define newP_y 0.4
-#define newP_z 0.30
+#define newP_y 0.2
+#define newP_z 0.20
 
 #define newO_x 0.0
 #define newO_y M_PI/2;
