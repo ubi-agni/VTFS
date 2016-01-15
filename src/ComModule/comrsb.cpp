@@ -3,7 +3,7 @@
 #include <kdl/frames.hpp>
 
 
-std::mutex mutex_lefttac,mutex_righttac,mutex_vis,\
+std::mutex mutex_lefttac,mutex_righttac,mutex_vis1,\
         mutex_pcs,mutex_markerpoints,mutex_gui;
 double right_position3d[3],right_CPnormal[3],\
         right_position3d_Object[3],right_CPnormal_Object[3];
@@ -50,7 +50,7 @@ void handle_righttac(boost::shared_ptr<TacMsg> data) {
 
 void handle_vis(boost::shared_ptr<VisMsg> data) {
     KDL::Rotation kdl_obj_orien;
-    mutex_vis.lock();
+    mutex_vis1.lock();
     if(data->objnum() > 0){
         obj.p(0) = data->objposition(0);
         obj.p(1) = data->objposition(1);
@@ -58,18 +58,20 @@ void handle_vis(boost::shared_ptr<VisMsg> data) {
         obj.roll = data->objorien(0);
         obj.pitch = data->objorien(1);
         obj.yaw = data->objorien(2);
-//        std::cout<<"position: "<<position(0)<<","<<position(1)<<","<<position(2)<<std::endl;
         kdl_obj_orien = kdl_obj_orien.RPY(obj.roll,obj.pitch,obj.yaw);
         conversions::convert(kdl_obj_orien,obj.orientation);
         obj.marker_num = data->objnum();
     }
     else{
         obj.p.setZero();
+        obj.roll = 0;
+        obj.pitch = 0;
+        obj.yaw = 0;
         obj.orientation.setIdentity();
         obj.marker_num = 0;
     }
     is_get_vis_msg = true;
-    mutex_vis.unlock();
+    mutex_vis1.unlock();
 }
 
 void handle_MarkerPoints(boost::shared_ptr<MarkerPointsMsg> data) {
@@ -174,10 +176,10 @@ bool ComRSB::tactile_receive(myrmex_msg& msg, std::string tacpart){
 
 }
 
-bool ComRSB::fiducialmarker_receive(markered_object_msg & msg){
-    mutex_vis.lock();
+bool ComRSB::fiducialmarker_receive(markered_object_msg& msg){
+    mutex_vis1.lock();
     msg = obj;
-    mutex_vis.unlock();
+    mutex_vis1.unlock();
     if(is_get_vis_msg == true){
         is_get_vis_msg = false;
         return true;

@@ -74,7 +74,9 @@ TaskNameT left_taskname;
 ComRSB *com_rsb;
 RsbDataType rdtleftkuka;
 RsbDataType rdtlefttac;
+RsbDataType rdtfiducial;
 myrmex_msg left_myrmex_msg;
+markered_object_msg tactoolmarker;
 ParameterManager* pm;
 RobotState *left_rs;
 gamaFT *ft_gama;
@@ -100,7 +102,7 @@ Eigen::Vector3d arm_payload_g;
 
 
 //using mutex locking controller ptr while it is switching.
-std::mutex mutex_act, mutex_force,mutex_tac,mutex_ft;
+std::mutex mutex_act, mutex_force,mutex_tac,mutex_ft,mutex_vis;
 //estimated force/torque from fri
 Eigen::Vector3d estkukaforce,estkukamoment;
 Eigen::Vector3d filtered_force;
@@ -133,6 +135,14 @@ void tactileviarsb(){
 //    std::cout<<"myrmex readout "<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
 
     mutex_tac.unlock();
+}
+
+void vismarkerviarsb(){
+    mutex_vis.lock();
+    com_rsb->fiducialmarker_receive(tactoolmarker);
+    std::cout<<"fiducial marker p"<<tactoolmarker.p<<std::endl;
+    std::cout<<"fiducial marker o"<<tactoolmarker.orientation<<std::endl;
+    mutex_vis.unlock();
 }
 
 void closeprog_cb(boost::shared_ptr<std::string> data){
@@ -591,8 +601,10 @@ void init(){
     com_rsb = new ComRSB();
     rdtleftkuka = LeftKukaEff;
     rdtlefttac = LeftMyrmex;
+    rdtfiducial = FiducialMarkerFeature;
     com_rsb->add_msg(rdtleftkuka);
     com_rsb->add_msg(rdtlefttac);
+    com_rsb->add_msg(rdtfiducial);
     ft.setZero(6);
     estkukaforce.setZero();
     estkukamoment.setZero();
@@ -731,6 +743,12 @@ int main(int argc, char* argv[])
     thrd_myrmex_read.setInterval(Timer::Interval(5));
     thrd_myrmex_read.start(true);
 
+    //start myrmex read thread
+    Timer thrd_vismarker_read(vismarkerviarsb);
+    thrd_vismarker_read.setSingleShot(false);
+    thrd_vismarker_read.setInterval(Timer::Interval(30));
+    thrd_vismarker_read.start(true);
+
 
     //start kuka arm control thread
     Timer thrd_kuka_ctrl(run_leftarm);
@@ -760,6 +778,7 @@ int main(int argc, char* argv[])
     #endif
     thrd_kuka_ctrl.stop();
     thrd_myrmex_read.stop();
+    thrd_vismarker_read.stop();
     #ifdef HAVE_ROS
     thrd_rospublisher.stop();
     #endif
