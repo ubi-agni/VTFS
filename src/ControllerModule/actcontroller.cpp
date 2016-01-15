@@ -61,6 +61,7 @@ void ActController::limit_vel(Eigen::Vector3d lim,\
 }
 
 void ActController::limit_eef_euler(Eigen::Vector3d lim){
+    std::cout<<"pose_o_eigen_l "<<pose_o_eigen_l<<std::endl;
     for(int i = 0; i < 3; i++){
         if(pose_o_eigen_l(i) > lim(i)){
             pose_o_eigen_l(i) = lim(i);

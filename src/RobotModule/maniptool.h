@@ -19,6 +19,15 @@ struct ToolState {
   double cur_ctc_y;
   double init_ctc_x;
   double init_ctc_y;
+  ToolState()
+      {
+          dof_num = 0;
+          init_ctc_x = -1;
+          init_ctc_y = -1;
+          cur_ctc_x = -1;
+          cur_ctc_y = -1;
+          rel_o.setZero();
+      }
 } ;
 
 class ManipTool

@@ -52,7 +52,7 @@
 #include <deque> //for estimating the normal direction of tool-end
 
 //desired contact pressure
-#define TAC_F 0.5
+#define TAC_F 0.15
 #define NV_EST_LEN 500
 
 #ifdef HAVE_ROS
@@ -121,7 +121,8 @@ std::deque<Eigen::Vector3d> robot_eef_deque;
 bool rec_flag_nv_est;
 bool vis_est_ort;
 Eigen::Vector3d est_tool_nv;
-Eigen::Matrix3d est_tool_ort;
+Eigen::Matrix3d init_est_tool_ort;
+Eigen::Matrix3d cur_est_tool_ort;
 Eigen::Matrix3d rel_eef_tactool;
 
 void tactileviarsb(){
@@ -150,7 +151,7 @@ void tactool_force_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->mt = FORCE;
     left_task_vec.back()->set_desired_cf_kuka(3);
     mutex_act.unlock();
-    std::cout<<"maintain the force"<<std::endl;
+    std::cout<<"maintain the force...................."<<std::endl;
 }
 
 void tactool_tactile_cb(boost::shared_ptr<std::string> data){
@@ -177,6 +178,7 @@ void tactool_taxel_sliding_cb(boost::shared_ptr<std::string> data){
     left_task_vec.push_back(new TacServoTask(left_taskname.tact));
     left_task_vec.back()->mt = TACTILE;
     left_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    left_task_vec.back()->set_desired_cp_moving_dir(1,0);
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
@@ -199,6 +201,7 @@ void tactool_exploring_cb(boost::shared_ptr<std::string> data){
     left_task_vec.push_back(new TacServoTask(left_taskname.tact));
     left_task_vec.back()->mt = TACTILE;
     left_task_vec.back()->set_desired_cf_mid(TAC_F);
+
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
@@ -234,7 +237,7 @@ void tactool_taxel_rolling_cb(boost::shared_ptr<std::string> data){
     left_task_vec.push_back(new TacServoTask(left_taskname.tact));
     left_task_vec.back()->mt = TACTILE;
     left_task_vec.back()->set_desired_cf_myrmex(TAC_F);
-    left_task_vec.back()->set_desired_rotation_range(0.1,0,0);
+    left_task_vec.back()->set_desired_rotation_range(0.05,0,0);
     mutex_act.unlock();
     std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
 }
@@ -247,36 +250,68 @@ void tactool_grav_comp_ctrl_cb(boost::shared_ptr<std::string> data){
 }
 
 void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+
+    //get start point position in cartesian space
+    p(0) = initP_x = left_rs->robot_position["eef"](0);
+    p(1) = initP_y= left_rs->robot_position["eef"](1);
+    p(2) = initP_z= left_rs->robot_position["eef"](2);
+
+    o = tm2axisangle(left_rs->robot_orien["eef"]);
+    initO_x = o(0);
+    initO_y = o(1);
+    initO_z = o(2);
+    left_task_vec.back()->set_desired_p_eigen(p);
+    left_task_vec.back()->set_desired_o_ax(o);
+    std::cout<<"switch to normal control"<<std::endl;
     std::cout<<"switch to normal control"<<std::endl;
     rmt = NormalMode;
 }
 
 void nv_est_cb(boost::shared_ptr<std::string> data){
+    rec_flag_nv_est = false;
     pcaf->GetData(robot_eef_deque);
     est_tool_nv = pcaf->getSlope_batch();
     est_tool_nv.normalize();
-    est_tool_ort = gen_ort_basis(est_tool_nv);
-    init_tool_pose.o = est_tool_ort;
-    init_tool_pose.p.setZero();
+    init_est_tool_ort = gen_ort_basis(est_tool_nv);
+    init_tool_pose.o = init_est_tool_ort;
     //Ttool2eef = Tg2eef * Ttool2g; to this end, the Ttool can be updated by Ttool2g = Teef2g * Ttool2eef;
     //which is Ttool = Teef * rel_eef_tactool;
-    rel_eef_tactool = left_rs->robot_orien["robot_eef"].transpose() * est_tool_ort;
+    rel_eef_tactool = left_rs->robot_orien["robot_eef"].transpose() * init_est_tool_ort;
     if(left_myrmex_msg.contactflag == true){
         mt_ptr->ts.init_ctc_x = left_myrmex_msg.cogx;
         mt_ptr->ts.init_ctc_y = left_myrmex_msg.cogy;
     }
-    mt_ptr->ts.eef_pose[0] = init_tool_pose;
+    mt_ptr->ts.eef_pose.push_back(init_tool_pose);
     mt_ptr->ts.rel_o = rel_eef_tactool;
-    rec_flag_nv_est = false;
+    rec_flag_nv_est = true;
     vis_est_ort = true;
-    std::cout<<"normal direction is "<<est_tool_nv(0)<<","<<est_tool_nv(1)<<","<<est_tool_nv(2)<<std::endl;
-    std::cout<<"orthogonal basis "<<est_tool_ort<<std::endl;
+    //robot is kept in the current pose
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+
+    //get start point position in cartesian space
+    p(0) = initP_x = left_rs->robot_position["eef"](0);
+    p(1) = initP_y= left_rs->robot_position["eef"](1);
+    p(2) = initP_z= left_rs->robot_position["eef"](2);
+
+    o = tm2axisangle(left_rs->robot_orien["eef"]);
+    initO_x = o(0);
+    initO_y = o(1);
+    initO_z = o(2);
+    left_task_vec.back()->set_desired_p_eigen(p);
+    left_task_vec.back()->set_desired_o_ax(o);
+    std::cout<<"switch to normal control"<<std::endl;
+    rmt = NormalMode;
 }
 
 void col_est_nv(){
     if((rec_flag_nv_est == true)&&(left_myrmex_msg.contactflag!=true)){
-        std::cout<<"robot trajectory is "<<left_rs->robot_position["robot_eef"](0)<<","\
-                   <<left_rs->robot_position["robot_eef"](1)<<","<<left_rs->robot_position["robot_eef"](2)<<std::endl;
+//        std::cout<<"robot trajectory is "<<left_rs->robot_position["robot_eef"](0)<<","\
+//                   <<left_rs->robot_position["robot_eef"](1)<<","<<left_rs->robot_position["robot_eef"](2)<<std::endl;
         robot_eef_deque.push_back(left_rs->robot_position["robot_eef"]);
         robot_eef_deque.pop_front();
     }
@@ -284,7 +319,6 @@ void col_est_nv(){
 
 
 void moveto_cb(boost::shared_ptr<std::string> data){
-    rec_flag_nv_est = true;
     Eigen::Vector3d p,o;
     p.setZero();
     o.setZero();
@@ -436,7 +470,8 @@ void ros_publisher(){
     if(vis_est_ort == true){
         tf::Matrix3x3 tfR;
         tf::Transform transform;
-        tf::matrixEigenToTF (est_tool_ort, tfR);
+        cur_est_tool_ort = left_rs->robot_orien["robot_eef"] * rel_eef_tactool;
+        tf::matrixEigenToTF (cur_est_tool_ort, tfR);
         transform.setOrigin( tf::Vector3(left_rs->robot_position["eef"](0), left_rs->robot_position["eef"](1), left_rs->robot_position["eef"](2)) );
         transform.setBasis(tfR);
         br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
@@ -482,7 +517,8 @@ void init(){
     robot_eef_deque.assign(NV_EST_LEN, Eigen::Vector3d::Zero());
     pcaf = new PCAFeature(NV_EST_LEN);
     est_tool_nv.setZero();
-    est_tool_ort.setIdentity();
+    init_est_tool_ort.setIdentity();
+    cur_est_tool_ort.setIdentity();
     rel_eef_tactool.setIdentity();
     rec_flag_nv_est = false;
     vis_est_ort = false;
@@ -495,6 +531,9 @@ void init(){
     mt_ptr = new ManipTool();
     mt_ptr ->mtt = Tacbrush;
     mt_ptr->ts.dof_num = 0;
+//    init_tool_pose.p.setZero();
+//    init_tool_pose.o.setZero();
+//    init_tool_pose.rel_o.setZero();
     //declare the cb function
     boost::function<void(boost::shared_ptr<std::string>)> button_tactool_force(tactool_force_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tactool_tactile(tactool_tactile_cb);
@@ -529,7 +568,7 @@ void init(){
     kuka_left_arm->get_joint_position_act();
     kuka_left_arm->update_robot_state();
     left_rs->updated(kuka_left_arm);
-    std::cout<<"state in the initialized stage are"<<left_rs->robot_position["eef"]<<std::endl;
+//    std::cout<<"state in the initialized stage are"<<left_rs->robot_position["eef"]<<std::endl;
     left_ac_vec.push_back(new ProActController(*pm));
     left_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
     Eigen::Vector3d p,o;

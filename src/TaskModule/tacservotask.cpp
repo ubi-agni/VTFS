@@ -64,3 +64,9 @@ void TacServoTask::set_desired_rotation_range(double r,double p,double y){
     desired_pose_range(1) = p;
     desired_pose_range(2) = y;
 }
+Eigen::Vector3d TacServoTask::get_desired_rotation_range(){
+    Eigen::Vector3d des;
+    des.setZero();
+    des = desired_pose_range;
+    return des;
+}

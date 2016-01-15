@@ -33,8 +33,9 @@ ParameterManager::ParameterManager(const std::string s = "left_arm_param.xml",Ta
     tac_map_task_name[LINEAR_TRACKING] = "LineTracking";
     tac_map_task_name[COVER_OBJECT_SURFACE] = "CoverObjectSurface";
     tac_map_task_name[OBJECT_SURFACE_EXPLORING] = "ObjectSurfaceExploring";
-    if(t == Myrmex)
-    tac_map_task_name[LEARN_TACTOOL_CONTACT] = "learnTactoolContact";
+    tac_map_task_name[LEARN_TACTOOL_CONTACT] = "LearnTactoolContact";
+    tac_map_task_name[LEARN_TACTOOL_SLIDING] = "LearnTactoolSliding";
+    tac_map_task_name[LEARN_TACTOOL_ROLLING] = "LearnTactoolRolling";
 
     pro_map_task_name[RLXP] = "Rlxp";
     pro_map_task_name[RLYP] = "Rlyp";
@@ -163,8 +164,9 @@ void ParameterManager::loadCtrlParam(std::string s){
     load(F_MAINTAIN,pt);
     load(F_CURVETRACKING,pt);
     //while myrmex is used for learning use the tool
-    if(tst == Myrmex)
-        load(LEARN_TACTOOL_CONTACT,pt);
+    load(LEARN_TACTOOL_CONTACT,pt);
+    load(LEARN_TACTOOL_SLIDING,pt);
+    load(LEARN_TACTOOL_ROLLING,pt);
 
     stiff_ctrlpara.axis_stiffness[0] = pt.get<double>("StiffnessParams.stiffness.a1");
     stiff_ctrlpara.axis_stiffness[1] = pt.get<double>("StiffnessParams.stiffness.a2");

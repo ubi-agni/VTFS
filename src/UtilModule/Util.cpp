@@ -310,8 +310,8 @@ extern Eigen::Matrix3d gen_ort_basis(Eigen::Vector3d v1){
         v3 = v1.cross(v2);
     }
     //construct matrix from vector
-    ort.col(0) = v2;
-    ort.col(1) = v3;
+    ort.col(0) = v2.normalized();
+    ort.col(1) = v3.normalized();
     ort.col(2) = v1;
     return ort;
 }

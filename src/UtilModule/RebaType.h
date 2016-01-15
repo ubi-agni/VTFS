@@ -81,6 +81,11 @@ struct RG_Pose{
     Eigen::Vector3d p;
     Eigen::Matrix3d o;
     Eigen::Matrix3d rel_o;
+    RG_Pose(){
+        p.setZero();
+        o.setZero();
+        rel_o.setZero();
+    }
 };
 
 

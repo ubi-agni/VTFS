@@ -36,6 +36,8 @@ public:
     void set_desired_cp_moving_dir(double x, double y);
     //set the desired rotation range of end-effector in euler representation(in rad)
     void set_desired_rotation_range(double,double,double);
+    //get the desired rotation range of end-effector in euler representation(in rad)
+    Eigen::Vector3d get_desired_rotation_range();
     double dir_x;
     double dir_y;
     Eigen::Vector3d desired_pose_range;

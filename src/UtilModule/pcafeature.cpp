@@ -10,8 +10,8 @@ PCAFeature::PCAFeature(int len){
 void PCAFeature::GetData(std::deque<Eigen::Vector3d> p){
     for(unsigned int i = 0; i < p.size(); i++)
         data_m.row(i) = p.at(i).transpose();
-    std::cout<<"all data traecjtory" <<std::endl;
-    std::cout<<data_m;
+//    std::cout<<"all data traecjtory" <<std::endl;
+//    std::cout<<data_m;
 }
 
 Eigen::Vector3d PCAFeature::getSlope_batch(){
