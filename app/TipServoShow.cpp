@@ -732,7 +732,7 @@ void init(){
     kuka_left_arm->get_joint_position_act();
     kuka_left_arm->update_robot_state();
     left_rs->updated(kuka_left_arm);
-    std::cout<<"state in the initialized stage are"<<left_rs->robot_position["eef"]<<std::endl;
+//    std::cout<<"state in the initialized stage are"<<left_rs->robot_position["eef"]<<std::endl;
     left_ac_vec.push_back(new ProActController(*pm));
     left_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
     Eigen::Vector3d p,o;
