@@ -1,0 +1,19 @@
+<vbox>
+  <button args="Moveto" handle="moveto"/>
+  <button args="gamaftcalib" handle="gamaftcalib"/>
+  <button args="taccalib_rec" handle="taccalib_rec"/>
+  <button args="tactool_force" handle="tactool_force"/>
+  <button args="tactool_tactile" handle="tactool_tactile"/>
+  <button args="tactool_taxel_sliding" handle="tactool_taxel_sliding"/>
+  <button args="tactool_taxel_rolling" handle="tactool_taxel_rolling"/>
+  <button args="tactool_exploring" handle="tactool_exploring"/>
+  <button args="ftcalib" handle="ftcalib"/>
+  <button args="tactool_follow" handle="tactool_follow"/>
+  <button args="tactool_grav_comp_ctrl" handle="tactool_grav_comp_ctrl"/>
+  <button args="tactool_normal_ctrl" handle="tactool_normal_ctrl"/>
+  <button args="brake" handle="brake"/>
+  <button args="nobrake" handle="nobrake"/>
+  <button args="normaldirection_est" handle="nv_est"/>
+  <button args="Close Prog" handle="closeprog"/>
+  <image handle="image2"/>
+</vbox>
