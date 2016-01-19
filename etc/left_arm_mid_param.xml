@@ -83,7 +83,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rlxn>
         <Rlyn>
-            <kp>-0.002</kp>
+            <kp>-0.005</kp>
             <psm>
                 <e00>0</e00>
                 <e11>1</e11>
@@ -265,17 +265,17 @@ See http://www.boost.org/LICENSE_1_0.txt
 
         <ContactForceTracking>
             <x>
-                <kp>0.08</kp>
+                <kp>0.01</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </x>
             <y>
-                <kp>0.08</kp>
+                <kp>0.01</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </y>
             <z>
-                <kp>0.08</kp>
+                <kp>0.01</kp>
                 <ki>0.000</ki>
                 <kd>0</kd>
             </z>

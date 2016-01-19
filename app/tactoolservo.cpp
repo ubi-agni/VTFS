@@ -48,6 +48,7 @@
 #include "msgcontenttype.h"
 #include "pcafeature.h"
 #include "maniptool.h"
+#include "contactdetector.h"
 
 #include <deque> //for estimating the normal direction of tool-end
 
@@ -85,6 +86,9 @@ PCAFeature *pcaf;
 //tactool initialization
 ManipTool *mt_ptr;
 RG_Pose init_tool_pose;
+
+//contact detector init
+ContactDetector *cdt;
 
 #define newP_x -0.1
 #define newP_y 0.4
@@ -140,8 +144,8 @@ void tactileviarsb(){
 void vismarkerviarsb(){
     mutex_vis.lock();
     com_rsb->fiducialmarker_receive(tactoolmarker);
-    std::cout<<"fiducial marker p"<<tactoolmarker.p<<std::endl;
-    std::cout<<"fiducial marker o"<<tactoolmarker.orientation<<std::endl;
+//    std::cout<<"fiducial marker p"<<tactoolmarker.p<<std::endl;
+//    std::cout<<"fiducial marker o"<<tactoolmarker.orientation<<std::endl;
     mutex_vis.unlock();
 }
 
@@ -279,6 +283,46 @@ void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     std::cout<<"switch to normal control"<<std::endl;
     rmt = NormalMode;
 }
+
+void nv_est(){
+    rec_flag_nv_est = false;
+    pcaf->GetData(robot_eef_deque);
+    est_tool_nv = pcaf->getSlope_batch();
+    est_tool_nv.normalize();
+    init_est_tool_ort = gen_ort_basis(est_tool_nv);
+    init_tool_pose.o = init_est_tool_ort;
+    //Ttool2eef = Tg2eef * Ttool2g; to this end, the Ttool can be updated by Ttool2g = Teef2g * Ttool2eef;
+    //which is Ttool = Teef * rel_eef_tactool;
+    rel_eef_tactool = left_rs->robot_orien["robot_eef"].transpose() * init_est_tool_ort;
+    if(left_myrmex_msg.contactflag == true){
+        mt_ptr->ts.init_ctc_x = left_myrmex_msg.cogx;
+        mt_ptr->ts.init_ctc_y = left_myrmex_msg.cogy;
+    }
+    std::cout<<"init tactile ctc "<<mt_ptr->ts.init_ctc_x<<","<<mt_ptr->ts.init_ctc_y<<std::endl;
+    mt_ptr->ts.eef_pose.push_back(init_tool_pose);
+    mt_ptr->ts.rel_o = rel_eef_tactool;
+    rec_flag_nv_est = true;
+    vis_est_ort = true;
+    //robot is kept in the current pose
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+
+    //get start point position in cartesian space
+    p(0) = initP_x = left_rs->robot_position["eef"](0);
+    p(1) = initP_y= left_rs->robot_position["eef"](1);
+    p(2) = initP_z= left_rs->robot_position["eef"](2);
+
+    o = tm2axisangle(left_rs->robot_orien["eef"]);
+    initO_x = o(0);
+    initO_y = o(1);
+    initO_z = o(2);
+    left_task_vec.back()->set_desired_p_eigen(p);
+    left_task_vec.back()->set_desired_o_ax(o);
+    std::cout<<"switch to normal control"<<std::endl;
+    rmt = NormalMode;
+}
+
 
 void nv_est_cb(boost::shared_ptr<std::string> data){
     rec_flag_nv_est = false;
@@ -522,7 +566,7 @@ std::string get_selfpath() {
 }
 
 void init(){
-
+    cdt = new ContactDetector();
     std::string selfpath = get_selfpath();
     robot_eef_deque.assign(NV_EST_LEN, Eigen::Vector3d::Zero());
     pcaf = new PCAFeature(NV_EST_LEN);
@@ -667,6 +711,13 @@ void init(){
 void run_leftarm(){
     //only call for this function, the ->jnt_position_act is updated
     if((com_okc->data_available == true)&&(com_okc->controller_update == false)){
+
+        //contact status detection
+        if(cdt->get_ctc_status(left_myrmex_msg.contactflag) == initcontact){
+            //the normal direction will be esimated while the first contact is done.
+            nv_est();
+
+        }
 //        kuka_left_arm->update_robot_stiffness();
         kuka_left_arm->get_joint_position_act();
         kuka_left_arm->update_robot_state();

@@ -116,6 +116,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
     if(midfb->isContact(midfb->data) == true){
         double deltaf;
         deltaf = desiredf - midfb->pressure;
+        std::cout<<"deltaf "<<deltaf<<std::endl;
         ctc_nv = midfb->nv;
         if(t->curtaskname.tact == CONTACT_FORCE_TRACKING){
             deltais(0) = deltaf*ctc_nv(0);
@@ -437,16 +438,18 @@ void TacServoController::update_robot_reference(ManipTool *mt, Robot *robot, Tas
     o_target.setZero();
     get_desired_lv(mt,robot,t,tacfb);
     limit_eef_euler(t->get_desired_rotation_range());
-    std::cout<<"lv before in tacservo "<<llv<<std::endl;
-    std::cout<<"ov before in tacservo "<<lov<<std::endl;
-//    if(dis_2_vec(mt->ts.init_ctc_x,mt->ts.init_ctc_y,tacfb->cogx,tacfb->cogy)<2){
-//        llv = llv + llv_tac;
-//        lov = lov + lov_tac;
-//    }
-    llv = llv + llv_tac;
-    lov = lov + lov_tac;
-    std::cout<<"lv after in tacservo "<<llv<<std::endl;
-    std::cout<<lov<<std::endl;
+//    std::cout<<"lv before in tacservo "<<llv<<std::endl;
+//    std::cout<<"ov before in tacservo "<<lov<<std::endl;
+    if(tacfb->contactflag == true){
+//        if(dis_2_vec(mt->ts.init_ctc_x,mt->ts.init_ctc_y,tacfb->cogx,tacfb->cogy)<2){
+//            llv = llv + llv_tac;
+//            lov = lov + lov_tac;
+//        }
+        llv = llv + llv_tac;
+        lov = lov + lov_tac;
+    }
+//    std::cout<<"lv after in tacservo "<<llv<<std::endl;
+//    std::cout<<lov<<std::endl;
     local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
                     lov,p_target,o_target);
     for (int i=0; i < 3; i++){
