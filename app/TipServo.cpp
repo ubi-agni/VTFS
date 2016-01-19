@@ -83,8 +83,8 @@ kuka_msg left_kuka_msg;
 gamaFT *ft_gama;
 
 #define newP_x -0.1
-#define newP_y 0.2
-#define newP_z 0.20
+#define newP_y 0.3
+#define newP_z 0.30
 
 #define newO_x 0.0
 #define newO_y M_PI/2;
@@ -144,6 +144,43 @@ void tip_force_cb(boost::shared_ptr<std::string> data){
     mutex_act.unlock();
     std::cout<<"maintain the force"<<std::endl;
 }
+
+void vogc_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"now you are in the approaching and geting contact task"<<std::endl;
+    bool ctc_flag, approaching_flag;
+    ctc_flag = false;
+    approaching_flag = false;
+    while(ctc_flag!= true){
+        ctc_flag = ftt->isContact(ftt->data);
+        std::cout<<"start approaching not contacted yet "<<std::endl;
+        if(approaching_flag == false){
+            left_ac_vec.clear();
+            left_task_vec.clear();
+            left_taskname.prot = RLYN;
+            left_ac_vec.push_back(new ProActController(*pm));
+            left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+            left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
+            left_task_vec.back()->mft = LOCAL;
+            left_task_vec.back()->mt = JOINTS;
+            approaching_flag = true;
+        }
+    }
+    //contact is detected
+    std::cout<<"contact detected "<<std::endl;
+    mutex_act.lock();
+    left_ac_vec.clear();
+    left_task_vec.clear();
+    left_taskname.tact = CONTACT_FORCE_TRACKING;
+    left_ac_vec.push_back(new TacServoController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new TacServoTask(left_taskname.tact));
+    left_task_vec.back()->mt = TACTILE;
+    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for maintain contact"<<std::endl;
+
+}
+
 
 void tip_tactile_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
@@ -913,7 +950,8 @@ void init(){
     tac_index = 0.0;
     //declare the cb function
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_force(tip_force_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(tip_tactile_cb);
+//    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(tip_tactile_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(vogc_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_sliding(tip_taxel_sliding_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_rolling(tip_taxel_rolling_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_exploring(tip_exploring_cb);
