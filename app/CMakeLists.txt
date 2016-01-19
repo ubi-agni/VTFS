@@ -24,6 +24,7 @@ SET(APPS
          tactoolservo
          MyrmexComTest
          MyrmexServo
+         BiManualTipServo
 #        CQTest
 #        KukaCartImpTest
 #        RigTFEst
