@@ -62,18 +62,6 @@ TacServoController::TacServoController(ParameterManager &p) : ActController(p)
     initTacServoCtrlParam(LEARN_TACTOOL_ROLLING);
     llv_tac.setZero();
     lov_tac.setZero();
-
-//    if(mkdir("/dev/shm/debug",0777)==-1)//creating a directory
-//    {
-//        std::cout<<"creat folder failed"<<std::endl;
-//    }
-    int temp;
-    if ((temp = mkdir("/dev/shm/debug",0777)) != 0) {
-        fprintf(stderr, "ERROR %d: unable to mkdir; %s\n", errno, strerror(errno));
-    }
-    std::string data_f ("/dev/shm/debug/");
-    ctrl_debug.open((data_f+std::string("ctrl_debug.txt")).c_str());
-    ctrl_debug2.open((data_f+std::string("ctrl_debug2.txt")).c_str());
 }
 
 
@@ -188,11 +176,9 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             deltais(0) =  midfb->pos[0] - desired_cp(0);
             deltais(1) = 0;
             deltais(2) = midfb->pos[2] - desired_cp(2);
-            ctrl_debug<<desired_cp(0)<<","<<midfb->pos[0]<<","<<desired_cp(2)<<","<<midfb->pos[2]<<",";
             for(int i = 0; i < 3; i++){
                 deltais(i) = deltais(i);
             }
-            ctrl_debug<<deltais(0)<<","<<deltais(1)<<","<<deltais(2)<<","<<deltaf<<","<<midfb->act_taxel_num<<",";
         }
     }
     else{
@@ -230,7 +216,6 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
                 for(int i = 0; i < 3; i++){
                     llv_tac(i) =  deltape(i) + (0.025)*deltaf*ctc_nv(i);
                 }
-                ctrl_debug2<<deltape(0)<<","<<deltape(1)<<","<<deltape(2)<<","<<deltape(3)<<","<<deltape(4)<<","<<deltape(5)<<",";
             }
             else{
                 llv_tac.setZero();
@@ -267,8 +252,6 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             ctc_nv_normalize = ctc_nv.normalized();
             lov_tac = lov_tac + 0.1*(1-(des_nv_normalize.dot(ctc_nv_normalize)))*rot_nv;
             std::cout<<"after the normal direction control "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
-            ctrl_debug<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<",";
-            ctrl_debug<<ctc_nv_normalize(0)<<","<<ctc_nv_normalize(1)<<","<<ctc_nv_normalize(2)<<",";
             //twist component, only use x z component of slope to compute the deviation angle between current estimated linear and z axis
             //only superimposing twist motion while following the cable.
             if(t->curtaskname.tact == LINEAR_TRACKING){
@@ -305,7 +288,6 @@ void TacServoController::update_robot_reference(Robot *robot, Task *t,FingertipT
                     lov,p_target,o_target);
     if(midfb->isContact(midfb->data) == true){
         if((t->curtaskname.tact == COVER_OBJECT_SURFACE)){
-            ctrl_debug<<o_target(0)<<","<<o_target(1)<<","<<o_target(2)<<std::endl;
         }
     }
 
@@ -391,8 +373,6 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
     double desiredf;
     //robot current state
     tst.get_desired_cf_myrmex(desiredf);
-    std::cout<<"desired and cur contact f in myrmex "<<desiredf<<","\
-            <<tacfb->cf<<std::endl;
     if(tacfb->contactflag == true){
         deltais(1) = tst.dir_x;
         deltais(0) = tst.dir_y;
@@ -424,12 +404,13 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
     deltape = Kpp[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais + \
             Kpi[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais_int + \
             Kpd[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * (deltais - deltais_old);
+
     llv_tac = mt->ts.rel_o* deltape.head(3);
     deltape.tail(3) = tst.desired_pose_range;
     lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
     limit_vel(get_llv_limit(),llv_tac,lov_tac);
+    std::cout<<"local rot vel "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
     deltais_old = deltais;
-
 }
 
 void TacServoController::update_robot_reference(ManipTool *mt, Robot *robot, Task *t,myrmex_msg *tacfb){
@@ -456,7 +437,7 @@ void TacServoController::update_robot_reference(ManipTool *mt, Robot *robot, Tas
         cart_command[i] = p_target(i);
         cart_command[i+3] = o_target(i);
     }
-    std::cout<<"o_target "<<o_target(0)<<","<<o_target(1)<<","<<o_target(2)<<std::endl;
+//    std::cout<<"o_target "<<o_target(0)<<","<<o_target(1)<<","<<o_target(2)<<std::endl;
     for(int i = 0; i < 6; i++)
         robot->set_cart_command(cart_command);
 }

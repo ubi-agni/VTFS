@@ -25,6 +25,7 @@ SET(APPS
          MyrmexComTest
          MyrmexServo
          BiManualTipServo
+         righttactoolservo
 #        CQTest
 #        KukaCartImpTest
 #        RigTFEst

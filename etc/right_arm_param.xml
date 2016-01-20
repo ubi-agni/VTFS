@@ -996,7 +996,7 @@ See http://www.boost.org/LICENSE_1_0.txt
                 <kd>0</kd>
             </y>
             <z>
-                <kp>0.05</kp>
+                <kp>0.2</kp>
                 <ki>0.000</ki>
                 <kd>0</kd>
             </z>
@@ -1066,17 +1066,17 @@ See http://www.boost.org/LICENSE_1_0.txt
 	
 	<LearnTactoolSliding>
             <x>
-                <kp>0.02</kp>
+                <kp>0.05</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </x>
             <y>
-                <kp>0.02</kp>
+                <kp>0.05</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </y>
             <z>
-                <kp>0.1</kp>
+                <kp>0.2</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </z>
@@ -1176,17 +1176,17 @@ See http://www.boost.org/LICENSE_1_0.txt
                 <kd>0</kd>
             </yaw>
             <roll2>
-                <kp>0.1</kp>
+                <kp>1</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </roll2>
             <pitch2>
-                <kp>0.1</kp>
+                <kp>1</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </pitch2>
             <yaw2>
-                <kp>0.1</kp>
+                <kp>1</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </yaw2>

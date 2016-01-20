@@ -11,9 +11,18 @@
   <button args="tactool_follow" handle="tactool_follow"/>
   <button args="tactool_grav_comp_ctrl" handle="tactool_grav_comp_ctrl"/>
   <button args="tactool_normal_ctrl" handle="tactool_normal_ctrl"/>
+  <button args="opensdh" handle="opensdh"/>
+  <button args="closesdh" handle="tactoolclosesdh"/>
+  <button args="stopsdh" handle="stopsdh"/>
   <button args="brake" handle="brake"/>
   <button args="nobrake" handle="nobrake"/>
   <button args="normaldirection_est" handle="nv_est"/>
   <button args="Close Prog" handle="closeprog"/>
+  <checkbox args="rotatex,true" handle="rotatex"/>
+  <checkbox args="rotatey,true" handle="rotatey"/>
+  <slider args="-5,5,0" handle="linexlen"/>
+  <slider args="-5,5,0" handle="lineylen"/>
+  <slider args="-10,10,0" handle="rotatexangle"/>
+  <slider args="-10,10,0" handle="rotateyangle"/>
   <image handle="image2"/>
 </vbox>
