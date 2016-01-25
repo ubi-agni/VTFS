@@ -80,6 +80,13 @@ enum MoveFrameT{
     LOCALP2P
 };
 
+//explore action mode for tactool learning
+enum ExploreModeT{
+    NOEXPLORE,
+    LINEAREXPLORE,
+    ROTATEEXPLORE
+};
+
 class Task
 {
 public:
@@ -88,6 +95,9 @@ public:
     virtual Eigen::Vector3d get_initial_p_eigen() = 0;
     virtual Eigen::Matrix3d get_desired_o_eigen() = 0;
     virtual Eigen::Vector3d get_desired_o_ax() = 0;
+    //specify the desired robot movement distance
+    virtual double get_desired_mv_dis() = 0;
+    virtual void set_desired_mv_dis(double s) = 0;
     virtual void set_desired_p_eigen(Eigen::Vector3d p) = 0;
     virtual void set_initial_p_eigen(Eigen::Vector3d p) = 0;
     virtual void set_desired_o_eigen(Eigen::Matrix3d o_eigen) = 0;
@@ -108,12 +118,14 @@ public:
     TaskNameT curtaskname;
     ModalityT mt;
     MoveFrameT mft;
+    ExploreModeT emt;
     Eigen::Vector3d velocity_p2p;
     TacFBType tft;
 protected:
     Eigen::Vector3d desired_p_eigen,initial_p_eigen;
     Eigen::Matrix3d desired_o_eigen;
     Eigen::Vector3d desired_o_ax;
+    double desired_dis;
 };
 
 #endif // TASK_H

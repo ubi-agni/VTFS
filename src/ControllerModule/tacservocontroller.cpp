@@ -2,6 +2,7 @@
 #include "TaskModule/tacservotask.h"
 #include <sys/stat.h>     //create folder for data record
 
+
  void TacServoController::initTacServoCtrlParam(TACTaskNameT tnt){
      Kpp[tnt].setZero(6, 6);
      Kpi[tnt].setZero(6, 6);
@@ -62,6 +63,7 @@ TacServoController::TacServoController(ParameterManager &p) : ActController(p)
     initTacServoCtrlParam(LEARN_TACTOOL_ROLLING);
     llv_tac.setZero();
     lov_tac.setZero();
+    cdet_ptr = new ContactDetector();
 }
 
 
@@ -374,15 +376,15 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
     //robot current state
     tst.get_desired_cf_myrmex(desiredf);
     if(tacfb->contactflag == true){
-        deltais(1) = tst.dir_x;
-        deltais(0) = tst.dir_y;
+        deltais(0) = tst.dir_x;
+        deltais(1) = tst.dir_y;
         deltais(2) =  desiredf - tacfb->cf;
         deltais(5) = M_PI/2 - tacfb->lineorien;
     }
     else{
         deltais(0) = 0;
         deltais(1) = 0;
-        deltais(2) =  0;
+        deltais(2) =  desiredf - tacfb->cf;
         deltais(5) = 0;
         deltais_int.setZero();
     }
@@ -409,7 +411,7 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
     deltape.tail(3) = tst.desired_pose_range;
     lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
     limit_vel(get_llv_limit(),llv_tac,lov_tac);
-    std::cout<<"local rot vel "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
+//    std::cout<<"local rot vel "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
     deltais_old = deltais;
 }
 
@@ -422,10 +424,20 @@ void TacServoController::update_robot_reference(ManipTool *mt, Robot *robot, Tas
 //    std::cout<<"lv before in tacservo "<<llv<<std::endl;
 //    std::cout<<"ov before in tacservo "<<lov<<std::endl;
     if(tacfb->contactflag == true){
-//        if(dis_2_vec(mt->ts.init_ctc_x,mt->ts.init_ctc_y,tacfb->cogx,tacfb->cogy)<2){
-//            llv = llv + llv_tac;
-//            lov = lov + lov_tac;
-//        }
+        if((t->emt == LINEAREXPLORE)||(t->emt == ROTATEEXPLORE)){
+//            if(dis_2_vec(mt->ts.init_ctc_x,mt->ts.init_ctc_y,tacfb->cogx,tacfb->cogy)<t->get_desired_mv_dis()){
+            if(cdet_ptr->isContactArea(tacfb->cogx,tacfb->cogy) == true){
+                llv = llv + llv_tac;
+                lov = lov + lov_tac;
+            }
+        }
+        else{
+            llv = llv + llv_tac;
+            lov = lov + lov_tac;
+        }
+    }
+    //temporary set like this in order to avoid the init contact failure while the controller is switching
+    else{
         llv = llv + llv_tac;
         lov = lov + lov_tac;
     }

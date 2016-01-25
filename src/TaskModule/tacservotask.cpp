@@ -70,3 +70,11 @@ Eigen::Vector3d TacServoTask::get_desired_rotation_range(){
     des = desired_pose_range;
     return des;
 }
+
+double TacServoTask::get_desired_mv_dis(){
+    return desired_dis;
+}
+
+void TacServoTask::set_desired_mv_dis(double s){
+    desired_dis =s;
+}

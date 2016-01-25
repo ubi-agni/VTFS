@@ -5,6 +5,7 @@
 #include <map>
 #include "UtilModule/msgcontenttype.h"
 #include <fstream>
+#include "TacModule/contactdetector.h"
 
 
 class TacServoController : public ActController
@@ -57,6 +58,7 @@ private:
     Eigen::VectorXd deltape;
     Eigen::Vector3d llv_tac,lov_tac;
     void initTacServoCtrlParam(TACTaskNameT);
+    ContactDetector *cdet_ptr;
 
 public:
     Eigen::VectorXd deltais;

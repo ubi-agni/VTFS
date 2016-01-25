@@ -48,10 +48,13 @@
 #include "RebaType.h"
 #include "msgcontenttype.h"
 #include "pcafeature.h"
+#include "regression2d.h"
 #include "maniptool.h"
 #include "contactdetector.h"
 
 #include <deque> //for estimating the normal direction of tool-end
+
+#include <math.h>       /* acos */
 
 //desired contact pressure
 #define TAC_F 0.3
@@ -82,6 +85,10 @@ markered_object_msg tactoolmarker;
 ParameterManager* pm;
 RobotState *right_rs;
 PCAFeature *pcaf;
+//for estimate the rotation of the real tactool xy
+Regression2d *rg2d;
+Eigen::Vector2d tacp2d;
+Reg_param rgp;
 
 //tactool initialization
 ManipTool *mt_ptr;
@@ -120,12 +127,19 @@ RobotModeT rmt;
 
 //save the last 500 position of robot end-effector
 std::deque<Eigen::Vector3d> robot_eef_deque;
+//save tactile trajectory in order to estimate y axis
+std::vector<Eigen::Vector2d> tac_tra_vec;
 bool rec_flag_nv_est;
+bool rec_flag_xy_est;
 bool vis_est_ort;
 Eigen::Vector3d est_tool_nv;
 Eigen::Matrix3d init_est_tool_ort;
 Eigen::Matrix3d cur_est_tool_ort;
+Eigen::Matrix3d cur_update_tool_ort;
 Eigen::Matrix3d rel_eef_tactool;
+
+//for update the tactool contact frame xy-tangent surface to the real tac sensor frame
+Eigen::Matrix3d real_tactool_ctcframe,rotationmatrix;
 
 struct ExploreAction{
     double ra_xaxis;
@@ -383,10 +397,41 @@ void nv_est_cb(boost::shared_ptr<std::string> data){
     rmt = NormalMode;
 }
 
+void xy_est_cb(){
+    rec_flag_xy_est = false;
+    rgp = rg2d->get_kb_batch(tac_tra_vec);
+    //rgp.sign_k is using atan2 to esimate the quadrant in which the contact points trajectory is located
+    //assume that tactool is take a linear exploration moving along +x axis
+    double DeltaGama;
+    if(rgp.sign_k == 1)
+        DeltaGama = atan(rgp.k);
+    else
+        DeltaGama = atan(rgp.k) - M_PI;
+    rotationmatrix(0,0) = cos(DeltaGama);
+    rotationmatrix(0,1) = (-1)*sin(DeltaGama);
+    rotationmatrix(1,0) = sin(DeltaGama);
+    rotationmatrix(1,1) = cos(DeltaGama);
+}
+
+void update_contact_frame_cb(boost::shared_ptr<std::string> data){
+    xy_est_cb();
+}
+
+
 void col_est_nv(){
     if((rec_flag_nv_est == true)&&(left_myrmex_msg.contactflag!=true)){
         robot_eef_deque.push_back(right_rs->robot_position["robot_eef"]);
         robot_eef_deque.pop_front();
+    }
+}
+
+//collect all data for estimating the real tactile sensor x y axis
+void col_est_xy(){
+    if(rec_flag_xy_est == true){
+        tacp2d.setZero();
+        tacp2d(0) = left_myrmex_msg.cogx;
+        tacp2d(1) = left_myrmex_msg.cogy;
+        tac_tra_vec.push_back(tacp2d);
     }
 }
 
@@ -475,10 +520,12 @@ void linexlen_cb(boost::shared_ptr<std::string> data){
    right_ac_vec.push_back(new TacServoController(*pm));
    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+   right_task_vec.back()->emt = LINEAREXPLORE;
    right_task_vec.back()->mt = TACTILE;
    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
    right_task_vec.back()->set_desired_cp_moving_dir(ea.la_xaxis,ea.la_yaxis);
    mutex_act.unlock();
+   rec_flag_xy_est = true;
    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
 
@@ -492,11 +539,13 @@ void lineylen_cb(boost::shared_ptr<std::string> data){
    right_ac_vec.push_back(new TacServoController(*pm));
    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+   right_task_vec.back()->emt = LINEAREXPLORE;
    right_task_vec.back()->mt = TACTILE;
    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
    right_task_vec.back()->set_desired_cp_moving_dir(ea.la_xaxis,ea.la_yaxis);
    mutex_act.unlock();
    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+   rec_flag_xy_est = true;
 }
 
 #ifdef HAVE_ROS
@@ -567,7 +616,16 @@ void ros_publisher(){
         transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)) );
         transform.setBasis(tfR);
         br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
+
+        //update contact frame after the tac exploration action
+        real_tactool_ctcframe =  cur_est_tool_ort * rotationmatrix;
+        tf::matrixEigenToTF (real_tactool_ctcframe, tfR);
+        transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)) );
+        transform.setBasis(tfR);
+        br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "updated_tactool_frame"));
     }
+
+
 
 
     // send a joint_state
@@ -611,14 +669,20 @@ void init(){
     est_tool_nv.setZero();
     init_est_tool_ort.setIdentity();
     cur_est_tool_ort.setIdentity();
+    cur_update_tool_ort.setIdentity();
     rel_eef_tactool.setIdentity();
     rec_flag_nv_est = false;
+    rec_flag_xy_est = false;
     vis_est_ort = false;
     rmt = NormalMode;
     tn = tactool;
     StopFlag = false;
     //initialize hand-hold manipulation tool--here is a tactile brush
     mt_ptr = new ManipTool();
+    rg2d = new Regression2d();
+    real_tactool_ctcframe.setIdentity();
+    rotationmatrix.setIdentity();
+
     mt_ptr ->mtt = Tacbrush;
     mt_ptr->ts.dof_num = 0;
 //    init_tool_pose.p.setZero();
@@ -636,6 +700,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_tactool_follow(tactool_cablefollow_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tactool_grav_comp_ctrl(tactool_grav_comp_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tactool_normal_ctrl(tactool_normal_ctrl_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_update_contact_frame(update_contact_frame_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_closeprog(closeprog_cb);
@@ -704,6 +769,7 @@ void init(){
     com_rsb->register_external("/foo/tactool_follow",button_tactool_follow);
     com_rsb->register_external("/foo/tactool_grav_comp_ctrl",button_tactool_grav_comp_ctrl);
     com_rsb->register_external("/foo/tactool_normal_ctrl",button_tactool_normal_ctrl);
+    com_rsb->register_external("/foo/update_contact_frame",button_update_contact_frame);
     com_rsb->register_external("/foo/brake",button_brake);
     com_rsb->register_external("/foo/nobrake",button_nobrake);
     com_rsb->register_external("/foo/closeprog",button_closeprog);
@@ -757,6 +823,7 @@ void run_rightarm(){
             //the normal direction will be esimated while the first contact is done.
             nv_est();
         }
+
 //        kuka_right_arm->update_robot_stiffness();
         kuka_right_arm->get_joint_position_act();
         kuka_right_arm->update_robot_state();
@@ -773,6 +840,7 @@ void run_rightarm(){
 //        mutex_force.unlock();
         //collect robot-eef position into a deque for computing the estimating nv
         col_est_nv();
+        col_est_xy();
         //using all kinds of controllers to update the reference
         mutex_act.lock();
         for(unsigned int i = 0; i < right_ac_vec.size();i++){

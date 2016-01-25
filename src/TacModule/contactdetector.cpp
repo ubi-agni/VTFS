@@ -37,3 +37,13 @@ ctc_status ContactDetector::get_ctc_status(bool b){
         return uncertaincontact;
     }
 }
+
+bool ContactDetector::isContactArea(double x,double y){
+    if((x>3)&&(x<13)&&(y>3)&&(y<13)){
+        return true;
+    }
+    else{
+        return false;
+    }
+
+}

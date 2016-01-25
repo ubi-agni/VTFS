@@ -31,6 +31,8 @@ public:
     void get_desired_cf_mid(double &p){p = taxel_pressure;}
     void switchtotask(TACTaskNameT taskname);
     void set_taxelfb_type_mid(TacFBType type);
+    double get_desired_mv_dis();
+    void set_desired_mv_dis(double s);
     //set the desired contact point motion direction while the tactool sliding
     //on the unknown corner
     void set_desired_cp_moving_dir(double x, double y);

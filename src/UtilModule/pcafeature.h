@@ -5,6 +5,7 @@
 #include <Eigen/SVD>
 #include <deque>
 
+//this class is designed for 3d major vector computation
 class PCAFeature
 {
 public:
@@ -19,5 +20,6 @@ private:
     Eigen::Matrix3d bsxfun_min(Eigen::MatrixXd used_data);
     Eigen::Vector3d meanvalue(Eigen::MatrixXd used_data);
 };
+
 
 #endif // PCAFEATURE_H

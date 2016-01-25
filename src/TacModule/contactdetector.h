@@ -22,5 +22,6 @@ public:
     int deque_len;
     ctc_status ctcs;
     ctc_status get_ctc_status(bool b);
+    bool isContactArea(double x,double y);
 };
 #endif // CONTACTDETECTOR_H

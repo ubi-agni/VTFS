@@ -11,6 +11,7 @@
   <button args="tactool_follow" handle="tactool_follow"/>
   <button args="tactool_grav_comp_ctrl" handle="tactool_grav_comp_ctrl"/>
   <button args="tactool_normal_ctrl" handle="tactool_normal_ctrl"/>
+  <button args="update_contact_frame" handle="update_contact_frame"/>
   <button args="opensdh" handle="opensdh"/>
   <button args="closesdh" handle="tactoolclosesdh"/>
   <button args="stopsdh" handle="stopsdh"/>
