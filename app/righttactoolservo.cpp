@@ -290,7 +290,7 @@ void tactool_taxel_rolling_cb(boost::shared_ptr<std::string> data){
 void tactool_grav_comp_ctrl_cb(boost::shared_ptr<std::string> data){
     std::cout<<"switch to psudo_gravity_compasenstation control"<<std::endl;
     rmt = PsudoGravityCompensation;
-    rec_flag_nv_est = true;
+//    rec_flag_nv_est = true;
 }
 
 void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
@@ -365,41 +365,42 @@ void nv_est(){
 
 
 void nv_est_cb(boost::shared_ptr<std::string> data){
-    rec_flag_nv_est = false;
-    pcaf->GetData(robot_eef_deque);
-    est_tool_nv = pcaf->getSlope_batch();
-    est_tool_nv.normalize();
-    init_est_tool_ort = gen_ort_basis(est_tool_nv);
-    init_tool_pose.o = init_est_tool_ort;
-    //Ttool2eef = Tg2eef * Ttool2g; to this end, the Ttool can be updated by Ttool2g = Teef2g * Ttool2eef;
-    //which is Ttool = Teef * rel_eef_tactool;
-    rel_eef_tactool = right_rs->robot_orien["robot_eef"].transpose() * init_est_tool_ort;
-    if(left_myrmex_msg.contactflag == true){
-        mt_ptr->ts.init_ctc_x = left_myrmex_msg.cogx;
-        mt_ptr->ts.init_ctc_y = left_myrmex_msg.cogy;
-    }
-    mt_ptr->ts.eef_pose.push_back(init_tool_pose);
-    mt_ptr->ts.rel_o = rel_eef_tactool;
     rec_flag_nv_est = true;
-    vis_est_ort = true;
-    //robot is kept in the current pose
-    Eigen::Vector3d p,o;
-    p.setZero();
-    o.setZero();
+//    rec_flag_nv_est = false;
+//    pcaf->GetData(robot_eef_deque);
+//    est_tool_nv = pcaf->getSlope_batch();
+//    est_tool_nv.normalize();
+//    init_est_tool_ort = gen_ort_basis(est_tool_nv);
+//    init_tool_pose.o = init_est_tool_ort;
+//    //Ttool2eef = Tg2eef * Ttool2g; to this end, the Ttool can be updated by Ttool2g = Teef2g * Ttool2eef;
+//    //which is Ttool = Teef * rel_eef_tactool;
+//    rel_eef_tactool = right_rs->robot_orien["robot_eef"].transpose() * init_est_tool_ort;
+//    if(left_myrmex_msg.contactflag == true){
+//        mt_ptr->ts.init_ctc_x = left_myrmex_msg.cogx;
+//        mt_ptr->ts.init_ctc_y = left_myrmex_msg.cogy;
+//    }
+//    mt_ptr->ts.eef_pose.push_back(init_tool_pose);
+//    mt_ptr->ts.rel_o = rel_eef_tactool;
+//    rec_flag_nv_est = true;
+//    vis_est_ort = true;
+//    //robot is kept in the current pose
+//    Eigen::Vector3d p,o;
+//    p.setZero();
+//    o.setZero();
 
-    //get start point position in cartesian space
-    p(0) = initP_x = right_rs->robot_position["eef"](0);
-    p(1) = initP_y= right_rs->robot_position["eef"](1);
-    p(2) = initP_z= right_rs->robot_position["eef"](2);
+//    //get start point position in cartesian space
+//    p(0) = initP_x = right_rs->robot_position["eef"](0);
+//    p(1) = initP_y= right_rs->robot_position["eef"](1);
+//    p(2) = initP_z= right_rs->robot_position["eef"](2);
 
-    o = tm2axisangle(right_rs->robot_orien["eef"]);
-    initO_x = o(0);
-    initO_y = o(1);
-    initO_z = o(2);
-    right_task_vec.back()->set_desired_p_eigen(p);
-    right_task_vec.back()->set_desired_o_ax(o);
-    std::cout<<"switch to normal control"<<std::endl;
-    rmt = NormalMode;
+//    o = tm2axisangle(right_rs->robot_orien["eef"]);
+//    initO_x = o(0);
+//    initO_y = o(1);
+//    initO_z = o(2);
+//    right_task_vec.back()->set_desired_p_eigen(p);
+//    right_task_vec.back()->set_desired_o_ax(o);
+//    std::cout<<"switch to normal control"<<std::endl;
+//    rmt = NormalMode;
 }
 
 void xy_est_cb(){
