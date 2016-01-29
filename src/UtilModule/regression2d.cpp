@@ -33,7 +33,7 @@ Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
     double deltay,deltax,a;
     deltay = (*ps.end())(1) - (*ps.begin())(1);
     deltax = (*ps.end())(0) - (*ps.begin())(0);
-    a = atan2(deltay,deltax);
+    a = atan2(-deltay,-deltax);
     rgp.sign_k = sign(a);
 
     //clear everything for the next computation

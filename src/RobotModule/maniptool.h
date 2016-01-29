@@ -15,6 +15,9 @@ struct ToolState {
   //transform  from tactool to robot eef
   //Ttool = Teef * rel_eef_tactool;
   Eigen::Matrix3d rel_o;
+  //rotation matrix from tactile sensor frame to arbitary tactile sensor tangent frame
+  Eigen::Matrix3d rotate_s2sdot;
+
   double cur_ctc_x;
   double cur_ctc_y;
   double init_ctc_x;
@@ -26,7 +29,8 @@ struct ToolState {
           init_ctc_y = -1;
           cur_ctc_x = -1;
           cur_ctc_y = -1;
-          rel_o.setZero();
+          rel_o.setIdentity();
+          rotate_s2sdot.setIdentity();
       }
 } ;
 

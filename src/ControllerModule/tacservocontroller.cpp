@@ -371,14 +371,23 @@ void TacServoController::update_robot_reference(Robot *robot, Task *t, myrmex_ms
 
 void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myrmex_msg *tacfb){
     TacServoTask tst(t->curtaskname.tact);
+    double desired_cp[2];
     tst = *(TacServoTask*)t;
     double desiredf;
     //robot current state
     tst.get_desired_cf_myrmex(desiredf);
+    tst.get_desired_cp_myrmex(desired_cp);
     if(tacfb->contactflag == true){
-        deltais(0) = tst.dir_x;
-        deltais(1) = tst.dir_y;
+        if (t->emt == LINEAREXPLORE){
+            deltais(0) = tst.dir_x;
+            deltais(1) = tst.dir_y;
+        }
+        else{
+            deltais(0) = (-1)* (tacfb->cogx - desired_cp[0]);
+            deltais(1) = (tacfb->cogy - desired_cp[1]);
+        }
         deltais(2) =  desiredf - tacfb->cf;
+        std::cout<<"desiredf and current f are "<<desiredf<<","<<tacfb->cf<<std::endl;
         deltais(5) = M_PI/2 - tacfb->lineorien;
     }
     else{
@@ -388,6 +397,7 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
         deltais(5) = 0;
         deltais_int.setZero();
     }
+
 
     //!this two value can be updated by other feedback in future
     deltais(3) = 0;
@@ -406,8 +416,12 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
     deltape = Kpp[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais + \
             Kpi[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais_int + \
             Kpd[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * (deltais - deltais_old);
-
-    llv_tac = mt->ts.rel_o* deltape.head(3);
+    if (t->emt == LINEAREXPLORE){
+        llv_tac = mt->ts.rel_o* deltape.head(3);
+    }
+    else{
+        llv_tac = mt->ts.rel_o* mt->ts.rotate_s2sdot*deltape.head(3);
+    }
     deltape.tail(3) = tst.desired_pose_range;
     lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
     limit_vel(get_llv_limit(),llv_tac,lov_tac);
@@ -425,7 +439,6 @@ void TacServoController::update_robot_reference(ManipTool *mt, Robot *robot, Tas
 //    std::cout<<"ov before in tacservo "<<lov<<std::endl;
     if(tacfb->contactflag == true){
         if((t->emt == LINEAREXPLORE)||(t->emt == ROTATEEXPLORE)){
-//            if(dis_2_vec(mt->ts.init_ctc_x,mt->ts.init_ctc_y,tacfb->cogx,tacfb->cogy)<t->get_desired_mv_dis()){
             if(cdet_ptr->isContactArea(tacfb->cogx,tacfb->cogy) == true){
                 llv = llv + llv_tac;
                 lov = lov + lov_tac;
@@ -442,7 +455,7 @@ void TacServoController::update_robot_reference(ManipTool *mt, Robot *robot, Tas
         lov = lov + lov_tac;
     }
 //    std::cout<<"lv after in tacservo "<<llv<<std::endl;
-//    std::cout<<lov<<std::endl;
+//    std::cout<<"ov after in tacservo "<<lov<<std::endl;
     local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
                     lov,p_target,o_target);
     for (int i=0; i < 3; i++){

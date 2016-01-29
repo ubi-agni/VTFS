@@ -57,7 +57,7 @@
 #include <math.h>       /* acos */
 
 //desired contact pressure
-#define TAC_F 0.3
+#define TAC_F 0.1
 #define NV_EST_LEN 200
 
 #ifdef HAVE_ROS
@@ -209,15 +209,19 @@ void tactool_tactile_cb(boost::shared_ptr<std::string> data){
 
 void tactool_taxel_sliding_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    double cp[2];
+    cp[0] = 7.5;
+    cp[1] = 7.5;
     right_ac_vec.clear();
     right_task_vec.clear();
-    right_taskname.tact = LEARN_TACTOOL_SLIDING;
+    right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
     right_ac_vec.push_back(new TacServoController(*pm));
     right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
     right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
     right_task_vec.back()->mt = TACTILE;
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
-    right_task_vec.back()->set_desired_cp_moving_dir(ea.la_xaxis,ea.la_yaxis);
+    right_task_vec.back()->set_desired_cp_myrmex(cp);
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
@@ -261,6 +265,7 @@ void tactool_cablefollow_cb(boost::shared_ptr<std::string> data){
     right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
     right_task_vec.push_back(new TacServoTask(right_taskname.tact));
     right_task_vec.back()->mt = TACTILE;
+
     right_task_vec.back()->set_desired_cf_mid(TAC_F);
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
@@ -404,13 +409,17 @@ void xy_est_cb(){
     //assume that tactool is take a linear exploration moving along +x axis
     double DeltaGama;
     if(rgp.sign_k == 1)
-        DeltaGama = atan(rgp.k);
+        DeltaGama = atan(rgp.k) - M_PI_2;
     else
-        DeltaGama = atan(rgp.k) - M_PI;
+        DeltaGama = atan(rgp.k) + M_PI_2;
+    //rotation matrix from sdot to s (sdot is virtual arbitary sensor frame defined by the normal direction
+    //s is the estimated real tactile sensor frame)
     rotationmatrix(0,0) = cos(DeltaGama);
     rotationmatrix(0,1) = (-1)*sin(DeltaGama);
     rotationmatrix(1,0) = sin(DeltaGama);
     rotationmatrix(1,1) = cos(DeltaGama);
+
+    mt_ptr->ts.rotate_s2sdot = rotationmatrix;
 }
 
 void update_contact_frame_cb(boost::shared_ptr<std::string> data){
@@ -486,6 +495,7 @@ void rotatexangle_cb(boost::shared_ptr<std::string> data){
    right_ac_vec.push_back(new TacServoController(*pm));
    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+   right_task_vec.back()->emt = ROTATEEXPLORE;
    right_task_vec.back()->mt = TACTILE;
    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
    right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
@@ -503,6 +513,7 @@ void rotateyangle_cb(boost::shared_ptr<std::string> data){
    right_ac_vec.push_back(new TacServoController(*pm));
    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+   right_task_vec.back()->emt = ROTATEEXPLORE;
    right_task_vec.back()->mt = TACTILE;
    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
    right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
