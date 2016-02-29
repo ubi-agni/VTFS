@@ -383,7 +383,7 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
             deltais(1) = tst.dir_y;
         }
         else{
-            deltais(0) = (-1)* (tacfb->cogx - desired_cp[0]);
+            deltais(0) = (tacfb->cogx - desired_cp[0]);
             deltais(1) = (tacfb->cogy - desired_cp[1]);
         }
         deltais(2) =  desiredf - tacfb->cf;

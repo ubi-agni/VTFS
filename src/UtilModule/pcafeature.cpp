@@ -27,7 +27,7 @@ Eigen::Vector3d PCAFeature::getSlope_batch(){
     u_m = (-1) * scale * (svd.matrixV().col(0)).transpose();
     //use the hieristic info: normal direction of tool is the same from start point
     //to end point in the data set
-    nv_dir = data_m.row(data_m.rows()-1) - data_m.row(0);
+    nv_dir = (data_m.row(data_m.rows()-1) - data_m.row(0));
     nv_dir.normalize();
     if(u_m.dot(nv_dir) > 0)
         return u_m;

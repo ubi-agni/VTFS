@@ -11,10 +11,13 @@ struct Reg_param{
     double k;
     double b;
     int sign_k;
+    double deltay,deltax;
     Reg_param(){
         k = 0;
         b = 0;
         sign_k = 0;
+        deltax = 0;
+        deltay = 0;
     }
 };
 

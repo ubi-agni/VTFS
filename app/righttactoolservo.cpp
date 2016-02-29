@@ -58,7 +58,7 @@
 
 //desired contact pressure
 #define TAC_F 0.1
-#define NV_EST_LEN 200
+#define NV_EST_LEN 50
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -409,18 +409,32 @@ void xy_est_cb(){
     //rgp.sign_k is using atan2 to esimate the quadrant in which the contact points trajectory is located
     //assume that tactool is take a linear exploration moving along +x axis
     double DeltaGama;
-    if(rgp.sign_k == 1)
-        DeltaGama = atan(rgp.k) - M_PI_2;
-    else
-        DeltaGama = atan(rgp.k) + M_PI_2;
-    //rotation matrix from sdot to s (sdot is virtual arbitary sensor frame defined by the normal direction
+    if(rgp.sign_k == 1){
+        if((rgp.deltay>0)&&(rgp.deltax>0)){
+            DeltaGama = atan(rgp.k) + M_PI;
+        }
+        else{
+            DeltaGama = atan(rgp.k);
+        }
+    }
+    else{
+        if((rgp.deltay>0)&&(rgp.deltax<0)){
+            DeltaGama = atan(rgp.k) + M_PI;
+        }
+        else{
+            DeltaGama = atan(rgp.k);
+        }
+    }
+
+    std::cout<<"sign_k is "<<rgp.sign_k<<" ,deltagamma "<<DeltaGama<<std::endl;
+    //rotation matrix of sdot related to s (sdot is virtual arbitary sensor frame defined by the normal direction
     //s is the estimated real tactile sensor frame)
     rotationmatrix(0,0) = cos(DeltaGama);
     rotationmatrix(0,1) = (-1)*sin(DeltaGama);
     rotationmatrix(1,0) = sin(DeltaGama);
     rotationmatrix(1,1) = cos(DeltaGama);
 
-    mt_ptr->ts.rotate_s2sdot = rotationmatrix;
+    mt_ptr->ts.rotate_s2sdot = rotationmatrix.transpose();
 }
 
 void update_contact_frame_cb(boost::shared_ptr<std::string> data){

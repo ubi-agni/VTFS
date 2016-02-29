@@ -30,10 +30,11 @@ Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
     rgp.k = cov / varx;
     rgp.b = mean_y - rgp.k * mean_x;
 
-    double deltay,deltax,a;
-    deltay = (*ps.end())(1) - (*ps.begin())(1);
-    deltax = (*ps.end())(0) - (*ps.begin())(0);
-    a = atan2(-deltay,-deltax);
+    double a;
+    rgp.deltay = (*ps.end())(1) - (*ps.begin())(1);
+    rgp.deltax = (*ps.end())(0) - (*ps.begin())(0);
+    a = atan2(rgp.deltay,rgp.deltax);
+    std::cout<<"atan2 "<<a*180.0/M_PI<<std::endl;
     rgp.sign_k = sign(a);
 
     //clear everything for the next computation
