@@ -357,6 +357,17 @@ void KukaLwr::initChains(ToolNameT tn){
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
         worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
+        //please comment the next line code if you are doing the robot calibration.
+        if(tn == sensing_pole){
+            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
+            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
+        }
+        if(tn == teensy_finger){
+            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
+        }
+        if(tn == tactool){
+            //spp 1st meeting version, nothing is added in the kinematics chain expect robot kinematics.
+        }
 #endif
     }
     if (kuka_left == rn){

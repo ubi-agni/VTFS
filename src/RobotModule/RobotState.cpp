@@ -74,12 +74,25 @@ void RobotState::updated(Robot *r){
         }
     }
     if((r->get_robotname() == kuka_right)){
-        robot_position["robot_eef"] = robot_position["eef"] = robot_position["joint7"];
-        robot_orien["robot_eef"] = robot_orien["eef"] = robot_orien["joint7"];
-        gen_hm(robot_orien["robot_eef"],robot_position["robot_eef"],cur_hm);
-        adj_matrix.topLeftCorner(3,3) = robot_orien["robot_eef"];
-        adj_matrix.bottomRightCorner(3,3) = robot_orien["robot_eef"];
-        adj_matrix.topRightCorner(3,3) = vectortoskew(robot_position["robot_eef"]) * robot_orien["robot_eef"];
+        r->worldToToolFkSolver->JntToCart(r->q,r->pose,11);
+        robot_position["robot_eef"] = kdl2eigen_position(r->pose);
+        robot_orien["robot_eef"] = kdl2eigen_orien(r->pose);
+        if(r->toolname == sensing_pole)
+            r->worldToToolFkSolver->JntToCart(r->q,r->pose,13);
+        if(r->toolname == teensy_finger)
+            r->worldToToolFkSolver->JntToCart(r->q,r->pose,12);
+        robot_position["eef"] = kdl2eigen_position(r->pose);
+        robot_orien["eef"] = kdl2eigen_orien(r->pose);
+        gen_hm(robot_orien["eef"],robot_position["eef"],cur_hm);
+        adj_matrix.topLeftCorner(3,3) = robot_orien["eef"];
+        adj_matrix.bottomRightCorner(3,3) = robot_orien["eef"];
+        adj_matrix.topRightCorner(3,3) = vectortoskew(robot_position["eef"]) * robot_orien["eef"];
+//        robot_position["robot_eef"] = robot_position["eef"] = robot_position["joint7"];
+//        robot_orien["robot_eef"] = robot_orien["eef"] = robot_orien["joint7"];
+//        gen_hm(robot_orien["robot_eef"],robot_position["robot_eef"],cur_hm);
+//        adj_matrix.topLeftCorner(3,3) = robot_orien["robot_eef"];
+//        adj_matrix.bottomRightCorner(3,3) = robot_orien["robot_eef"];
+//        adj_matrix.topRightCorner(3,3) = vectortoskew(robot_position["robot_eef"]) * robot_orien["robot_eef"];
     }
     if((r->get_robotname() == kuka_left)){
         r->worldToToolFkSolver->JntToCart(r->q,r->pose,11);

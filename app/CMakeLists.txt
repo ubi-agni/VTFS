@@ -26,6 +26,7 @@ SET(APPS
          MyrmexServo
          BiManualTipServo
          righttactoolservo
+         HapticExploring
 #        CQTest
 #        KukaCartImpTest
 #        RigTFEst
