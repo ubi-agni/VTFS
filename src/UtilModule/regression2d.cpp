@@ -27,7 +27,7 @@ Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
     double varx = sum_x2 - sum_x * mean_x;
     double cov = sum_xy - sum_x * mean_y;
 
-    rgp.k = cov / varx;
+    rgp.k = atan(cov / varx);
     rgp.b = mean_y - rgp.k * mean_x;
 
     double a;
