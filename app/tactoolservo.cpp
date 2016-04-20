@@ -5,7 +5,8 @@
  Author      : Qiang Li
  Version     :
  Copyright   : Copyright Qiang Li, Universität Bielefeld
- Description : kuka+shadow hand grasp tool do tactile servo, one end of the tool is covered by the myrmex sensor
+ Description : left kuka+schunk hand grasp tool, interact with environment(point)
+               This is the initialized test version of righttactoolservo.
  ============================================================================
  */
 

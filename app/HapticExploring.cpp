@@ -115,14 +115,21 @@ Eigen::Vector3d left_cp_g,right_cp_g;
 Eigen::Vector3d left_cendp_g,right_cendp_g;
 Eigen::Vector3d left_cnv_g,right_cnv_g;
 Eigen::Vector3d left_cp_nv,right_cp_nv;
+double left_pressure, right_pressure;
 
 
 void tip_startrecord_cb(boost::shared_ptr<std::string> data){
     std::cout<<"startrecord data"<<std::endl;
+    bool leftcontact_f;
+    mutex_lefttac.lock();
+    leftcontact_f = Leftftt->isContact(Leftftt->data);
+    mutex_lefttac.unlock();
+    if(leftcontact_f == true){
     Tposition<<left_cp_g(0)<<","<<left_cp_g(1)<<","<<left_cp_g(2)<<","<<\
-               left_cp_nv(0)<<","<<left_cp_nv(1)<<","<<left_cp_nv(2)<<","\
+               left_cp_nv(0)<<","<<left_cp_nv(1)<<","<<left_cp_nv(2)<<","<<left_pressure<<","\
               <<right_cp_g(0)<<","<<right_cp_g(1)<<","<<right_cp_g(2)<<","<<\
-                             right_cp_nv(0)<<","<<right_cp_nv(1)<<","<<right_cp_nv(2)<<std::endl;
+                             right_cp_nv(0)<<","<<right_cp_nv(1)<<","<<right_cp_nv(2)<<","<<right_pressure<<std::endl;
+    }
 }
 void tip_continuerecord_cb(boost::shared_ptr<std::string> data){
     std::cout<<"continuerecord data"<<std::endl;
@@ -582,6 +589,7 @@ void get_mid_info(){
         local2global(Leftftt->nv/100,\
                      left_rs->robot_orien["eef"],l2g_temp);
         left_cendp_g = left_cp_g + l2g_temp;
+        left_pressure = Leftftt->pressure;
     }
     mutex_lefttac.unlock();
 
@@ -597,6 +605,7 @@ void get_mid_info(){
         local2global(Rightftt->nv/100,\
                      right_rs->robot_orien["eef"],l2g_temp);
         right_cendp_g = right_cp_g + l2g_temp;
+        right_pressure = Rightftt->pressure;
 
     }
     mutex_righttac.unlock();

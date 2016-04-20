@@ -6,7 +6,9 @@
  Author      : Qiang Li
  Version     :
  Copyright   : Copyright Qiang Li, Universität Bielefeld
- Description : kuka+shadow hand grasp tool do tactile servo, one end of the tool is covered by the myrmex sensor
+ Description : right kuka+schunk hand grasp tool, interact with environment(point)
+               in order to estimate the homogeneous matrix from robot end-effector to
+               the tool end-effector.
  ============================================================================
  */
 

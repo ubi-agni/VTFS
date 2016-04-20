@@ -1,0 +1,21 @@
+<vbox>
+  <button args="TipMoveto" handle="tipmoveto"/>
+  <button args="SDHMoveto" handle="sdhmoveto"/>
+  <button args="gamaftcalib" handle="gamaftcalib"/>
+  <button args="tip_tactile" handle="tip_tactile"/>
+  <button args="tip_taxel_sliding" handle="tip_taxel_sliding"/>
+  <button args="tip_taxel_rolling" handle="tip_taxel_rolling"/>
+  <button args="tip_exploring" handle="tip_exploring"/>
+  <button args="tip_grav_comp_ctrl" handle="tip_grav_comp_ctrl"/>
+  <button args="tip_normal_ctrl" handle="tip_normal_ctrl"/>
+  <button args="opensdh" handle="opensdh"/>
+  <button args="closesdh" handle="closesdh"/>
+  <button args="stopsdh" handle="stopsdh"/>
+  <button args="brake" handle="brake"/>
+  <button args="nobrake" handle="nobrake"/>
+  <button args="updateadmittance" handle="updateadmittance"/>
+  <button args="Close Prog" handle="closeprog"/>
+  <checkbox args="ArrayMarker,true" handle="sa-marker"/>
+  <slider args="0,11,0" handle="tacindex"/>
+  <image handle="image2"/>
+</vbox>
