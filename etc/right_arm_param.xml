@@ -1127,8 +1127,8 @@ See http://www.boost.org/LICENSE_1_0.txt
                 <e55>0</e55>
             </vsm>
             <ttjkm>
-                <e00>-1</e00>
-                <e11>-1</e11>
+                <e00>1</e00>
+                <e11>1</e11>
                 <e22>1</e22>
                 <e33>0</e33>
                 <e44>0</e44>

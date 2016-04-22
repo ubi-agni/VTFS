@@ -420,8 +420,8 @@ void col_est_nv(){
 void col_est_xy(){
     if(rec_flag_xy_est == true){
         tacp2d.setZero();
-        tacp2d(0) = left_myrmex_msg.cogx;
-        tacp2d(1) = left_myrmex_msg.cogy;
+        tacp2d(0) = left_myrmex_msg.cogy;
+        tacp2d(1) = left_myrmex_msg.cogx;
         tac_tra_vec.push_back(tacp2d);
     }
 }
