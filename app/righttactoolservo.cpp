@@ -99,6 +99,8 @@ RG_Pose init_tool_pose;
 //contact detector init
 ContactDetector *cdt;
 
+std::ofstream P_ctc;
+
 #define newP_x 0.1
 #define newP_y 0.4
 #define newP_z 0.30
@@ -162,9 +164,7 @@ void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
     mutex_tac.lock();
     com_rsb->tactile_receive(left_myrmex_msg,"leftmyrmex");
-//    std::cout<<"tactile output"<<std::endl;
-//    std::cout<<"myrmex readout "<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
-
+//    std::cout<<"myrmex readout "<<","<<left_myrmex_msg.contactflag<<","<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
     mutex_tac.unlock();
 }
 
@@ -292,7 +292,6 @@ void tactool_taxel_rolling_cb(boost::shared_ptr<std::string> data){
 void tactool_grav_comp_ctrl_cb(boost::shared_ptr<std::string> data){
     std::cout<<"switch to psudo_gravity_compasenstation control"<<std::endl;
     rmt = PsudoGravityCompensation;
-//    rec_flag_nv_est = true;
 }
 
 void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
@@ -321,6 +320,8 @@ void nv_est(){
         rec_flag_nv_est = false;
         pcaf->GetData(robot_eef_deque);
         est_tool_nv = pcaf->getSlope_batch();
+        //clear all data in the deque in order to estimate normal direction next time.
+        robot_eef_deque.clear();
         est_tool_nv.normalize();
         init_est_tool_ort = gen_ort_basis(est_tool_nv);
         init_tool_pose.o = init_est_tool_ort;
@@ -373,23 +374,29 @@ void nv_est_cb(boost::shared_ptr<std::string> data){
 void xy_est_cb(){
     rec_flag_xy_est = false;
     rgp = rg2d->get_kb_batch(tac_tra_vec);
+    for (std::vector<Eigen::Vector2d>::iterator it = tac_tra_vec.begin() ; it != tac_tra_vec.end(); ++it){
+        P_ctc << (*it)(0)<<","<<(*it)(1);
+        P_ctc << '\n';
+    }
+    //clear vector in order to estimate xy next time.
+    tac_tra_vec.clear();
     //rgp.sign_k is using atan2 to esimate the quadrant in which the contact points trajectory is located
     //assume that tactool is take a linear exploration moving along +x axis
     double DeltaGama;
     if(rgp.sign_k == 1){
         if((rgp.deltay>0)&&(rgp.deltax>0)){
-            DeltaGama = atan(rgp.k) + M_PI;
+            DeltaGama = rgp.k + M_PI;
         }
         else{
-            DeltaGama = atan(rgp.k);
+            DeltaGama = rgp.k;
         }
     }
     else{
         if((rgp.deltay>0)&&(rgp.deltax<0)){
-            DeltaGama = atan(rgp.k) + M_PI;
+            DeltaGama = rgp.k + M_PI;
         }
         else{
-            DeltaGama = atan(rgp.k);
+            DeltaGama = rgp.k;
         }
     }
 
@@ -418,7 +425,7 @@ void col_est_nv(){
 
 //collect all data for estimating the real tactile sensor x y axis
 void col_est_xy(){
-    if(rec_flag_xy_est == true){
+    if((rec_flag_xy_est == true)&&(left_myrmex_msg.contactflag==true)){
         tacp2d.setZero();
         tacp2d(0) = left_myrmex_msg.cogy;
         tacp2d(1) = left_myrmex_msg.cogx;
@@ -810,10 +817,13 @@ void init(){
 void run_rightarm(){
     //only call for this function, the ->jnt_position_act is updated
     if((com_okc->data_available == true)&&(com_okc->controller_update == false)){
-
+//        std::cout<<"contactdequre "<<cdt->tac_ctc_deque.at(0)<<"," <<cdt->tac_ctc_deque.at(1)<<","<<cdt->tac_ctc_deque.at(2)<<","<<cdt->tac_ctc_deque.at(3)<<","<<cdt->tac_ctc_deque.at(4)<<std::endl;
+//        std::cout<<"contact position"<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogx<<std::endl;
         //contact status detection
         if(cdt->get_ctc_status(left_myrmex_msg.contactflag) == initcontact){
             //the normal direction will be esimated while the first contact is done.
+//            std::cout<<"init contact "<<std::endl;
+//            std::cout<<cdt->tac_ctc_deque.at(0)<<"," <<cdt->tac_ctc_deque.at(1)<<","<<cdt->tac_ctc_deque.at(2)<<","<<cdt->tac_ctc_deque.at(3)<<","<<cdt->tac_ctc_deque.at(4)<<std::endl;
             nv_est();
         }
 
@@ -868,6 +878,7 @@ int main(int argc, char* argv[])
 {
     //for data recording
     std::string data_f ("/tmp/");
+    P_ctc.open((data_f+std::string("ctc.txt")).c_str());
 
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);
@@ -885,7 +896,7 @@ int main(int argc, char* argv[])
     //start myrmex read thread
     Timer thrd_myrmex_read(tactileviarsb);
     thrd_myrmex_read.setSingleShot(false);
-    thrd_myrmex_read.setInterval(Timer::Interval(5));
+    thrd_myrmex_read.setInterval(Timer::Interval(10));
     thrd_myrmex_read.start(true);
 
     //start myrmex read thread

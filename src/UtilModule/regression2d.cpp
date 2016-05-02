@@ -20,6 +20,7 @@ Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
     for (std::vector<Eigen::Vector2d>::iterator it = ps.begin(); it != ps.end(); ++it){
         sum_x += (*it)(0); sum_y += (*it)(1); sum_xy += (*it)(0) * (*it)(1); sum_x2 += (*it)(0) * (*it)(0);
     }
+    std::cout<<"length of the dataset "<<ps.size()<<std::endl;
     // means
     double mean_x = sum_x / ps.size();
     double mean_y = sum_y / ps.size();
@@ -31,10 +32,12 @@ Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
     rgp.b = mean_y - rgp.k * mean_x;
 
     double a;
-    rgp.deltay = (*ps.end())(1) - (*ps.begin())(1);
-    rgp.deltax = (*ps.end())(0) - (*ps.begin())(0);
+    rgp.deltay = (*(ps.end()-1))(1) - (*ps.begin())(1);
+    rgp.deltax = (*(ps.end()-1))(0) - (*ps.begin())(0);
+    std::cout<<"end is "<<(*(ps.end()-1))(1)<<","<<(*(ps.end()-1))(0)<<std::endl;
+    std::cout<<"start is "<<(*ps.begin())(1)<<","<<(*ps.begin())(0)<<std::endl;
     a = atan2(rgp.deltay,rgp.deltax);
-    std::cout<<"atan2 "<<a*180.0/M_PI<<std::endl;
+    std::cout<<"atan2 "<<a<<std::endl;
     rgp.sign_k = sign(a);
 
     //clear everything for the next computation
@@ -47,10 +50,6 @@ Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
     varx = 0;
     return rgp;
 }
-
-
-
-
 
 
 
