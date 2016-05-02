@@ -59,7 +59,7 @@
 #include <math.h>       /* acos */
 
 //desired contact pressure
-#define TAC_F 0.1
+#define TAC_F 0.05
 #define NV_EST_LEN 50
 
 #ifdef HAVE_ROS
@@ -392,7 +392,7 @@ void xy_est_cb(){
         }
     }
     else{
-        if((rgp.deltay>0)&&(rgp.deltax<0)){
+        if((rgp.deltay<0)&&(rgp.deltax>0)){
             DeltaGama = rgp.k + M_PI;
         }
         else{
@@ -618,7 +618,7 @@ void ros_publisher(){
         br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
 
         //update contact frame after the tac exploration action
-        real_tactool_ctcframe =  cur_est_tool_ort * rotationmatrix;
+        real_tactool_ctcframe =  cur_est_tool_ort * rotationmatrix.transpose();
         tf::matrixEigenToTF (real_tactool_ctcframe, tfR);
         transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)) );
         transform.setBasis(tfR);
