@@ -359,3 +359,7 @@ extern double dis_2_vec(double x1,double y1,double x2,double y2){
     return dev_v.norm();
 
 }
+
+extern Eigen::Vector3d update_translation_est(){
+
+}

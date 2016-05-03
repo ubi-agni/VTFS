@@ -58,6 +58,8 @@ RobotState::RobotState(Robot *r){
     theta_old = 0.0;
     old_hm.setIdentity(4,4);
     cur_hm.setIdentity(4,4);
+    old_roboteef_hm.setIdentity(4,4);
+    cur_roboteef_hm.setIdentity(4,4);
     adj_matrix.setZero(6,6);
 }
 
@@ -83,6 +85,7 @@ void RobotState::updated(Robot *r){
             r->worldToToolFkSolver->JntToCart(r->q,r->pose,12);
         robot_position["eef"] = kdl2eigen_position(r->pose);
         robot_orien["eef"] = kdl2eigen_orien(r->pose);
+        gen_hm(robot_orien["robot_eef"],robot_position["robot_eef"],cur_roboteef_hm);
         gen_hm(robot_orien["eef"],robot_position["eef"],cur_hm);
         adj_matrix.topLeftCorner(3,3) = robot_orien["eef"];
         adj_matrix.bottomRightCorner(3,3) = robot_orien["eef"];
@@ -104,6 +107,7 @@ void RobotState::updated(Robot *r){
             r->worldToToolFkSolver->JntToCart(r->q,r->pose,12);
         robot_position["eef"] = kdl2eigen_position(r->pose);
         robot_orien["eef"] = kdl2eigen_orien(r->pose);
+        gen_hm(robot_orien["robot_eef"],robot_position["robot_eef"],cur_roboteef_hm);
         gen_hm(robot_orien["eef"],robot_position["eef"],cur_hm);
         adj_matrix.topLeftCorner(3,3) = robot_orien["eef"];
         adj_matrix.bottomRightCorner(3,3) = robot_orien["eef"];

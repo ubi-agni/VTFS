@@ -160,6 +160,10 @@ struct ExploreAction{
 //exploration action for tactool learning
 ExploreAction ea;
 
+//linear and rotation velocity of robot end-effector
+Eigen::Vector3d linear_v,omega_v;
+bool translation_est_flag;
+
 void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
     mutex_tac.lock();
@@ -683,6 +687,10 @@ void init(){
     real_tactool_ctcframe.setIdentity();
     rotationmatrix.setIdentity();
 
+    linear_v.setZero();
+    omega_v.setZero();
+    translation_est_flag =false;
+
     mt_ptr ->mtt = Tacbrush;
     mt_ptr->ts.dof_num = 0;
 //    init_tool_pose.p.setZero();
@@ -844,6 +852,13 @@ void run_rightarm(){
         //collect robot-eef position into a deque for computing the estimating nv
         col_est_nv();
         col_est_xy();
+
+        //estimate the twist of the robot end-effector
+        right_rs->Est_eef_twist(kuka_right_arm,linear_v,omega_v);
+        if(translation_est_flag == true){
+            update_translation_est();
+        }
+
         //using all kinds of controllers to update the reference
         mutex_act.lock();
         for(unsigned int i = 0; i < right_ac_vec.size();i++){
@@ -868,6 +883,7 @@ void run_rightarm(){
         //use CBF to compute the desired joint angle rate
         kuka_right_arm->update_cbf_controller();
         kuka_right_arm->set_joint_command(rmt);
+        right_rs->old_roboteef_hm = right_rs->cur_roboteef_hm;
         com_okc->controller_update = true;
         com_okc->data_available = false;
     }

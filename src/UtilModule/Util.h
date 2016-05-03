@@ -36,4 +36,5 @@ extern Eigen::Matrix4d gen_transform(Eigen::Vector3d omega, Eigen::Vector3d vel,
 //generate orthogonal basis from one vector
 extern Eigen::Matrix3d gen_ort_basis(Eigen::Vector3d v);
 extern double dis_2_vec(double x1,double y1,double x2,double y2);
+extern Eigen::Vector3d update_translation_est();
 //extern Eigen::VectorXd MatrixtoQuaternion(Eigen::Matrix3d);

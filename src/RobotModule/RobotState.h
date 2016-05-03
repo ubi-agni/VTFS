@@ -65,7 +65,7 @@ public:
     double JntPosition_mea[7];
     Eigen::Vector3d contact_position;
     Eigen::Vector3d contact_nv;
-    Eigen::MatrixXd old_hm,cur_hm;
+    Eigen::MatrixXd old_hm,old_roboteef_hm,cur_hm,cur_roboteef_hm;
     Eigen::MatrixXd adj_matrix;
 
     //rotation angle rate estimation
