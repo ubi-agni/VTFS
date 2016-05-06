@@ -13,6 +13,8 @@
 
 class Robot;
 class RobotState;
+class ManipTool;
+
 class ActController
 {
 public:

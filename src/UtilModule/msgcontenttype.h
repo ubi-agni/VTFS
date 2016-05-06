@@ -1,5 +1,7 @@
 #ifndef MSGCONTENTTYPE_H
 #define MSGCONTENTTYPE_H
+#include <Eigen/Dense>
+
 struct kuka_msg {
   Eigen::Vector3d p;
   Eigen::Matrix3d o;

@@ -3,8 +3,14 @@
 
 #include "UtilModule/RebaType.h"
 #include <vector>
+#include "UtilModule/Util.h"
+#include "TacModule/myrmextac.h"
+#include "RobotModule/RobotState.h"
 
+#include <fstream>
+#include <iostream>
 
+class RobotState;
 
 struct ToolState {
     //default case, dof_num = 0
@@ -17,6 +23,8 @@ struct ToolState {
   Eigen::Matrix3d rel_o;
   //rotation matrix from tactile sensor frame to arbitary tactile sensor tangent frame
   Eigen::Matrix3d rotate_s2sdot;
+  //estimated sensor frame after the update.
+  Eigen::Matrix3d tac_sensor_cfm_local;
 
   double cur_ctc_x;
   double cur_ctc_y;
@@ -31,16 +39,31 @@ struct ToolState {
           cur_ctc_y = -1;
           rel_o.setIdentity();
           rotate_s2sdot.setIdentity();
+          tac_sensor_cfm_local.setIdentity();
       }
 } ;
 
 class ManipTool
 {
 public:
-    ManipTool();
+    ManipTool(RobotState *);
     //default case, mtt = Notool
     ManipuToolT mtt;
     ToolState ts;
+    void update_translation_est(Eigen::Vector3d lv,Eigen::Vector3d rv,\
+                                 Eigen::Matrix3d robot_eef_rm, MyrmexTac *myrtac);
+    Eigen::Matrix3d Gama_r;
+    Eigen::Matrix3d L_r;
+    Eigen::Matrix3d L_r_dot;
+    Eigen::Vector3d  c_r;
+    Eigen::Vector3d  c_r_dot;
+    double beta_r = 0.99;
+    Eigen::Vector3d est_trans;
+    Eigen::Vector3d est_trans_dot;
+    void update_tac_sensor_cfm_local();
+    void store_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans);
+    void load_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans);
+    std::fstream f_nv,f_rotate,f_trans;
 };
 
 #endif // MANIPTOOL_H

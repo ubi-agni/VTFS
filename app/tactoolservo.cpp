@@ -582,10 +582,7 @@ void init(){
     arm_payload_g.setZero();
     tn = tactool;
     StopFlag = false;
-    //initialize hand-hold manipulation tool--here is a tactile brush
-    mt_ptr = new ManipTool();
-    mt_ptr ->mtt = Tacbrush;
-    mt_ptr->ts.dof_num = 0;
+
 //    init_tool_pose.p.setZero();
 //    init_tool_pose.o.setZero();
 //    init_tool_pose.rel_o.setZero();
@@ -623,6 +620,10 @@ void init(){
     kuka_left_arm->get_joint_position_act();
     kuka_left_arm->update_robot_state();
     left_rs->updated(kuka_left_arm);
+    //initialize hand-hold manipulation tool--here is a tactile brush
+    mt_ptr = new ManipTool(left_rs);
+    mt_ptr ->mtt = Tacbrush;
+    mt_ptr->ts.dof_num = 0;
 //    std::cout<<"state in the initialized stage are"<<left_rs->robot_position["eef"]<<std::endl;
     left_ac_vec.push_back(new ProActController(*pm));
     left_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));

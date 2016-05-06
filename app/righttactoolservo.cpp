@@ -1,5 +1,3 @@
-
-
 /*
  ============================================================================
  Name        : righttactoolservo.cpp
@@ -53,13 +51,14 @@
 #include "regression2d.h"
 #include "maniptool.h"
 #include "contactdetector.h"
+#include "myrmextac.h"
 
 #include <deque> //for estimating the normal direction of tool-end
 
 #include <math.h>       /* acos */
 
 //desired contact pressure
-#define TAC_F 0.05
+#define TAC_F 0.02
 #define NV_EST_LEN 50
 
 #ifdef HAVE_ROS
@@ -101,6 +100,7 @@ ContactDetector *cdt;
 
 std::ofstream P_ctc;
 
+std::string fn_nv,fn_rotate,fn_trans;
 #define newP_x 0.1
 #define newP_y 0.4
 #define newP_z 0.30
@@ -144,6 +144,7 @@ Eigen::Matrix3d rel_eef_tactool;
 
 //for update the tactool contact frame xy-tangent surface to the real tac sensor frame
 Eigen::Matrix3d real_tactool_ctcframe,rotationmatrix;
+MyrmexTac *myrtac;
 
 struct ExploreAction{
     double ra_xaxis;
@@ -169,6 +170,8 @@ void tactileviarsb(){
     mutex_tac.lock();
     com_rsb->tactile_receive(left_myrmex_msg,"leftmyrmex");
 //    std::cout<<"myrmex readout "<<","<<left_myrmex_msg.contactflag<<","<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
+    myrtac->update_initial_data(left_myrmex_msg);
+    myrtac->cal_ctc_lv();
     mutex_tac.unlock();
 }
 
@@ -339,6 +342,7 @@ void nv_est(){
         std::cout<<"init tactile ctc "<<mt_ptr->ts.init_ctc_x<<","<<mt_ptr->ts.init_ctc_y<<std::endl;
         mt_ptr->ts.eef_pose.push_back(init_tool_pose);
         mt_ptr->ts.rel_o = rel_eef_tactool;
+        mt_ptr->est_trans = right_rs->robot_position["robot_eef"];
         vis_est_ort = true;
         mutex_act.lock();
         right_ac_vec.clear();
@@ -477,6 +481,15 @@ void nobrake_cb(boost::shared_ptr<std::string> data){
     com_okc->release_brake();
 }
 
+void load_tool_param_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"store the learned data into files"<<std::endl;
+    mt_ptr->load_parameters(fn_nv,fn_rotate,fn_trans);
+}
+
+void store_tool_param_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"store the learned data into files"<<std::endl;
+    mt_ptr->store_parameters(fn_nv,fn_rotate,fn_trans);
+}
 
 void rotatexangle_cb(boost::shared_ptr<std::string> data){
    ea.ra_xaxis = 0.01 * std::stoi(*data);
@@ -492,6 +505,7 @@ void rotatexangle_cb(boost::shared_ptr<std::string> data){
    right_task_vec.back()->mt = TACTILE;
    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
    right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
+   translation_est_flag = true;
    mutex_act.unlock();
    std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
 }
@@ -510,6 +524,7 @@ void rotateyangle_cb(boost::shared_ptr<std::string> data){
    right_task_vec.back()->mt = TACTILE;
    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
    right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
+   translation_est_flag = true;
    mutex_act.unlock();
    std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
 }
@@ -612,25 +627,21 @@ void ros_publisher(){
 
     //create a ROS tf object and fill it orientation only currently
     //broadcast this transform to ROS relative to world(kuka_endeffector)
-    if(vis_est_ort == true){
-        tf::Matrix3x3 tfR;
-        tf::Transform transform;
-        cur_est_tool_ort = right_rs->robot_orien["robot_eef"] * rel_eef_tactool;
-        tf::matrixEigenToTF (cur_est_tool_ort, tfR);
-        transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)) );
-        transform.setBasis(tfR);
-        br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
+    tf::Matrix3x3 tfR;
+    tf::Transform transform;
+    cur_est_tool_ort = right_rs->robot_orien["robot_eef"] * mt_ptr->ts.rel_o;
+    tf::matrixEigenToTF (cur_est_tool_ort, tfR);
 
-        //update contact frame after the tac exploration action
-        real_tactool_ctcframe =  cur_est_tool_ort * rotationmatrix.transpose();
-        tf::matrixEigenToTF (real_tactool_ctcframe, tfR);
-        transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)) );
-        transform.setBasis(tfR);
-        br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "updated_tactool_frame"));
-    }
+    transform.setOrigin( tf::Vector3(mt_ptr->est_trans(0), mt_ptr->est_trans(1), mt_ptr->est_trans(2)) );
+    transform.setBasis(tfR);
+    br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
 
-
-
+    //update contact frame after the tac exploration action
+    real_tactool_ctcframe =  cur_est_tool_ort * mt_ptr->ts.rotate_s2sdot;
+    tf::matrixEigenToTF (real_tactool_ctcframe, tfR);
+    transform.setOrigin(  tf::Vector3(mt_ptr->est_trans(0), mt_ptr->est_trans(1), mt_ptr->est_trans(2)));
+    transform.setBasis(tfR);
+    br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "updated_tactool_frame"));
 
     // send a joint_state
     jsPub.publish(js);
@@ -667,32 +678,11 @@ std::string get_selfpath() {
 
 void init(){
     cdt = new ContactDetector();
+    myrtac = new MyrmexTac();
     std::string selfpath = get_selfpath();
     robot_eef_deque.assign(NV_EST_LEN, Eigen::Vector3d::Zero());
     pcaf = new PCAFeature(NV_EST_LEN);
-    est_tool_nv.setZero();
-    init_est_tool_ort.setIdentity();
-    cur_est_tool_ort.setIdentity();
-    cur_update_tool_ort.setIdentity();
-    rel_eef_tactool.setIdentity();
-    rec_flag_nv_est = false;
-    rec_flag_xy_est = false;
-    vis_est_ort = false;
-    rmt = NormalMode;
-    tn = tactool;
-    StopFlag = false;
-    //initialize hand-hold manipulation tool--here is a tactile brush
-    mt_ptr = new ManipTool();
-    rg2d = new Regression2d();
-    real_tactool_ctcframe.setIdentity();
-    rotationmatrix.setIdentity();
 
-    linear_v.setZero();
-    omega_v.setZero();
-    translation_est_flag =false;
-
-    mt_ptr ->mtt = Tacbrush;
-    mt_ptr->ts.dof_num = 0;
 //    init_tool_pose.p.setZero();
 //    init_tool_pose.o.setZero();
 //    init_tool_pose.rel_o.setZero();
@@ -716,6 +706,8 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> slider_lineylen(lineylen_cb);
     boost::function<void(boost::shared_ptr<std::string>)> slider_rotatexangle(rotatexangle_cb);
     boost::function<void(boost::shared_ptr<std::string>)> slider_rotateyangle(rotateyangle_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> load_tool_param(load_tool_param_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> store_tool_param(store_tool_param_cb);
 
     std::string config_filename = selfpath + "/etc/right_arm_param.xml";
     if(is_file_exist(config_filename.c_str()) == false){
@@ -729,11 +721,41 @@ void init(){
     pm = new ParameterManager(config_filename,Myrmex);
     com_okc = new ComOkc(kuka_right,OKC_HOST,OKC_PORT);
     com_okc->connect();
+    tn = tactool;
     kuka_right_arm = new KukaLwr(kuka_right,*com_okc,tn);
     right_rs = new RobotState(kuka_right_arm);
     kuka_right_arm->get_joint_position_act();
     kuka_right_arm->update_robot_state();
     right_rs->updated(kuka_right_arm);
+
+    est_tool_nv.setZero();
+    init_est_tool_ort.setIdentity();
+    cur_est_tool_ort.setIdentity();
+    cur_update_tool_ort.setIdentity();
+    rel_eef_tactool.setIdentity();
+    rec_flag_nv_est = false;
+    rec_flag_xy_est = false;
+    vis_est_ort = false;
+    rmt = NormalMode;
+    StopFlag = false;
+    //initialize hand-hold manipulation tool--here is a tactile brush
+    mt_ptr = new ManipTool(right_rs);
+    fn_nv = selfpath + "/etc/f_rel_o.txt";
+    std::cout<<"file full path is "<<fn_nv<<std::endl;
+    fn_rotate = selfpath + "/etc/f_s2sdot.txt";
+    fn_trans = selfpath + "/etc/f_trans.txt";
+    mt_ptr->load_parameters(fn_nv,fn_rotate,fn_trans);
+    rg2d = new Regression2d();
+    real_tactool_ctcframe.setIdentity();
+    rotationmatrix.setIdentity();
+
+    linear_v.setZero();
+    omega_v.setZero();
+    translation_est_flag =false;
+
+    mt_ptr ->mtt = Tacbrush;
+    mt_ptr->ts.dof_num = 0;
+
 //    std::cout<<"state in the initialized stage are"<<right_rs->robot_position["eef"]<<std::endl;
     right_ac_vec.push_back(new ProActController(*pm));
     right_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
@@ -785,6 +807,8 @@ void init(){
     com_rsb->register_external("/foo/lineylen",slider_lineylen);
     com_rsb->register_external("/foo/rotatexangle",slider_rotatexangle);
     com_rsb->register_external("/foo/rotateyangle",slider_rotateyangle);
+    com_rsb->register_external("/foo/load_tool_param",load_tool_param);
+    com_rsb->register_external("/foo/store_tool_param",store_tool_param);
 
 #ifdef HAVE_ROS
     std::string left_kuka_arm_name="la";
@@ -855,8 +879,10 @@ void run_rightarm(){
 
         //estimate the twist of the robot end-effector
         right_rs->Est_eef_twist(kuka_right_arm,linear_v,omega_v);
+        mt_ptr->update_tac_sensor_cfm_local();
         if(translation_est_flag == true){
-            update_translation_est();
+            mt_ptr->update_translation_est(linear_v,omega_v,right_rs->robot_orien["robot_eef"],myrtac);
+            std::cout<<"position is: "<<mt_ptr->est_trans(0)<<","<<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<std::endl;
         }
 
         //using all kinds of controllers to update the reference

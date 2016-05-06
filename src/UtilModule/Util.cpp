@@ -1,5 +1,7 @@
 #include "Util.h"
 
+#define MAXBUFSIZE  ((int) 1e6)
+
 Eigen::Vector3d euler2axisangle(Eigen::Vector3d la,Eigen::Matrix3d tm){
 	Eigen::Vector3d CtrlAxisAngle;
 	Eigen::Matrix3d DesiredMatrix;
@@ -360,6 +362,40 @@ extern double dis_2_vec(double x1,double y1,double x2,double y2){
 
 }
 
-extern Eigen::Vector3d update_translation_est(){
 
-}
+extern Eigen::MatrixXd readMatrix(std::fstream &infile)
+    {
+    int cols = 0, rows = 0;
+    double buff[MAXBUFSIZE];
+
+    while (! infile.eof())
+        {
+        std::string line;
+        getline(infile, line);
+
+        int temp_cols = 0;
+        std::stringstream stream(line);
+        while(! stream.eof())
+            stream >> buff[cols*rows+temp_cols++];
+
+        if (temp_cols == 0)
+            continue;
+
+        if (cols == 0)
+            cols = temp_cols;
+
+        rows++;
+        }
+
+    infile.close();
+
+    rows--;
+
+    // Populate matrix with numbers.
+    Eigen::MatrixXd result(rows,cols);
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            result(i,j) = buff[ cols*i+j ];
+
+    return result;
+    }

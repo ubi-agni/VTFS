@@ -419,7 +419,7 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
         llv_tac = mt->ts.rel_o* deltape.head(3);
     }
     else{
-        llv_tac = mt->ts.rel_o* mt->ts.rotate_s2sdot*deltape.head(3);
+        llv_tac = mt->ts.tac_sensor_cfm_local*deltape.head(3);
     }
     deltape.tail(3) = tst.desired_pose_range;
     lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
