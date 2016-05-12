@@ -73,6 +73,8 @@ public:
     double rate_old;
     double theta_old;
     void Est_eef_twist(Robot* r,Eigen::Vector3d& v, Eigen::Vector3d& omega);
+    //attention: in function -- Est_eef_twist_local: v is not the linear velocity in the body frame by only translation part
+    void Est_eef_twist_local(Robot* r,Eigen::Vector3d& v, Eigen::Vector3d& omega);
     void twist_ltog(Eigen::Vector3d gv, Eigen::Vector3d go,Eigen::Vector3d& lv, Eigen::Vector3d& lo);
 };
 

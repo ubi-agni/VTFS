@@ -132,6 +132,24 @@ void RobotState::Est_eef_twist(Robot *r,Eigen::Vector3d& gv, Eigen::Vector3d& go
 //    std::cout<<"lo "<<go(0)<<","<<go(1)<<","<<go(2)<<std::endl;
 }
 
+void RobotState::Est_eef_twist_local(Robot *r,Eigen::Vector3d& gv, Eigen::Vector3d& go){
+    Eigen::MatrixXd I,devT;
+    I.setIdentity(4,4);
+    devT.setZero(4,4);
+//    std::cout<<"old _tm" <<std::endl;
+//    std::cout<<old_roboteef_hm<<std::endl;
+//    std::cout<<"cur _tm" <<std::endl;
+//    std::cout<<cur_roboteef_hm<<std::endl;
+    devT = (I - cur_roboteef_hm.inverse() * old_roboteef_hm)/r->gettimecycle();
+    for(int i = 0; i < 3; i++)
+        gv(i) = devT(i,3);
+    go = skewtovector(devT.topLeftCorner(3,3));
+//    std::cout<<"delta T"<<std::endl;
+//    std::cout<<devT<<std::endl;
+//    std::cout<<"lv "<<gv(0)<<","<<gv(1)<<","<<gv(2)<<std::endl;
+//    std::cout<<"lo "<<go(0)<<","<<go(1)<<","<<go(2)<<std::endl;
+}
+
 void RobotState::twist_ltog(Eigen::Vector3d gv,Eigen::Vector3d go, Eigen::Vector3d& lv,Eigen::Vector3d& lo){
     Eigen::VectorXd gtw,ltw;
     ltw.setZero(6);

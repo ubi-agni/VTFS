@@ -98,7 +98,7 @@ RG_Pose init_tool_pose;
 //contact detector init
 ContactDetector *cdt;
 
-std::ofstream P_ctc;
+std::ofstream P_ctc, P_est;
 
 std::string fn_nv,fn_rotate,fn_trans;
 #define newP_x 0.1
@@ -169,7 +169,7 @@ void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
     mutex_tac.lock();
     com_rsb->tactile_receive(left_myrmex_msg,"leftmyrmex");
-//    std::cout<<"myrmex readout "<<","<<left_myrmex_msg.contactflag<<","<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
+    std::cout<<"myrmex readout "<<","<<left_myrmex_msg.contactflag<<","<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
     myrtac->update_initial_data(left_myrmex_msg);
     myrtac->cal_ctc_lv();
     mutex_tac.unlock();
@@ -198,6 +198,7 @@ void tactool_force_cb(boost::shared_ptr<std::string> data){
     right_task_vec.push_back(new ForceServoTask(right_taskname.forcet));
     right_task_vec.back()->mt = FORCE;
     right_task_vec.back()->set_desired_cf_kuka(3);
+    rmt = NormalMode;
     mutex_act.unlock();
     std::cout<<"maintain the force...................."<<std::endl;
 }
@@ -212,6 +213,7 @@ void tactool_tactile_cb(boost::shared_ptr<std::string> data){
     right_task_vec.push_back(new TacServoTask(right_taskname.tact));
     right_task_vec.back()->mt = TACTILE;
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    rmt = NormalMode;
     mutex_act.unlock();
     std::cout<<"tactile servoing for maintain contact"<<std::endl;
 }
@@ -231,6 +233,7 @@ void tactool_taxel_sliding_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = TACTILE;
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     right_task_vec.back()->set_desired_cp_myrmex(cp);
+    rmt = NormalMode;
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
@@ -253,6 +256,7 @@ void tactool_exploring_cb(boost::shared_ptr<std::string> data){
     right_task_vec.push_back(new TacServoTask(right_taskname.tact));
     right_task_vec.back()->mt = TACTILE;
     right_task_vec.back()->set_desired_cf_mid(TAC_F);
+    rmt = NormalMode;
 
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
@@ -276,6 +280,7 @@ void tactool_cablefollow_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = TACTILE;
 
     right_task_vec.back()->set_desired_cf_mid(TAC_F);
+    rmt = NormalMode;
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
@@ -291,6 +296,7 @@ void tactool_taxel_rolling_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = TACTILE;
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
+    rmt = NormalMode;
     mutex_act.unlock();
     std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
 }
@@ -315,11 +321,20 @@ void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     initO_x = o(0);
     initO_y = o(1);
     initO_z = o(2);
+
+    mutex_act.lock();
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_ac_vec.push_back(new ProActController(*pm));
+    right_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
+    right_task_vec.back()->mt = JOINTS;
+    right_task_vec.back()->mft = GLOBAL;
     right_task_vec.back()->set_desired_p_eigen(p);
     right_task_vec.back()->set_desired_o_ax(o);
     std::cout<<"switch to normal control"<<std::endl;
     std::cout<<"switch to normal control"<<std::endl;
     rmt = NormalMode;
+    mutex_act.unlock();
 }
 
 void nv_est(){
@@ -464,6 +479,7 @@ void moveto_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mft = GLOBAL;
     right_task_vec.back()->set_desired_p_eigen(p);
     right_task_vec.back()->set_desired_o_ax(o);
+    rmt = NormalMode;
     mutex_act.unlock();
     std::cout<<"robot self movement and move to new pose"<<std::endl;
 }
@@ -878,11 +894,12 @@ void run_rightarm(){
         col_est_xy();
 
         //estimate the twist of the robot end-effector
-        right_rs->Est_eef_twist(kuka_right_arm,linear_v,omega_v);
+        right_rs->Est_eef_twist_local(kuka_right_arm,linear_v,omega_v);
         mt_ptr->update_tac_sensor_cfm_local();
         if(translation_est_flag == true){
             mt_ptr->update_translation_est(linear_v,omega_v,right_rs->robot_orien["robot_eef"],myrtac);
-            std::cout<<"position is: "<<mt_ptr->est_trans(0)<<","<<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<std::endl;
+            P_est<<linear_v(0)<<","<<linear_v(1)<<","<<linear_v(2)<<","<<omega_v(0)<<","<<omega_v(1)<<","<<omega_v(2)<<",";
+            P_est<<mt_ptr->est_trans(0)<<","<<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<std::endl;
         }
 
         //using all kinds of controllers to update the reference
@@ -921,6 +938,7 @@ int main(int argc, char* argv[])
     //for data recording
     std::string data_f ("/tmp/");
     P_ctc.open((data_f+std::string("ctc.txt")).c_str());
+    P_est.open((data_f+std::string("est.txt")).c_str());
 
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);

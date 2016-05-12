@@ -25,8 +25,7 @@ void ManipTool::update_translation_est(Eigen::Vector3d lv,Eigen::Vector3d rv,\
     omiga_skmatrix.setZero();
     omiga_skmatrix = vectortoskew(rv);
     L_r_dot = (-1)*beta_r*L_r-omiga_skmatrix*omiga_skmatrix;
-    c_r_dot = (-1)*beta_r*c_r+omiga_skmatrix*(robot_eef_rm * \
-                                              ts.tac_sensor_cfm_local*myrtac->ctc_vel-lv);
+    c_r_dot = (-1)*beta_r*c_r+omiga_skmatrix*(ts.tac_sensor_cfm_local*myrtac->ctc_vel - lv);
     est_trans_dot = (-1)*Gama_r*(L_r*est_trans-c_r);
     L_r = L_r + L_r_dot;
     c_r = c_r + c_r_dot;
