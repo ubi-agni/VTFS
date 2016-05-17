@@ -421,7 +421,12 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
     else{
         llv_tac = mt->ts.tac_sensor_cfm_local*deltape.head(3);
     }
-    deltape.tail(3) = tst.desired_pose_range;
+    if (t->emt == ROTATEEXPLORE){
+        deltape.tail(3) = tst.desired_pose_range;
+    }
+    else{
+
+    }
     lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
     limit_vel(get_llv_limit(),llv_tac,lov_tac);
 //    std::cout<<"local rot vel "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
