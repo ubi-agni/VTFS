@@ -23,6 +23,8 @@
 #include <geometry_msgs/Point.h>
 #endif
 #include <iomanip>
+//for xcf and hsm
+#include "XCFCommunication.h"
 
 
 #include <boost/filesystem/operations.hpp>
@@ -164,6 +166,8 @@ ExploreAction ea;
 //linear and rotation velocity of robot end-effector
 Eigen::Vector3d linear_v,omega_v;
 bool translation_est_flag;
+//ptr for xcf
+SmartPtr<XCFCommunication> xcfCommunicator;
 
 void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
@@ -297,6 +301,8 @@ void tactool_taxel_rolling_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
     rmt = NormalMode;
+    //todo update event in the short memory
+    xcfCommunicator->sendReleaseRequest(v,b);
     mutex_act.unlock();
     std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
 }
@@ -735,6 +741,8 @@ void init(){
     }
 
     pm = new ParameterManager(config_filename,Myrmex);
+    // inint xcf communicator
+    xcfCommunicator = new XCFCommunication("xcf:ShortTerm");
     com_okc = new ComOkc(kuka_right,OKC_HOST,OKC_PORT);
     com_okc->connect();
     tn = tactool;
