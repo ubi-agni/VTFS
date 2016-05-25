@@ -20,6 +20,7 @@
   <button args="normaldirection_est" handle="nv_est"/>
   <button args="load_tool_param" handle="load_tool_param"/>
   <button args="store_tool_param" handle="store_tool_param"/>
+  <button args="update_chain" handle="update_chain"/>
   <button args="Close Prog" handle="closeprog"/>
   <checkbox args="rotatex,true" handle="rotatex"/>
   <checkbox args="rotatey,true" handle="rotatey"/>
