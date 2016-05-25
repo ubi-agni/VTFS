@@ -61,6 +61,8 @@ RobotState::RobotState(Robot *r){
     old_roboteef_hm.setIdentity(4,4);
     cur_roboteef_hm.setIdentity(4,4);
     adj_matrix.setZero(6,6);
+    linear_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(20,Average,Eigen::Vector3d(0,0,0));
+    angle_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(20,Average,Eigen::Vector3d(0,0,0));
 }
 
 void RobotState::updated(Robot *r){
@@ -116,6 +118,9 @@ void RobotState::updated(Robot *r){
 }
 void RobotState::Est_eef_twist(Robot *r,Eigen::Vector3d& gv, Eigen::Vector3d& go){
     Eigen::MatrixXd I,devT;
+    Eigen::Vector3d tmp_gv,tmp_go;
+    tmp_go.setZero();
+    tmp_gv.setZero();
     I.setIdentity(4,4);
     devT.setZero(4,4);
 //    std::cout<<"old _tm" <<std::endl;
@@ -124,8 +129,11 @@ void RobotState::Est_eef_twist(Robot *r,Eigen::Vector3d& gv, Eigen::Vector3d& go
 //    std::cout<<cur_roboteef_hm<<std::endl;
     devT = (I - old_roboteef_hm * cur_roboteef_hm.inverse())/r->gettimecycle();
     for(int i = 0; i < 3; i++)
-        gv(i) = devT(i,3);
-    go = skewtovector(devT.topLeftCorner(3,3));
+        tmp_gv(i) = devT(i,3);
+    gv = linear_filter->push(tmp_gv);
+
+    tmp_go = skewtovector(devT.topLeftCorner(3,3));
+    go = angle_filter->push(tmp_go);
 //    std::cout<<"delta T"<<std::endl;
 //    std::cout<<devT<<std::endl;
 //    std::cout<<"lv "<<gv(0)<<","<<gv(1)<<","<<gv(2)<<std::endl;
@@ -134,16 +142,22 @@ void RobotState::Est_eef_twist(Robot *r,Eigen::Vector3d& gv, Eigen::Vector3d& go
 
 void RobotState::Est_eef_twist_local(Robot *r,Eigen::Vector3d& gv, Eigen::Vector3d& go){
     Eigen::MatrixXd I,devT;
+    Eigen::Vector3d tmp_gv,tmp_go;
     I.setIdentity(4,4);
     devT.setZero(4,4);
+    tmp_go.setZero();
+    tmp_gv.setZero();
 //    std::cout<<"old _tm" <<std::endl;
 //    std::cout<<old_roboteef_hm<<std::endl;
 //    std::cout<<"cur _tm" <<std::endl;
 //    std::cout<<cur_roboteef_hm<<std::endl;
     devT = (I - cur_roboteef_hm.inverse() * old_roboteef_hm)/r->gettimecycle();
     for(int i = 0; i < 3; i++)
-        gv(i) = devT(i,3);
-    go = skewtovector(devT.topLeftCorner(3,3));
+        tmp_gv(i) = devT(i,3);
+    gv = linear_filter->push(tmp_gv);
+
+    tmp_go = skewtovector(devT.topLeftCorner(3,3));
+    go = angle_filter->push(tmp_go);
 //    std::cout<<"delta T"<<std::endl;
 //    std::cout<<devT<<std::endl;
 //    std::cout<<"lv "<<gv(0)<<","<<gv(1)<<","<<gv(2)<<std::endl;

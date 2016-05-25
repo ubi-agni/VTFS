@@ -387,7 +387,7 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
             deltais(1) = (tacfb->cogx - desired_cp[1]);
         }
         deltais(2) =  desiredf - tacfb->cf;
-//        std::cout<<"desiredf and current f are "<<desiredf<<","<<tacfb->cf<<std::endl;
+        std::cout<<"desiredf and current f are "<<desiredf<<","<<tacfb->cf<<std::endl;
         deltais(5) = M_PI/2 - tacfb->lineorien;
     }
     else{

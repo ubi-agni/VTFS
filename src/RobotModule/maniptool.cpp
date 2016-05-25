@@ -1,17 +1,16 @@
 #include "maniptool.h"
-
+#include <stdlib.h>
 
 ManipTool::ManipTool(RobotState *rs)
 {
     mtt = Notool;
-    Gama_r = 30*Eigen::Matrix3d::Identity();
+    Gama_r = 5*Eigen::Matrix3d::Identity();
     L_r = Eigen::Matrix3d::Zero();
     L_r_dot = Eigen::Matrix3d::Zero();
     c_r.setZero();
     c_r_dot.setZero();
     beta_r = 0.99;
     est_trans.setZero();
-    est_trans = rs->robot_position["robot_eef"];
     est_trans_dot.setZero();
 }
 
@@ -25,7 +24,8 @@ void ManipTool::update_translation_est(Eigen::Vector3d lv,Eigen::Vector3d rv,\
     omiga_skmatrix.setZero();
     omiga_skmatrix = vectortoskew(rv);
     L_r_dot = (-1)*beta_r*L_r-omiga_skmatrix*omiga_skmatrix;
-    c_r_dot = (-1)*beta_r*c_r+omiga_skmatrix*(ts.tac_sensor_cfm_local*myrtac->ctc_vel - lv);
+
+    c_r_dot = (-1)*beta_r*c_r+omiga_skmatrix*(ts.tac_sensor_cfm_local*(myrtac->ctc_vel*0.005/0.004) - lv);
     est_trans_dot = (-1)*Gama_r*(L_r*est_trans-c_r);
     L_r = L_r + L_r_dot;
     c_r = c_r + c_r_dot;
@@ -41,6 +41,9 @@ void ManipTool::load_parameters(std::string fn_nv, std::string fn_rorate,std::st
         ts.rotate_s2sdot = readMatrix(f_rotate);
         f_trans.open(fn_trans.c_str());
         est_trans = readMatrix(f_trans);
+        est_trans(0) += 2*(double) rand() / (RAND_MAX);
+        est_trans(1) += 2*(double) rand() / (RAND_MAX);
+        est_trans(2) += 2*(double) rand() / (RAND_MAX);
 
     }
     else{

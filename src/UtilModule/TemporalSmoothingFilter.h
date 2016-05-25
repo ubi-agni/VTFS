@@ -18,6 +18,9 @@
     Copyright 2009, 2010 Qiang Li
 */
 
+#ifndef SMOOTHING_FILTER_H
+#define SMOOTHING_FILTER_H
+
 #include <deque>
 #include <algorithm>
 #include <numeric>
@@ -44,3 +47,5 @@ class TemporalSmoothingFilter{
   void clear();
   T push(const T &t);
 };
+
+#endif // SMOOTHING_FILTER_H

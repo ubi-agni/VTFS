@@ -39,7 +39,7 @@ ctc_status ContactDetector::get_ctc_status(bool b){
 }
 
 bool ContactDetector::isContactArea(double x,double y){
-    if((x>=1)&&(x<=14)&&(y>=1)&&(y<=14)){
+    if((x>=2)&&(x<=13)&&(y>=2)&&(y<=13)){
         return true;
     }
     else{

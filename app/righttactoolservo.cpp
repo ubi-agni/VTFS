@@ -24,7 +24,6 @@
 #endif
 #include <iomanip>
 //for xcf and hsm
-#include "XCFCommunication.h"
 
 
 #include <boost/filesystem/operations.hpp>
@@ -60,7 +59,7 @@
 #include <math.h>       /* acos */
 
 //desired contact pressure
-#define TAC_F 0.02
+#define TAC_F 0.05
 #define NV_EST_LEN 50
 
 #ifdef HAVE_ROS
@@ -166,16 +165,15 @@ ExploreAction ea;
 //linear and rotation velocity of robot end-effector
 Eigen::Vector3d linear_v,omega_v;
 bool translation_est_flag;
-//ptr for xcf
-SmartPtr<XCFCommunication> xcfCommunicator;
+
+
 
 void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
     mutex_tac.lock();
     com_rsb->tactile_receive(left_myrmex_msg,"leftmyrmex");
-    std::cout<<"myrmex readout "<<","<<left_myrmex_msg.contactflag<<","<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
+//    std::cout<<"myrmex readout "<<","<<left_myrmex_msg.contactflag<<","<<left_myrmex_msg.cogx<<","<<left_myrmex_msg.cogy<<std::endl;
     myrtac->update_initial_data(left_myrmex_msg);
-    myrtac->cal_ctc_lv();
     mutex_tac.unlock();
 }
 
@@ -301,8 +299,6 @@ void tactool_taxel_rolling_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
     rmt = NormalMode;
-    //todo update event in the short memory
-    xcfCommunicator->sendReleaseRequest(v,b);
     mutex_act.unlock();
     std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
 }
@@ -363,7 +359,7 @@ void nv_est(){
         std::cout<<"init tactile ctc "<<mt_ptr->ts.init_ctc_x<<","<<mt_ptr->ts.init_ctc_y<<std::endl;
         mt_ptr->ts.eef_pose.push_back(init_tool_pose);
         mt_ptr->ts.rel_o = rel_eef_tactool;
-        mt_ptr->est_trans = right_rs->robot_position["robot_eef"];
+        mt_ptr->est_trans.setZero();
         vis_est_ort = true;
         mutex_act.lock();
         right_ac_vec.clear();
@@ -514,7 +510,8 @@ void store_tool_param_cb(boost::shared_ptr<std::string> data){
 }
 
 void rotatexangle_cb(boost::shared_ptr<std::string> data){
-   ea.ra_xaxis = 0.01 * std::stoi(*data);
+   ea.ra_xaxis = 0.005 * std::stoi(*data);
+   ea.ra_yaxis = 0;
    std::cout<<"rot along x "<<ea.ra_xaxis<<std::endl;
    mutex_act.lock();
    right_ac_vec.clear();
@@ -533,7 +530,8 @@ void rotatexangle_cb(boost::shared_ptr<std::string> data){
 }
 
 void rotateyangle_cb(boost::shared_ptr<std::string> data){
-   ea.ra_yaxis = 0.01 * std::stoi(*data);
+   ea.ra_yaxis = 0.005 * std::stoi(*data);
+   ea.ra_xaxis = 0;
    std::cout<<"rot along y "<<ea.ra_yaxis<<std::endl;
    mutex_act.lock();
    right_ac_vec.clear();
@@ -649,19 +647,22 @@ void ros_publisher(){
 
     //create a ROS tf object and fill it orientation only currently
     //broadcast this transform to ROS relative to world(kuka_endeffector)
+    Eigen::Vector3d g_est_trans;
+    g_est_trans.setZero();
     tf::Matrix3x3 tfR;
     tf::Transform transform;
     cur_est_tool_ort = right_rs->robot_orien["robot_eef"] * mt_ptr->ts.rel_o;
     tf::matrixEigenToTF (cur_est_tool_ort, tfR);
 
-    transform.setOrigin( tf::Vector3(mt_ptr->est_trans(0), mt_ptr->est_trans(1), mt_ptr->est_trans(2)) );
+    g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
+    transform.setOrigin( tf::Vector3(g_est_trans(0), g_est_trans(1), g_est_trans(2)) );
     transform.setBasis(tfR);
     br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
 
     //update contact frame after the tac exploration action
     real_tactool_ctcframe =  cur_est_tool_ort * mt_ptr->ts.rotate_s2sdot;
     tf::matrixEigenToTF (real_tactool_ctcframe, tfR);
-    transform.setOrigin(  tf::Vector3(mt_ptr->est_trans(0), mt_ptr->est_trans(1), mt_ptr->est_trans(2)));
+    transform.setOrigin( tf::Vector3(g_est_trans(0), g_est_trans(1), g_est_trans(2)) );
     transform.setBasis(tfR);
     br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "updated_tactool_frame"));
 
@@ -741,8 +742,6 @@ void init(){
     }
 
     pm = new ParameterManager(config_filename,Myrmex);
-    // inint xcf communicator
-    xcfCommunicator = new XCFCommunication("xcf:ShortTerm");
     com_okc = new ComOkc(kuka_right,OKC_HOST,OKC_PORT);
     com_okc->connect();
     tn = tactool;
@@ -904,10 +903,13 @@ void run_rightarm(){
         //estimate the twist of the robot end-effector
         right_rs->Est_eef_twist_local(kuka_right_arm,linear_v,omega_v);
         mt_ptr->update_tac_sensor_cfm_local();
-        if(translation_est_flag == true){
+        if((translation_est_flag == true)&&(myrtac->contactflag == true)&&(myrtac->cog_x > 0)&&(myrtac->cog_y > 0)){
+            //every taxel is 5mm, every control step is 4ms
+            myrtac->cal_ctc_lv();
             mt_ptr->update_translation_est(linear_v,omega_v,right_rs->robot_orien["robot_eef"],myrtac);
             P_est<<linear_v(0)<<","<<linear_v(1)<<","<<linear_v(2)<<","<<omega_v(0)<<","<<omega_v(1)<<","<<omega_v(2)<<",";
-            P_est<<mt_ptr->est_trans(0)<<","<<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<std::endl;
+            P_est<<mt_ptr->est_trans(0)<<","<<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<","<<myrtac->ctc_vel(0)\
+                  <<","<<myrtac->ctc_vel(1) <<","<<myrtac->ctc_vel(2)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<std::endl;
         }
 
         //using all kinds of controllers to update the reference
@@ -964,7 +966,7 @@ int main(int argc, char* argv[])
     //start myrmex read thread
     Timer thrd_myrmex_read(tactileviarsb);
     thrd_myrmex_read.setSingleShot(false);
-    thrd_myrmex_read.setInterval(Timer::Interval(10));
+    thrd_myrmex_read.setInterval(Timer::Interval(1));
     thrd_myrmex_read.start(true);
 
     //start myrmex read thread

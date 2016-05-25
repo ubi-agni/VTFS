@@ -25,6 +25,7 @@
 #include <map>
 #include "UtilModule/Util.h"
 #include <utility> //for std::pair
+#include "UtilModule/TemporalSmoothingFilter.h"
 
 class Robot;
 
@@ -76,6 +77,10 @@ public:
     //attention: in function -- Est_eef_twist_local: v is not the linear velocity in the body frame by only translation part
     void Est_eef_twist_local(Robot* r,Eigen::Vector3d& v, Eigen::Vector3d& omega);
     void twist_ltog(Eigen::Vector3d gv, Eigen::Vector3d go,Eigen::Vector3d& lv, Eigen::Vector3d& lo);
+
+private:
+    TemporalSmoothingFilter<Eigen::Vector3d>* linear_filter;
+    TemporalSmoothingFilter<Eigen::Vector3d>* angle_filter;
 };
 
 class EnvState{
