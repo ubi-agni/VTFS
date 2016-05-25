@@ -85,6 +85,8 @@ void RobotState::updated(Robot *r){
             r->worldToToolFkSolver->JntToCart(r->q,r->pose,13);
         if(r->toolname == teensy_finger)
             r->worldToToolFkSolver->JntToCart(r->q,r->pose,12);
+        if(r->toolname == tactool)
+            r->worldToToolFkSolver->JntToCart(r->q,r->pose,12);
         robot_position["eef"] = kdl2eigen_position(r->pose);
         robot_orien["eef"] = kdl2eigen_orien(r->pose);
         gen_hm(robot_orien["robot_eef"],robot_position["robot_eef"],cur_roboteef_hm);
@@ -106,6 +108,8 @@ void RobotState::updated(Robot *r){
         if(r->toolname == sensing_pole)
             r->worldToToolFkSolver->JntToCart(r->q,r->pose,13);
         if(r->toolname == teensy_finger)
+            r->worldToToolFkSolver->JntToCart(r->q,r->pose,12);
+        if(r->toolname == tactool)
             r->worldToToolFkSolver->JntToCart(r->q,r->pose,12);
         robot_position["eef"] = kdl2eigen_position(r->pose);
         robot_orien["eef"] = kdl2eigen_orien(r->pose);

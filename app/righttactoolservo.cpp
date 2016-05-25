@@ -165,6 +165,7 @@ ExploreAction ea;
 //linear and rotation velocity of robot end-effector
 Eigen::Vector3d linear_v,omega_v;
 bool translation_est_flag;
+bool update_chain_flag;
 
 
 
@@ -587,6 +588,12 @@ void lineylen_cb(boost::shared_ptr<std::string> data){
    rec_flag_xy_est = true;
 }
 
+void update_chain_cb(boost::shared_ptr<std::string> data){
+    update_chain_flag = true;
+    kuka_right_arm->toolname = tactool;
+    kuka_right_arm->addSegmentinChain(mt_ptr->ts.tac_sensor_cfm_local,mt_ptr->est_trans);
+}
+
 #ifdef HAVE_ROS
 void run(){
     ros::Rate r(500);
@@ -666,6 +673,17 @@ void ros_publisher(){
     transform.setBasis(tfR);
     br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "updated_tactool_frame"));
 
+    //update and check manipulation chain
+    if(update_chain_flag == true){
+        tf::matrixEigenToTF (right_rs->robot_orien["eef"], tfR);
+        transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)) );
+        transform.setBasis(tfR);
+        br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "newchain_eef_frame"));
+    }
+
+
+
+
     // send a joint_state
     jsPub.publish(js);
 //    ros::spinOnce();
@@ -705,6 +723,7 @@ void init(){
     std::string selfpath = get_selfpath();
     robot_eef_deque.assign(NV_EST_LEN, Eigen::Vector3d::Zero());
     pcaf = new PCAFeature(NV_EST_LEN);
+    update_chain_flag = false;
 
 //    init_tool_pose.p.setZero();
 //    init_tool_pose.o.setZero();
@@ -731,6 +750,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> slider_rotateyangle(rotateyangle_cb);
     boost::function<void(boost::shared_ptr<std::string>)> load_tool_param(load_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> store_tool_param(store_tool_param_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> update_chain(update_chain_cb);
 
     std::string config_filename = selfpath + "/etc/right_arm_param.xml";
     if(is_file_exist(config_filename.c_str()) == false){
@@ -744,7 +764,7 @@ void init(){
     pm = new ParameterManager(config_filename,Myrmex);
     com_okc = new ComOkc(kuka_right,OKC_HOST,OKC_PORT);
     com_okc->connect();
-    tn = tactool;
+    tn = none;
     kuka_right_arm = new KukaLwr(kuka_right,*com_okc,tn);
     right_rs = new RobotState(kuka_right_arm);
     kuka_right_arm->get_joint_position_act();
@@ -832,6 +852,7 @@ void init(){
     com_rsb->register_external("/foo/rotateyangle",slider_rotateyangle);
     com_rsb->register_external("/foo/load_tool_param",load_tool_param);
     com_rsb->register_external("/foo/store_tool_param",store_tool_param);
+    com_rsb->register_external("/foo/update_chain",update_chain);
 
 #ifdef HAVE_ROS
     std::string left_kuka_arm_name="la";

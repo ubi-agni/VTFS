@@ -61,6 +61,7 @@ public:
     Eigen::Vector3d forceCorr,forceCorrStdDev;
     void calibForce(int sampletimes);
     void getTcpFtCalib (Eigen::Vector3d &cf);
+    void addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p);
 private:
     void initChains(ToolNameT tn=sensing_pole);
     void initCbf();

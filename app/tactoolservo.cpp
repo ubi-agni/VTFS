@@ -580,7 +580,7 @@ void init(){
     rmt = NormalMode;
     ft_gama = new gamaFT;
     arm_payload_g.setZero();
-    tn = tactool;
+    tn = none;
     StopFlag = false;
 
 //    init_tool_pose.p.setZero();

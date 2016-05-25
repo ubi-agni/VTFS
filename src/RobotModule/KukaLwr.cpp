@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "ControllerModule/actcontroller.h"
 #include "ControllerModule/CtrlParam.h"
+#include "UtilModule/eigen_to_kdl.h"
 
 #define initP_x 0.28
 #define initP_y 0.3
@@ -365,9 +366,11 @@ void KukaLwr::initChains(ToolNameT tn){
         if(tn == teensy_finger){
             worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
         }
-        if(tn == tactool){
-            //spp 1st meeting version, nothing is added in the kinematics chain expect robot kinematics.
+        if(tn == none){
+            //nothing tool is assembled
         }
+
+
 #endif
     }
     if (kuka_left == rn){
@@ -395,8 +398,8 @@ void KukaLwr::initChains(ToolNameT tn){
         if(tn == teensy_finger){
             worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
         }
-        if(tn == tactool){
-            //spp 1st meeting version, nothing is added in the kinematics chain expect robot kinematics.
+        if(tn == none){
+            //nothing tool is assembled
         }
     }
     baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
@@ -412,6 +415,15 @@ void KukaLwr::initChains(ToolNameT tn){
     worldToToolIkSolver = new ChainIkSolverVel_pinv (worldToTool);
     worldToToolJacSolver = new ChainJntToJacSolver (worldToTool);
 }
+
+void KukaLwr::addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p){
+    Vector kdl_p;
+    Rotation kdl_R;
+    conversions::convert(p,kdl_p);
+    conversions::convert(R,kdl_R);
+    worldToTool.addSegment (Segment(Joint(Joint::None),Frame(kdl_R,kdl_p)));
+}
+
 
 void KukaLwr::initCbf (){
     if (kuka_left == rn){
