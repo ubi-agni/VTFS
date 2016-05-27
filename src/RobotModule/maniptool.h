@@ -50,7 +50,7 @@ public:
     //default case, mtt = Notool
     ManipuToolT mtt;
     ToolState ts;
-    void update_translation_est(Eigen::Vector3d lv,Eigen::Vector3d rv,\
+    Eigen::Vector3d update_translation_est(Eigen::Vector3d lv,Eigen::Vector3d rv,\
                                  Eigen::Matrix3d robot_eef_rm, MyrmexTac *myrtac);
     Eigen::Matrix3d Gama_r;
     Eigen::Matrix3d L_r;

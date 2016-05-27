@@ -368,6 +368,7 @@ void KukaLwr::initChains(ToolNameT tn){
         }
         if(tn == none){
             //nothing tool is assembled
+             std::cout<<"nothing in the end-effector on right arm"<<std::endl;
         }
 
 
@@ -400,6 +401,7 @@ void KukaLwr::initChains(ToolNameT tn){
         }
         if(tn == none){
             //nothing tool is assembled
+            std::cout<<"nothing in the end-effector on left arm"<<std::endl;
         }
     }
     baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
@@ -421,7 +423,11 @@ void KukaLwr::addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p){
     Rotation kdl_R;
     conversions::convert(p,kdl_p);
     conversions::convert(R,kdl_R);
+    delete worldToToolFkSolver;
+    delete  worldToToolJacSolver;
     worldToTool.addSegment (Segment(Joint(Joint::None),Frame(kdl_R,kdl_p)));
+    worldToToolFkSolver = new ChainFkSolverPos_recursive (worldToTool);
+    worldToToolJacSolver = new ChainJntToJacSolver (worldToTool);
 }
 
 

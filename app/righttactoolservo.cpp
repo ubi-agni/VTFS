@@ -676,6 +676,7 @@ void ros_publisher(){
     //update and check manipulation chain
     if(update_chain_flag == true){
         tf::matrixEigenToTF (right_rs->robot_orien["eef"], tfR);
+        std::cout<<"new position "<<right_rs->robot_position["eef"]<<std::endl;
         transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)) );
         transform.setBasis(tfR);
         br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "newchain_eef_frame"));
@@ -922,15 +923,17 @@ void run_rightarm(){
         col_est_xy();
 
         //estimate the twist of the robot end-effector
+        Eigen::Vector3d store_temp;
+        store_temp.setZero();
         right_rs->Est_eef_twist_local(kuka_right_arm,linear_v,omega_v);
         mt_ptr->update_tac_sensor_cfm_local();
         if((translation_est_flag == true)&&(myrtac->contactflag == true)&&(myrtac->cog_x > 0)&&(myrtac->cog_y > 0)){
             //every taxel is 5mm, every control step is 4ms
             myrtac->cal_ctc_lv();
-            mt_ptr->update_translation_est(linear_v,omega_v,right_rs->robot_orien["robot_eef"],myrtac);
+            store_temp = mt_ptr->update_translation_est(linear_v,omega_v,right_rs->robot_orien["robot_eef"],myrtac);
             P_est<<linear_v(0)<<","<<linear_v(1)<<","<<linear_v(2)<<","<<omega_v(0)<<","<<omega_v(1)<<","<<omega_v(2)<<",";
             P_est<<mt_ptr->est_trans(0)<<","<<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<","<<myrtac->ctc_vel(0)\
-                  <<","<<myrtac->ctc_vel(1) <<","<<myrtac->ctc_vel(2)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<std::endl;
+                  <<","<<myrtac->ctc_vel(1) <<","<<myrtac->ctc_vel(2)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<","<<store_temp(0)<<","<<store_temp(1)<<","<<store_temp(2)<<std::endl;
         }
 
         //using all kinds of controllers to update the reference

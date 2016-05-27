@@ -4,7 +4,7 @@
 ManipTool::ManipTool(RobotState *rs)
 {
     mtt = Notool;
-    Gama_r = 5*Eigen::Matrix3d::Identity();
+    Gama_r = Eigen::Matrix3d::Identity();
     L_r = Eigen::Matrix3d::Zero();
     L_r_dot = Eigen::Matrix3d::Zero();
     c_r.setZero();
@@ -18,18 +18,23 @@ void ManipTool::update_tac_sensor_cfm_local(){
     ts.tac_sensor_cfm_local = ts.rel_o* ts.rotate_s2sdot;
 }
 
-void ManipTool::update_translation_est(Eigen::Vector3d lv,Eigen::Vector3d rv,\
+Eigen::Vector3d ManipTool::update_translation_est(Eigen::Vector3d lv,Eigen::Vector3d rv,\
                                        Eigen::Matrix3d robot_eef_rm, MyrmexTac *myrtac){
     Eigen::Matrix3d omiga_skmatrix;
+    Eigen::Vector3d temp_lv;
+    temp_lv.setZero();
     omiga_skmatrix.setZero();
     omiga_skmatrix = vectortoskew(rv);
+    temp_lv(1) = myrtac->ctc_vel(0);
+    temp_lv(0) = myrtac->ctc_vel(1);
     L_r_dot = (-1)*beta_r*L_r-omiga_skmatrix*omiga_skmatrix;
 
-    c_r_dot = (-1)*beta_r*c_r+omiga_skmatrix*(ts.tac_sensor_cfm_local*(myrtac->ctc_vel*0.005/0.004) - lv);
+    c_r_dot = (-1)*beta_r*c_r+omiga_skmatrix*(ts.tac_sensor_cfm_local*(temp_lv*0.005/0.004) - lv);
     est_trans_dot = (-1)*Gama_r*(L_r*est_trans-c_r);
     L_r = L_r + L_r_dot;
     c_r = c_r + c_r_dot;
     est_trans = est_trans + est_trans_dot;
+    return ts.tac_sensor_cfm_local*(temp_lv*0.005/0.004);
 }
 
 void ManipTool::load_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans){
@@ -43,10 +48,11 @@ void ManipTool::load_parameters(std::string fn_nv, std::string fn_rorate,std::st
         f_rotate.close();
         f_trans.open(fn_trans.c_str());
         est_trans = readMatrix(f_trans);
+        std::cout<<"init position "<<est_trans<<std::endl;
         f_trans.close();
-        est_trans(0) += 2*(double) rand() / (RAND_MAX);
-        est_trans(1) += 2*(double) rand() / (RAND_MAX);
-        est_trans(2) += 2*(double) rand() / (RAND_MAX);
+//        est_trans(0) += 0.5*(double) rand() / (RAND_MAX);
+//        est_trans(1) += 0.5*(double) rand() / (RAND_MAX);
+//        est_trans(2) += 0.5*(double) rand() / (RAND_MAX);
 
     }
     else{
