@@ -13,6 +13,7 @@ TacServoTask::TacServoTask(TACTaskNameT taskname)
     dir_x = 0;
     dir_y = 0;
     desired_pose_range.setZero();
+    desired_orien_myrmex = M_PI/2;
 }
 
 
@@ -29,6 +30,10 @@ void TacServoTask::set_desired_cf_myrmex(double cf){
     desired_cf_myrmex = cf;
 }
 
+
+void TacServoTask::set_desired_orien_myrmex(double orien){
+    desired_orien_myrmex = orien;
+}
 void TacServoTask::set_desired_taxel_mid(int id){
     act_taxel_id = id;
 }

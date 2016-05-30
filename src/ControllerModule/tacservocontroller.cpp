@@ -313,7 +313,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, myrmex_msg *tacfb
     if(tacfb->contactflag == true){
         deltais(1) = tacfb->cogx - desired_cp[0];
         deltais(0) = tacfb->cogy - desired_cp[1];
-        deltais(5) = M_PI/2 - tacfb->lineorien;
+        deltais(5) = 0- tacfb->lineorien;
     }
     else{
         deltais(0) = 0;
@@ -374,9 +374,11 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
     double desired_cp[2];
     tst = *(TacServoTask*)t;
     double desiredf;
+    double desiredorien;
     //robot current state
     tst.get_desired_cf_myrmex(desiredf);
     tst.get_desired_cp_myrmex(desired_cp);
+    tst.get_desired_orien_myrmex(desiredorien);
     if(tacfb->contactflag == true){
         if (t->emt == LINEAREXPLORE){
             deltais(0) = tst.dir_x;
@@ -388,8 +390,8 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
         }
         deltais(2) =  desiredf - tacfb->cf;
 //        std::cout<<"desiredf and current f are "<<desiredf<<","<<tacfb->cf<<std::endl;
-        deltais(5) = M_PI/2 - tacfb->lineorien;
-        std::cout<<"current line direction"<<tacfb->lineorien<<std::endl;
+        deltais(5) = desiredorien - tacfb->lineorien;
+        std::cout<<"deisred and current line direction"<<desiredorien<<",,,,,"<<tacfb->lineorien<<std::endl;
     }
     else{
         deltais(0) = 0;

@@ -552,7 +552,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             <tsm>
                 <e00>0</e00>
                 <e11>0</e11>
-                <e22>1</e22>
+                <e22>0</e22>
                 <e33>0</e33>
                 <e44>0</e44>
                 <e55>1</e55>

@@ -16,6 +16,7 @@ public:
     void set_desired_o_ax(Eigen::Vector3d o_ax){desired_o_ax = o_ax;}
     void set_desired_cp_myrmex(double *){}
     void set_desired_cf_myrmex(double){}
+    void set_desired_orien_myrmex(double){}
     void set_desired_cf_kuka(double);
     void get_desired_cp_myrmex(double *cp){}
     void get_desired_cf_myrmex(double& cf_myrmex){}

@@ -286,6 +286,7 @@ void tactool_cablefollow_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = TACTILE;
 
     right_task_vec.back()->set_desired_cf_mid(TAC_F);
+    right_task_vec.back()->set_desired_orien_myrmex(0);
     right_task_vec.back()->set_desired_rotation_range(0,0,M_PI);
     rmt = NormalMode;
     mutex_act.unlock();

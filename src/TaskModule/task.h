@@ -114,6 +114,7 @@ public:
     virtual void set_taxelfb_type_mid(TacFBType type) = 0;
     virtual void set_desired_cp_moving_dir(double x, double y) = 0;
     virtual void set_desired_rotation_range(double,double,double) = 0;
+    virtual void set_desired_orien_myrmex(double) = 0;
     virtual Eigen::Vector3d get_desired_rotation_range() = 0;
     TaskNameT curtaskname;
     ModalityT mt;
