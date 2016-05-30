@@ -214,6 +214,7 @@ void tactool_tactile_cb(boost::shared_ptr<std::string> data){
     right_ac_vec.push_back(new TacServoController(*pm));
     right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
     right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
     right_task_vec.back()->mt = TACTILE;
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     rmt = NormalMode;
@@ -257,6 +258,7 @@ void tactool_exploring_cb(boost::shared_ptr<std::string> data){
     right_ac_vec.push_back(new TacServoController(*pm));
     right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
     right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
     right_task_vec.back()->mt = TACTILE;
     right_task_vec.back()->set_desired_cf_mid(TAC_F);
     rmt = NormalMode;
@@ -280,6 +282,7 @@ void tactool_cablefollow_cb(boost::shared_ptr<std::string> data){
     right_ac_vec.push_back(new TacServoController(*pm));
     right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
     right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
     right_task_vec.back()->mt = TACTILE;
 
     right_task_vec.back()->set_desired_cf_mid(TAC_F);
@@ -292,13 +295,14 @@ void tactool_taxel_rolling_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     right_ac_vec.clear();
     right_task_vec.clear();
-    right_taskname.tact = LEARN_TACTOOL_ROLLING;
+    right_taskname.tact = COVER_OBJECT_SURFACE;
     right_ac_vec.push_back(new TacServoController(*pm));
     right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
     right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
     right_task_vec.back()->mt = TACTILE;
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
-    right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
+    right_task_vec.back()->set_desired_rotation_range(0.2,0.2,0);
     rmt = NormalMode;
     mutex_act.unlock();
     std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
@@ -316,14 +320,11 @@ void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     o.setZero();
 
     //get start point position in cartesian space
-    p(0) = initP_x = right_rs->robot_position["eef"](0);
-    p(1) = initP_y= right_rs->robot_position["eef"](1);
-    p(2) = initP_z= right_rs->robot_position["eef"](2);
+    p(0) = right_rs->robot_position["eef"](0);
+    p(1) = right_rs->robot_position["eef"](1);
+    p(2) = right_rs->robot_position["eef"](2);
 
     o = tm2axisangle(right_rs->robot_orien["eef"]);
-    initO_x = o(0);
-    initO_y = o(1);
-    initO_z = o(2);
 
     mutex_act.lock();
     right_ac_vec.clear();
@@ -334,7 +335,6 @@ void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mft = GLOBAL;
     right_task_vec.back()->set_desired_p_eigen(p);
     right_task_vec.back()->set_desired_o_ax(o);
-    std::cout<<"switch to normal control"<<std::endl;
     std::cout<<"switch to normal control"<<std::endl;
     rmt = NormalMode;
     mutex_act.unlock();
@@ -592,6 +592,33 @@ void update_chain_cb(boost::shared_ptr<std::string> data){
     update_chain_flag = true;
     kuka_right_arm->toolname = tactool;
     kuka_right_arm->addSegmentinChain(mt_ptr->ts.tac_sensor_cfm_local,mt_ptr->est_trans);
+    kuka_right_arm->initCbf();
+    kuka_right_arm->get_joint_position_act();
+    kuka_right_arm->update_robot_state();
+    right_rs->updated(kuka_right_arm);
+
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+
+    //get start point position in cartesian space
+    p(0) = right_rs->robot_position["eef"](0);
+    p(1) = right_rs->robot_position["eef"](1);
+    p(2) = right_rs->robot_position["eef"](2);
+
+    o = tm2axisangle(right_rs->robot_orien["eef"]);
+    mutex_act.lock();
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_ac_vec.push_back(new ProActController(*pm));
+    right_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
+    right_task_vec.back()->mt = JOINTS;
+    right_task_vec.back()->mft = GLOBAL;
+    right_task_vec.back()->set_desired_p_eigen(p);
+    right_task_vec.back()->set_desired_o_ax(o);
+    rmt = NormalMode;
+    mutex_act.unlock();
+    std::cout<<"update chain and cbf, then stay in the origin place"<<std::endl;
 }
 
 #ifdef HAVE_ROS
@@ -676,7 +703,6 @@ void ros_publisher(){
     //update and check manipulation chain
     if(update_chain_flag == true){
         tf::matrixEigenToTF (right_rs->robot_orien["eef"], tfR);
-        std::cout<<"new position "<<right_rs->robot_position["eef"]<<std::endl;
         transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)) );
         transform.setBasis(tfR);
         br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "newchain_eef_frame"));

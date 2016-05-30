@@ -27,6 +27,7 @@ void KukaLwr::setReference (CBF::FloatVector new_ref){
     }
 }
 
+
 void KukaLwr::setReference (double* positions){
     CBF::FloatVector ref(6);
     for (int i=0; i < 6; i++)
@@ -59,10 +60,18 @@ void KukaLwr::update_robot_state(){
     for (int i=0; i < LBR_MNJ; i++){
         q2(i) = jnt_position_mea[i];
     }
+    if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not lock mutex");
+        exit (EXIT_FAILURE);
+    }
     worldToToolFkSolver->JntToCart(q,position);
     baseToToolFkSolver->JntToCart (q2,baseposition);
     Jac_kdl.resize(7);
     worldToToolJacSolver->JntToJac(q,Jac_kdl);
+    if (0 != pthread_mutex_unlock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not unlock mutex");
+        exit (EXIT_FAILURE);
+    }
     TM_kdl = position.M;
     position_p_kdl = position.p;
     conversions::convert(TM_kdl,m_TM_eigen);
@@ -101,9 +110,17 @@ void KukaLwr::update_cbf_controller(){
     for (int i=0; i < LBR_MNJ; i++){
         newResourceVector(i) = jnt_position_act[i];
     }
+    if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not lock mutex");
+        exit (EXIT_FAILURE);
+    }
     kukaResourceP->set(newResourceVector);
     primitiveControllerP->step();
     updates = kukaResourceP->get() - newResourceVector;
+    if (0 != pthread_mutex_unlock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not unlock mutex");
+        exit (EXIT_FAILURE);
+    }
 }
 
 void KukaLwr::set_joint_command(RobotModeT m=NormalMode){
@@ -323,10 +340,22 @@ void KukaLwr::initKukaResource (){
     get_joint_position_act();
     for (int i=0;i < 7; i++)
         (*myResourceVector) (i) = jnt_position_act[i];
+    if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not lock mutex");
+        exit (EXIT_FAILURE);
+    }
     kukaResourceP->set((*myResourceVector));
+    if (0 != pthread_mutex_unlock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not unlock mutex");
+        exit (EXIT_FAILURE);
+    }
 }
 
 void KukaLwr::initChains(ToolNameT tn){
+    if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not lock mutex");
+        exit (EXIT_FAILURE);
+    }
 /*
     DH representation referecen paper:Visual Estimation and Control of Robot Manipulating Systems(phd thesis)
 */
@@ -416,6 +445,10 @@ void KukaLwr::initChains(ToolNameT tn){
     baseToToolFkSolver = new ChainFkSolverPos_recursive (baseToTool);
     worldToToolIkSolver = new ChainIkSolverVel_pinv (worldToTool);
     worldToToolJacSolver = new ChainJntToJacSolver (worldToTool);
+    if (0 != pthread_mutex_unlock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not unlock mutex");
+        exit (EXIT_FAILURE);
+    }
 }
 
 void KukaLwr::addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p){
@@ -423,26 +456,33 @@ void KukaLwr::addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p){
     Rotation kdl_R;
     conversions::convert(p,kdl_p);
     conversions::convert(R,kdl_R);
+    if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not lock mutex");
+        exit (EXIT_FAILURE);
+    }
     delete worldToToolFkSolver;
     delete  worldToToolJacSolver;
     worldToTool.addSegment (Segment(Joint(Joint::None),Frame(kdl_R,kdl_p)));
     worldToToolFkSolver = new ChainFkSolverPos_recursive (worldToTool);
     worldToToolJacSolver = new ChainJntToJacSolver (worldToTool);
+    if (0 != pthread_mutex_unlock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not unlock mutex");
+        exit (EXIT_FAILURE);
+    }
 }
 
 
 void KukaLwr::initCbf (){
     if (kuka_left == rn){
+        if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
+            perror ("CbfPlanner: setReference(): could not lock mutex");
+            exit (EXIT_FAILURE);
+        }
         boost::shared_ptr<KDL::Chain> chain (new KDL::Chain(worldToTool));
         currentTaskReferenceP = CBF::DummyReferencePtr (new CBF::DummyReference(1,6));
         currentTaskTargetP = CBF::DummyReferencePtr (new CBF::DummyReference(1,6));
         kukaResourceP = CBF::DummyResourcePtr (new CBF::DummyResource(7));
         currentSubordinateTaskReferenceP = CBF::DummyReferencePtr (new CBF::DummyReference(1,7));
-
-        if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
-            perror ("CbfPlanner: initCbf(): could not lock mutex");
-            exit (EXIT_FAILURE);
-        }
         try {
             CBF::FloatVector myReferenceVector(6);
             CBF::FloatVector mySubordinateReferenceVector (7);
@@ -526,17 +566,17 @@ void KukaLwr::initCbf (){
         //    noCbf = false;
     }
 
+
     if (kuka_right == rn){
+        if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
+            perror ("CbfPlanner: initCbf(): could not lock mutex");
+            exit (EXIT_FAILURE);
+        }
         boost::shared_ptr<KDL::Chain> chain (new KDL::Chain(worldToTool));
         currentTaskReferenceP = CBF::DummyReferencePtr (new CBF::DummyReference(1,6));
         currentTaskTargetP = CBF::DummyReferencePtr (new CBF::DummyReference(1,6));
         kukaResourceP = CBF::DummyResourcePtr (new CBF::DummyResource(7));
         currentSubordinateTaskReferenceP = CBF::DummyReferencePtr (new CBF::DummyReference(1,7));
-
-        if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
-            perror ("CbfPlanner: initCbf(): could not lock mutex");
-            exit (EXIT_FAILURE);
-        }
         try {
             CBF::FloatVector myReferenceVector(6);
             CBF::FloatVector mySubordinateReferenceVector (7);
