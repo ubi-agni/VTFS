@@ -271,12 +271,12 @@ void tactool_cablefollow_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     right_ac_vec.clear();
     right_task_vec.clear();
-//    right_taskname.prot = RLZN;
-//    right_ac_vec.push_back(new ProActController(*pm));
-//    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
-//    right_task_vec.push_back(new KukaSelfCtrlTask(right_taskname.prot));
-//    right_task_vec.back()->mft = LOCAL;
-//    right_task_vec.back()->mt = JOINTS;
+    right_taskname.prot = RLYP;
+    right_ac_vec.push_back(new ProActController(*pm));
+    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
+    right_task_vec.push_back(new KukaSelfCtrlTask(right_taskname.prot));
+    right_task_vec.back()->mft = LOCAL;
+    right_task_vec.back()->mt = JOINTS;
 
     right_taskname.tact = Z_ORIEN_TRACKING;
     right_ac_vec.push_back(new TacServoController(*pm));
