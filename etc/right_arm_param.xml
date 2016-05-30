@@ -505,18 +505,18 @@ See http://www.boost.org/LICENSE_1_0.txt
 
         <ZOrienTracking>
             <x>
-                <kp>0.0002</kp>
-                <ki>0.00003</ki>
+                <kp>0.01</kp>
+                <ki>0</ki>
                 <kd>0</kd>
             </x>
             <y>
-                <kp>0.0002</kp>
-                <ki>0.00003</ki>
+                <kp>0.01</kp>
+                <ki>0</ki>
                 <kd>0</kd>
             </y>
             <z>
-                <kp>0.0002</kp>
-                <ki>0.00003</ki>
+                <kp>0.5</kp>
+                <ki>0</ki>
                 <kd>0</kd>
             </z>
             <roll>

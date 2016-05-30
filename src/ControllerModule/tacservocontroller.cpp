@@ -389,6 +389,7 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
         deltais(2) =  desiredf - tacfb->cf;
 //        std::cout<<"desiredf and current f are "<<desiredf<<","<<tacfb->cf<<std::endl;
         deltais(5) = M_PI/2 - tacfb->lineorien;
+        std::cout<<"current line direction"<<tacfb->lineorien<<std::endl;
     }
     else{
         deltais(0) = 0;
@@ -427,7 +428,7 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
     if (t->emt == ROTATEEXPLORE){
         deltape.tail(3) = tst.desired_pose_range;
     }
-    std::cout<<"rotation stimulous"<<deltape.tail(3)<<std::endl;
+//    std::cout<<"rotation stimulous"<<deltape.tail(3)<<std::endl;
     lov_tac = Kop[tst.curtaskname.tact] * deltape.tail(3);
     limit_vel(get_llv_limit(),llv_tac,lov_tac);
 //    std::cout<<"local rot vel "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
