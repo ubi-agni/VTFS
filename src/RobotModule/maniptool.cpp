@@ -12,6 +12,12 @@ ManipTool::ManipTool(RobotState *rs)
     beta_r = 0.99;
     est_trans.setZero();
     est_trans_dot.setZero();
+    est_nv.setZero();
+
+    P_bar.setZero();
+    L_n.setZero();
+    L_n_dot.setZero();
+    nv_dot.setZero();
 }
 
 void ManipTool::update_tac_sensor_cfm_local(){
@@ -36,6 +42,27 @@ Eigen::Vector3d ManipTool::update_translation_est(Eigen::Vector3d lv,Eigen::Vect
     est_trans = est_trans + est_trans_dot;
     return ts.tac_sensor_cfm_local*(temp_lv*0.005/0.004);
 }
+
+
+void ManipTool::update_nv(Eigen::Vector3d lv,Eigen::Vector3d& n_hat,Eigen::Vector3d& nv_dot_fb){
+    P_bar = Eigen::Matrix3d::Identity()-n_hat*n_hat.transpose();
+    std::cout<<"P_bar "<<std::endl;
+    std::cout<<P_bar;
+    nv_dot = -1*Gama_n*P_bar*L_n*n_hat;
+    std::cout<<"nv_dot: "<<nv_dot(0)<<","<<nv_dot(0)<<","<<nv_dot(0)<<std::endl;
+    nv_dot_fb = nv_dot;
+    L_n_dot = -beta_n*L_n+(1/(1+pow(lv.norm(),2)))*lv*lv.transpose();
+    n_hat = n_hat+nv_dot;
+    n_hat = n_hat/n_hat.norm();
+    std::cout<<"n_hat are: "<<n_hat(0)<<","<<n_hat(1)<<","<<n_hat(2)<<std::endl;
+    L_n = L_n + L_n_dot;
+    std::cout<<"L_N "<<std::endl;
+    std::cout<<L_n;
+    std::cout<<"L_N "<<std::endl;
+    std::cout<<L_n_dot;
+
+}
+
 
 void ManipTool::load_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans){
     if((is_file_exist(fn_nv.c_str()) == true)&&(is_file_exist(fn_rorate.c_str()) == true)&&\
@@ -80,3 +107,6 @@ void ManipTool::store_parameters(std::string fn_nv, std::string fn_rorate,std::s
         exit(0);
     }
 }
+
+
+

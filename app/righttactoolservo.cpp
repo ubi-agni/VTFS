@@ -70,6 +70,7 @@ ros::Publisher jsPub;
 ros::NodeHandle *nh;
 //ros::Publisher gamma_force_marker_pub;
 ros::Publisher nv_est_marker_pub;
+ros::Publisher nv_est_marker_update_pub;
 #endif
 
 ComOkc *com_okc;
@@ -99,7 +100,7 @@ RG_Pose init_tool_pose;
 //contact detector init
 ContactDetector *cdt;
 
-std::ofstream P_ctc, P_est;
+std::ofstream P_ctc, P_est, P_nv_est;
 
 std::string fn_nv,fn_rotate,fn_trans;
 #define newP_x 0.1
@@ -166,6 +167,7 @@ ExploreAction ea;
 Eigen::Vector3d linear_v,omega_v;
 bool translation_est_flag;
 bool update_chain_flag;
+bool update_nv_flag;
 
 
 
@@ -238,6 +240,105 @@ void tactool_taxel_sliding_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     right_task_vec.back()->set_desired_cp_myrmex(cp);
     rmt = NormalMode;
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+}
+
+void go_a_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    double cp[2];
+    cp[0] = 3;
+    cp[1] = 3;
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
+    right_ac_vec.push_back(new TacServoController(*pm));
+    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
+    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
+    right_task_vec.back()->mt = TACTILE;
+    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    right_task_vec.back()->set_desired_cp_myrmex(cp);
+    rmt = NormalMode;
+
+    //in order to update the normal direciton, we need initialize the normal direction
+    //from the kinestheic teaching
+
+    update_nv_flag = true;
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+}
+
+void go_b_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    double cp[2];
+    cp[0] = 3;
+    cp[1] = 12;
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
+    right_ac_vec.push_back(new TacServoController(*pm));
+    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
+    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
+    right_task_vec.back()->mt = TACTILE;
+    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    right_task_vec.back()->set_desired_cp_myrmex(cp);
+    rmt = NormalMode;
+    //in order to update the normal direciton, we need initialize the normal direction
+    //from the kinestheic teaching
+//    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
+    update_nv_flag = true;
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+}
+
+
+void go_c_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    double cp[2];
+    cp[0] = 12;
+    cp[1] = 12;
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
+    right_ac_vec.push_back(new TacServoController(*pm));
+    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
+    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
+    right_task_vec.back()->mt = TACTILE;
+    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    right_task_vec.back()->set_desired_cp_myrmex(cp);
+    rmt = NormalMode;
+    //in order to update the normal direciton, we need initialize the normal direction
+    //from the kinestheic teaching
+//    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
+    update_nv_flag = true;
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+}
+
+
+void go_d_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    double cp[2];
+    cp[0] = 12;
+    cp[1] = 3;
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
+    right_ac_vec.push_back(new TacServoController(*pm));
+    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
+    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
+    right_task_vec.back()->mt = TACTILE;
+    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    right_task_vec.back()->set_desired_cp_myrmex(cp);
+    rmt = NormalMode;
+    //in order to update the normal direciton, we need initialize the normal direction
+    //from the kinestheic teaching
+//    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
+    update_nv_flag = true;
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
@@ -339,6 +440,9 @@ void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->set_desired_o_ax(o);
     std::cout<<"switch to normal control"<<std::endl;
     rmt = NormalMode;
+
+    //temperarily put here
+    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
     mutex_act.unlock();
 }
 
@@ -681,6 +785,49 @@ void ros_publisher(){
         nv_est_marker_pub.publish(nv_est_marker);
     }
 
+    if(nv_est_marker_update_pub.getNumSubscribers() >= 1){
+        visualization_msgs::Marker nv_est_marker_update;
+        Eigen::Vector3d g_est_trans;
+        g_est_trans.setZero();
+        g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
+        mutex_tac.lock();
+        // Set the color -- be sure to set alpha to something non-zero!
+        nv_est_marker_update.color.r = 1.0f;
+        nv_est_marker_update.color.g = 0.0f;
+        nv_est_marker_update.color.b = 0.0f;
+        nv_est_marker_update.color.a = 1.0;
+        mutex_tac.unlock();
+
+        nv_est_marker_update.header.frame_id = "frame";
+        nv_est_marker_update.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        nv_est_marker_update.ns = "KukaRos";
+        nv_est_marker_update.id = 0;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        nv_est_marker_update.type = visualization_msgs::Marker::ARROW;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        nv_est_marker_update.action = visualization_msgs::Marker::ADD;
+
+        nv_est_marker_update.points.resize(2);
+        nv_est_marker_update.points[0].x = g_est_trans(0);
+        nv_est_marker_update.points[0].y = g_est_trans(1);
+        nv_est_marker_update.points[0].z = g_est_trans(2);
+
+        nv_est_marker_update.points[1].x = g_est_trans(0)+mt_ptr->est_nv(0)/20;
+        nv_est_marker_update.points[1].y = g_est_trans(1)+mt_ptr->est_nv(1)/20;
+        nv_est_marker_update.points[1].z = g_est_trans(2)+mt_ptr->est_nv(2)/20;
+        std::cout<<"estimated nv is: "<<mt_ptr->est_nv(0)<<","<<mt_ptr->est_nv(1)<<","<<mt_ptr->est_nv(2)<<std::endl;
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        nv_est_marker_update.scale.x = .001;
+        nv_est_marker_update.scale.y = .001;
+        nv_est_marker_update.scale.z = .001;
+
+        nv_est_marker_update.lifetime = ros::Duration();
+        nv_est_marker_update_pub.publish(nv_est_marker_update);
+    }
+
     //create a ROS tf object and fill it orientation only currently
     //broadcast this transform to ROS relative to world(kuka_endeffector)
     Eigen::Vector3d g_est_trans;
@@ -753,6 +900,7 @@ void init(){
     robot_eef_deque.assign(NV_EST_LEN, Eigen::Vector3d::Zero());
     pcaf = new PCAFeature(NV_EST_LEN);
     update_chain_flag = false;
+    update_nv_flag = false;
 
 //    init_tool_pose.p.setZero();
 //    init_tool_pose.o.setZero();
@@ -780,6 +928,10 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> load_tool_param(load_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> store_tool_param(store_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> update_chain(update_chain_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> go_a(go_a_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> go_b(go_b_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> go_c(go_c_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> go_d(go_d_cb);
 
     std::string config_filename = selfpath + "/etc/right_arm_param.xml";
     if(is_file_exist(config_filename.c_str()) == false){
@@ -882,6 +1034,10 @@ void init(){
     com_rsb->register_external("/foo/load_tool_param",load_tool_param);
     com_rsb->register_external("/foo/store_tool_param",store_tool_param);
     com_rsb->register_external("/foo/update_chain",update_chain);
+    com_rsb->register_external("/foo/go_a",go_a);
+    com_rsb->register_external("/foo/go_b",go_b);
+    com_rsb->register_external("/foo/go_c",go_c);
+    com_rsb->register_external("/foo/go_d",go_d);
 
 #ifdef HAVE_ROS
     std::string left_kuka_arm_name="la";
@@ -907,6 +1063,7 @@ void init(){
 
     js.header.frame_id="frame";
     nv_est_marker_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker", 2);
+    nv_est_marker_update_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker_update", 2);
 
     jsPub = nh->advertise<sensor_msgs::JointState> ("joint_states", 2);
     ros::spinOnce();
@@ -964,6 +1121,19 @@ void run_rightarm(){
                   <<","<<myrtac->ctc_vel(1) <<","<<myrtac->ctc_vel(2)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<","<<store_temp(0)<<","<<store_temp(1)<<","<<store_temp(2)<<std::endl;
         }
 
+        if((update_nv_flag == true)&&(myrtac->contactflag == true)&&(myrtac->cog_x > 0)&&(myrtac->cog_y > 0)){
+            Eigen::Vector3d store_vel,temp_vel;
+            store_vel.setZero();
+            temp_vel.setZero();
+            store_vel = right_rs->robot_orien["robot_eef"]*linear_v;
+            myrtac->cal_ctc_lv();
+            mt_ptr->update_nv(right_rs->robot_orien["robot_eef"]*linear_v,mt_ptr->est_nv,temp_vel);
+            P_nv_est<<store_vel(0)<<","<<store_vel(1)<<","<<store_vel(2)<<","<<myrtac->ctc_vel(0)\
+                   <<","<<myrtac->ctc_vel(1)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<","\
+                  <<mt_ptr->est_nv(0)<<","<<mt_ptr->est_nv(1)<<","<<mt_ptr->est_nv(2)<<","\
+                    <<temp_vel(0)<<","<<temp_vel(1)<<","<<temp_vel(2)<<std::endl;
+        }
+
         //using all kinds of controllers to update the reference
         mutex_act.lock();
         for(unsigned int i = 0; i < right_ac_vec.size();i++){
@@ -1001,6 +1171,7 @@ int main(int argc, char* argv[])
     std::string data_f ("/tmp/");
     P_ctc.open((data_f+std::string("ctc.txt")).c_str());
     P_est.open((data_f+std::string("est.txt")).c_str());
+    P_nv_est.open((data_f+std::string("nvest.txt")).c_str());
 
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);

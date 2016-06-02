@@ -52,14 +52,26 @@ public:
     ToolState ts;
     Eigen::Vector3d update_translation_est(Eigen::Vector3d lv,Eigen::Vector3d rv,\
                                  Eigen::Matrix3d robot_eef_rm, MyrmexTac *myrtac);
+    void update_nv(Eigen::Vector3d lv,Eigen::Vector3d &n_hat,Eigen::Vector3d& nv_dot_fb);
+    //parameters required for the translation learning
     Eigen::Matrix3d Gama_r;
     Eigen::Matrix3d L_r;
     Eigen::Matrix3d L_r_dot;
     Eigen::Vector3d  c_r;
     Eigen::Vector3d  c_r_dot;
     double beta_r = 0.99;
+
+    //parameters for the normal direction estimation
+    Eigen::Matrix3d P_bar;
+    double Gama_n = 2;
+    Eigen::Matrix3d L_n;
+    Eigen::Matrix3d L_n_dot;
+    Eigen::Vector3d nv_dot;
+    double beta_n = 0.99;
+
     Eigen::Vector3d est_trans;
     Eigen::Vector3d est_trans_dot;
+    Eigen::Vector3d est_nv;
     void update_tac_sensor_cfm_local();
     void store_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans);
     void load_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans);

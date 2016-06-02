@@ -391,7 +391,7 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
         deltais(2) =  desiredf - tacfb->cf;
 //        std::cout<<"desiredf and current f are "<<desiredf<<","<<tacfb->cf<<std::endl;
         deltais(5) = desiredorien - tacfb->lineorien;
-        std::cout<<"deisred and current line direction"<<desiredorien<<",,,,,"<<tacfb->lineorien<<std::endl;
+//        std::cout<<"deisred and current line direction"<<desiredorien<<",,,,,"<<tacfb->lineorien<<std::endl;
     }
     else{
         deltais(0) = 0;
