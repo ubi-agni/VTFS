@@ -59,7 +59,7 @@ public:
     Eigen::Matrix3d L_r_dot;
     Eigen::Vector3d  c_r;
     Eigen::Vector3d  c_r_dot;
-    double beta_r = 0.99;
+    double beta_r;
 
     //parameters for the normal direction estimation
     Eigen::Matrix3d P_bar;

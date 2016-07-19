@@ -4,12 +4,12 @@
 ManipTool::ManipTool(RobotState *rs)
 {
     mtt = Notool;
-    Gama_r = Eigen::Matrix3d::Identity();
+    Gama_r = 2*Eigen::Matrix3d::Identity();
     L_r = Eigen::Matrix3d::Zero();
     L_r_dot = Eigen::Matrix3d::Zero();
     c_r.setZero();
     c_r_dot.setZero();
-    beta_r = 0.99;
+    beta_r = 0.9;
     est_trans.setZero();
     est_trans_dot.setZero();
     est_nv.setZero();
@@ -46,20 +46,12 @@ Eigen::Vector3d ManipTool::update_translation_est(Eigen::Vector3d lv,Eigen::Vect
 
 void ManipTool::update_nv(Eigen::Vector3d lv,Eigen::Vector3d& n_hat,Eigen::Vector3d& nv_dot_fb){
     P_bar = Eigen::Matrix3d::Identity()-n_hat*n_hat.transpose();
-    std::cout<<"P_bar "<<std::endl;
-    std::cout<<P_bar;
     nv_dot = -1*Gama_n*P_bar*L_n*n_hat;
-    std::cout<<"nv_dot: "<<nv_dot(0)<<","<<nv_dot(0)<<","<<nv_dot(0)<<std::endl;
     nv_dot_fb = nv_dot;
     L_n_dot = -beta_n*L_n+(1/(1+pow(lv.norm(),2)))*lv*lv.transpose();
     n_hat = n_hat+nv_dot;
     n_hat = n_hat/n_hat.norm();
-    std::cout<<"n_hat are: "<<n_hat(0)<<","<<n_hat(1)<<","<<n_hat(2)<<std::endl;
     L_n = L_n + L_n_dot;
-    std::cout<<"L_N "<<std::endl;
-    std::cout<<L_n;
-    std::cout<<"L_N "<<std::endl;
-    std::cout<<L_n_dot;
 
 }
 

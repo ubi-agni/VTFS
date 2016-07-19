@@ -71,6 +71,8 @@ ros::NodeHandle *nh;
 //ros::Publisher gamma_force_marker_pub;
 ros::Publisher nv_est_marker_pub;
 ros::Publisher nv_est_marker_update_pub;
+//four target markers
+ros::Publisher Marker_1_pub,Marker_2_pub,Marker_3_pub,Marker_4_pub;
 #endif
 
 ComOkc *com_okc;
@@ -168,6 +170,8 @@ Eigen::Vector3d linear_v,omega_v;
 bool translation_est_flag;
 bool update_chain_flag;
 bool update_nv_flag;
+bool vis_first_contact_flag;
+bool update_rotationtm_flag;
 
 
 
@@ -259,6 +263,7 @@ void go_a_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = TACTILE;
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     right_task_vec.back()->set_desired_cp_myrmex(cp);
+    translation_est_flag = false;
     rmt = NormalMode;
 
     //in order to update the normal direciton, we need initialize the normal direction
@@ -266,7 +271,7 @@ void go_a_cb(boost::shared_ptr<std::string> data){
 
     update_nv_flag = true;
     mutex_act.unlock();
-    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+    std::cout<<"tactile servoing for sliding to the desired point a"<<std::endl;
 }
 
 void go_b_cb(boost::shared_ptr<std::string> data){
@@ -289,8 +294,9 @@ void go_b_cb(boost::shared_ptr<std::string> data){
     //from the kinestheic teaching
 //    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
     update_nv_flag = true;
+    translation_est_flag = false;
     mutex_act.unlock();
-    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+    std::cout<<"tactile servoing for sliding to the desired point b"<<std::endl;
 }
 
 
@@ -314,8 +320,9 @@ void go_c_cb(boost::shared_ptr<std::string> data){
     //from the kinestheic teaching
 //    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
     update_nv_flag = true;
+    translation_est_flag = false;
     mutex_act.unlock();
-    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+    std::cout<<"tactile servoing for sliding to the desired point c"<<std::endl;
 }
 
 
@@ -339,8 +346,9 @@ void go_d_cb(boost::shared_ptr<std::string> data){
     //from the kinestheic teaching
 //    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
     update_nv_flag = true;
+    translation_est_flag = false;
     mutex_act.unlock();
-    std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+    std::cout<<"tactile servoing for sliding to the desired point d"<<std::endl;
 }
 
 
@@ -441,10 +449,31 @@ void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     std::cout<<"switch to normal control"<<std::endl;
     rmt = NormalMode;
 
-    //temperarily put here
-    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
+
     mutex_act.unlock();
 }
+
+void init_nv_cb(boost::shared_ptr<std::string> data){
+    //before update nv, init it with kinesthetic teching result.
+    std::cout<<"init nv correctly"<<mt_ptr->est_nv<<std::endl;
+    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
+}
+
+void update_nv_cb(boost::shared_ptr<std::string> data){
+    init_est_tool_ort = gen_ort_basis(mt_ptr->est_nv);
+    init_tool_pose.o = init_est_tool_ort;
+    //Ttool2eef = Tg2eef * Ttool2g; to this end, the Ttool can be updated by Ttool2g = Teef2g * Ttool2eef;
+    //which is Ttool = Teef * rel_eef_tactool;
+    rel_eef_tactool = right_rs->robot_orien["robot_eef"].transpose() * init_est_tool_ort;
+    if(left_myrmex_msg.contactflag == true){
+        mt_ptr->ts.init_ctc_x = left_myrmex_msg.cogx;
+        mt_ptr->ts.init_ctc_y = left_myrmex_msg.cogy;
+    }
+    std::cout<<"update nv and relative nv finished "<<std::endl;
+    mt_ptr->ts.rel_o = rel_eef_tactool;
+    update_nv_flag = false;
+}
+
 
 void nv_est(){
     if(rec_flag_nv_est == true){
@@ -545,6 +574,7 @@ void xy_est_cb(){
 
 void update_contact_frame_cb(boost::shared_ptr<std::string> data){
     xy_est_cb();
+    update_rotationtm_flag = true;
 }
 
 
@@ -633,7 +663,7 @@ void rotatexangle_cb(boost::shared_ptr<std::string> data){
    right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
    translation_est_flag = true;
    mutex_act.unlock();
-   std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
+   std::cout<<"tactile servoing for rolling to the desired point x"<<std::endl;
 }
 
 void rotateyangle_cb(boost::shared_ptr<std::string> data){
@@ -653,7 +683,7 @@ void rotateyangle_cb(boost::shared_ptr<std::string> data){
    right_task_vec.back()->set_desired_rotation_range(ea.ra_xaxis,ea.ra_yaxis,0);
    translation_est_flag = true;
    mutex_act.unlock();
-   std::cout<<"tactile servoing for rolling to the desired point"<<std::endl;
+   std::cout<<"tactile servoing for rolling to the desired point y"<<std::endl;
 }
 
 void linexlen_cb(boost::shared_ptr<std::string> data){
@@ -672,7 +702,7 @@ void linexlen_cb(boost::shared_ptr<std::string> data){
    right_task_vec.back()->set_desired_cp_moving_dir(ea.la_xaxis,ea.la_yaxis);
    mutex_act.unlock();
    rec_flag_xy_est = true;
-   std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+   std::cout<<"tactile servoing for sliding to the desired point x"<<std::endl;
 }
 
 void lineylen_cb(boost::shared_ptr<std::string> data){
@@ -690,7 +720,7 @@ void lineylen_cb(boost::shared_ptr<std::string> data){
    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
    right_task_vec.back()->set_desired_cp_moving_dir(ea.la_xaxis,ea.la_yaxis);
    mutex_act.unlock();
-   std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
+   std::cout<<"tactile servoing for sliding to the desired point y"<<std::endl;
    rec_flag_xy_est = true;
 }
 
@@ -745,6 +775,149 @@ void ros_publisher(){
     }
 
     js.header.stamp=ros::Time::now();
+    //publish marker of target
+    //publish the actived taxel
+    if ((Marker_1_pub.getNumSubscribers() >= 1)){
+        visualization_msgs::Marker target_marker;
+        // Set the color -- be sure to set alpha to something non-zero!
+        target_marker.color.r = 1.0f;
+        target_marker.color.g = 0.0f;
+        target_marker.color.b = 0.0f;
+        target_marker.color.a = 1.0;
+
+        target_marker.header.frame_id = "frame";
+        target_marker.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        target_marker.ns = "KukaRos";
+        target_marker.id = 0;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        target_marker.type = visualization_msgs::Marker::CUBE;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        target_marker.action = visualization_msgs::Marker::ADD;
+        target_marker.pose.position.x = 0.464;
+        target_marker.pose.position.y = 0.339;
+        target_marker.pose.position.z = 0.02;
+        target_marker.pose.orientation.x = 0.0;
+        target_marker.pose.orientation.y = 0.0;
+        target_marker.pose.orientation.z = 0.0;
+        target_marker.pose.orientation.w = 1.0;
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        target_marker.scale.x = .105;
+        target_marker.scale.y = .105;
+        target_marker.scale.z = .002;
+
+        target_marker.lifetime = ros::Duration();
+        Marker_1_pub.publish(target_marker);
+    }
+
+    if ((Marker_2_pub.getNumSubscribers() >= 1)){
+        visualization_msgs::Marker target_marker;
+        // Set the color -- be sure to set alpha to something non-zero!
+        target_marker.color.r = 1.0f;
+        target_marker.color.g = 0.0f;
+        target_marker.color.b = 0.0f;
+        target_marker.color.a = 1.0;
+
+        target_marker.header.frame_id = "frame";
+        target_marker.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        target_marker.ns = "KukaRos";
+        target_marker.id = 0;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        target_marker.type = visualization_msgs::Marker::CUBE;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        target_marker.action = visualization_msgs::Marker::ADD;
+        target_marker.pose.position.x = 0.171;
+        target_marker.pose.position.y = 0.220;
+        target_marker.pose.position.z = 0.02;
+        target_marker.pose.orientation.x = 0.0;
+        target_marker.pose.orientation.y = 0.0;
+        target_marker.pose.orientation.z = 0.0;
+        target_marker.pose.orientation.w = 1.0;
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        target_marker.scale.x = .105;
+        target_marker.scale.y = .105;
+        target_marker.scale.z = .002;
+
+        target_marker.lifetime = ros::Duration();
+        Marker_2_pub.publish(target_marker);
+    }
+
+    if ((Marker_3_pub.getNumSubscribers() >= 1)){
+        visualization_msgs::Marker target_marker;
+        // Set the color -- be sure to set alpha to something non-zero!
+        target_marker.color.r = 1.0f;
+        target_marker.color.g = 0.0f;
+        target_marker.color.b = 0.0f;
+        target_marker.color.a = 1.0;
+
+        target_marker.header.frame_id = "frame";
+        target_marker.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        target_marker.ns = "KukaRos";
+        target_marker.id = 0;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        target_marker.type = visualization_msgs::Marker::CUBE;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        target_marker.action = visualization_msgs::Marker::ADD;
+        target_marker.pose.position.x = 0.0835;
+        target_marker.pose.position.y = 0.472;
+        target_marker.pose.position.z = 0.02;
+        target_marker.pose.orientation.x = 0.0;
+        target_marker.pose.orientation.y = 0.0;
+        target_marker.pose.orientation.z = 0.0;
+        target_marker.pose.orientation.w = 1.0;
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        target_marker.scale.x = .105;
+        target_marker.scale.y = .105;
+        target_marker.scale.z = .002;
+
+        target_marker.lifetime = ros::Duration();
+        Marker_3_pub.publish(target_marker);
+    }
+
+    if ((Marker_4_pub.getNumSubscribers() >= 1)){
+        visualization_msgs::Marker target_marker;
+        // Set the color -- be sure to set alpha to something non-zero!
+        target_marker.color.r = 1.0f;
+        target_marker.color.g = 0.0f;
+        target_marker.color.b = 0.0f;
+        target_marker.color.a = 1.0;
+
+        target_marker.header.frame_id = "frame";
+        target_marker.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        target_marker.ns = "KukaRos";
+        target_marker.id = 0;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        target_marker.type = visualization_msgs::Marker::CUBE;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        target_marker.action = visualization_msgs::Marker::ADD;
+        target_marker.pose.position.x = 0.3716;
+        target_marker.pose.position.y = 0.134;
+        target_marker.pose.position.z = 0.02;
+        target_marker.pose.orientation.x = 0.0;
+        target_marker.pose.orientation.y = 0.0;
+        target_marker.pose.orientation.z = 0.0;
+        target_marker.pose.orientation.w = 1.0;
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        target_marker.scale.x = .105;
+        target_marker.scale.y = .105;
+        target_marker.scale.z = .002;
+
+        target_marker.lifetime = ros::Duration();
+        Marker_4_pub.publish(target_marker);
+    }
+
+
     //publish the gamma force vector
     if(nv_est_marker_pub.getNumSubscribers() >= 1){
         visualization_msgs::Marker nv_est_marker;
@@ -789,7 +962,8 @@ void ros_publisher(){
         visualization_msgs::Marker nv_est_marker_update;
         Eigen::Vector3d g_est_trans;
         g_est_trans.setZero();
-        g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
+        g_est_trans = right_rs->robot_position["robot_eef"];
+//        g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
         mutex_tac.lock();
         // Set the color -- be sure to set alpha to something non-zero!
         nv_est_marker_update.color.r = 1.0f;
@@ -814,15 +988,20 @@ void ros_publisher(){
         nv_est_marker_update.points[0].y = g_est_trans(1);
         nv_est_marker_update.points[0].z = g_est_trans(2);
 
-        nv_est_marker_update.points[1].x = g_est_trans(0)+mt_ptr->est_nv(0)/20;
-        nv_est_marker_update.points[1].y = g_est_trans(1)+mt_ptr->est_nv(1)/20;
-        nv_est_marker_update.points[1].z = g_est_trans(2)+mt_ptr->est_nv(2)/20;
-        std::cout<<"estimated nv is: "<<mt_ptr->est_nv(0)<<","<<mt_ptr->est_nv(1)<<","<<mt_ptr->est_nv(2)<<std::endl;
+        Eigen::Vector3d temp_nv;
+        temp_nv.setZero();
+        temp_nv = real_tactool_ctcframe.col(2);
+
+
+
+        nv_est_marker_update.points[1].x = g_est_trans(0)+temp_nv(0)/2;
+        nv_est_marker_update.points[1].y = g_est_trans(1)+temp_nv(1)/2;
+        nv_est_marker_update.points[1].z = g_est_trans(2)+temp_nv(2)/2;
 
         // Set the scale of the marker -- 1x1x1 here means 1m on a side
-        nv_est_marker_update.scale.x = .001;
-        nv_est_marker_update.scale.y = .001;
-        nv_est_marker_update.scale.z = .001;
+        nv_est_marker_update.scale.x = .003;
+        nv_est_marker_update.scale.y = .003;
+        nv_est_marker_update.scale.z = .003;
 
         nv_est_marker_update.lifetime = ros::Duration();
         nv_est_marker_update_pub.publish(nv_est_marker_update);
@@ -837,28 +1016,29 @@ void ros_publisher(){
     cur_est_tool_ort = right_rs->robot_orien["robot_eef"] * mt_ptr->ts.rel_o;
     tf::matrixEigenToTF (cur_est_tool_ort, tfR);
 
-    g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
-    transform.setOrigin( tf::Vector3(g_est_trans(0), g_est_trans(1), g_est_trans(2)) );
-    transform.setBasis(tfR);
-    br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
+    if(vis_first_contact_flag == true){
+        g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
+        transform.setOrigin( tf::Vector3(g_est_trans(0), g_est_trans(1), g_est_trans(2)) );
+        transform.setBasis(tfR);
+        br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
+    }
 
-    //update contact frame after the tac exploration action
-    real_tactool_ctcframe =  cur_est_tool_ort * mt_ptr->ts.rotate_s2sdot;
-    tf::matrixEigenToTF (real_tactool_ctcframe, tfR);
-    transform.setOrigin( tf::Vector3(g_est_trans(0), g_est_trans(1), g_est_trans(2)) );
-    transform.setBasis(tfR);
-    br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "updated_tactool_frame"));
+    if(update_rotationtm_flag == true){
+        //update contact frame after the tac exploration action
+        real_tactool_ctcframe =  cur_est_tool_ort * mt_ptr->ts.rotate_s2sdot;
+        tf::matrixEigenToTF (real_tactool_ctcframe, tfR);
+        transform.setOrigin( tf::Vector3(g_est_trans(0), g_est_trans(1), g_est_trans(2)) );
+        transform.setBasis(tfR);
+        br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "updated_tactool_frame"));
+    }
 
     //update and check manipulation chain
     if(update_chain_flag == true){
         tf::matrixEigenToTF (right_rs->robot_orien["eef"], tfR);
         transform.setOrigin( tf::Vector3(right_rs->robot_position["eef"](0), right_rs->robot_position["eef"](1), right_rs->robot_position["eef"](2)) );
         transform.setBasis(tfR);
-        br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "newchain_eef_frame"));
+//        br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "newchain_eef_frame"));
     }
-
-
-
 
     // send a joint_state
     jsPub.publish(js);
@@ -901,6 +1081,8 @@ void init(){
     pcaf = new PCAFeature(NV_EST_LEN);
     update_chain_flag = false;
     update_nv_flag = false;
+    vis_first_contact_flag = false;
+    update_rotationtm_flag = false;
 
 //    init_tool_pose.p.setZero();
 //    init_tool_pose.o.setZero();
@@ -928,10 +1110,12 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> load_tool_param(load_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> store_tool_param(store_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> update_chain(update_chain_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> init_nv(init_nv_cb);
     boost::function<void(boost::shared_ptr<std::string>)> go_a(go_a_cb);
     boost::function<void(boost::shared_ptr<std::string>)> go_b(go_b_cb);
     boost::function<void(boost::shared_ptr<std::string>)> go_c(go_c_cb);
     boost::function<void(boost::shared_ptr<std::string>)> go_d(go_d_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> update_nv(update_nv_cb);
 
     std::string config_filename = selfpath + "/etc/right_arm_param.xml";
     if(is_file_exist(config_filename.c_str()) == false){
@@ -1034,10 +1218,12 @@ void init(){
     com_rsb->register_external("/foo/load_tool_param",load_tool_param);
     com_rsb->register_external("/foo/store_tool_param",store_tool_param);
     com_rsb->register_external("/foo/update_chain",update_chain);
+    com_rsb->register_external("/foo/init_nv",init_nv);
     com_rsb->register_external("/foo/go_a",go_a);
     com_rsb->register_external("/foo/go_b",go_b);
     com_rsb->register_external("/foo/go_c",go_c);
     com_rsb->register_external("/foo/go_d",go_d);
+    com_rsb->register_external("/foo/update_nv",update_nv);
 
 #ifdef HAVE_ROS
     std::string left_kuka_arm_name="la";
@@ -1064,6 +1250,10 @@ void init(){
     js.header.frame_id="frame";
     nv_est_marker_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker", 2);
     nv_est_marker_update_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker_update", 2);
+    Marker_1_pub = nh->advertise<visualization_msgs::Marker>("marker1", 2);
+    Marker_2_pub = nh->advertise<visualization_msgs::Marker>("marker2", 2);
+    Marker_3_pub = nh->advertise<visualization_msgs::Marker>("marker3", 2);
+    Marker_4_pub = nh->advertise<visualization_msgs::Marker>("marker4", 2);
 
     jsPub = nh->advertise<sensor_msgs::JointState> ("joint_states", 2);
     ros::spinOnce();
@@ -1087,6 +1277,7 @@ void run_rightarm(){
 //            std::cout<<"init contact "<<std::endl;
 //            std::cout<<cdt->tac_ctc_deque.at(0)<<"," <<cdt->tac_ctc_deque.at(1)<<","<<cdt->tac_ctc_deque.at(2)<<","<<cdt->tac_ctc_deque.at(3)<<","<<cdt->tac_ctc_deque.at(4)<<std::endl;
             nv_est();
+            vis_first_contact_flag = true;
         }
 
 //        kuka_right_arm->update_robot_stiffness();
@@ -1118,7 +1309,8 @@ void run_rightarm(){
             store_temp = mt_ptr->update_translation_est(linear_v,omega_v,right_rs->robot_orien["robot_eef"],myrtac);
             P_est<<linear_v(0)<<","<<linear_v(1)<<","<<linear_v(2)<<","<<omega_v(0)<<","<<omega_v(1)<<","<<omega_v(2)<<",";
             P_est<<mt_ptr->est_trans(0)<<","<<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<","<<myrtac->ctc_vel(0)\
-                  <<","<<myrtac->ctc_vel(1) <<","<<myrtac->ctc_vel(2)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<","<<store_temp(0)<<","<<store_temp(1)<<","<<store_temp(2)<<std::endl;
+                  <<","<<myrtac->ctc_vel(1) <<","<<myrtac->ctc_vel(2)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<","\
+                 <<store_temp(0)<<","<<store_temp(1)<<","<<store_temp(2)<<std::endl;
         }
 
         if((update_nv_flag == true)&&(myrtac->contactflag == true)&&(myrtac->cog_x > 0)&&(myrtac->cog_y > 0)){
@@ -1154,6 +1346,8 @@ void run_rightarm(){
         right_ac_vec[0]->llv.setZero();
         right_ac_vec[0]->lov.setZero();
         mutex_act.unlock();
+
+//        std::cout<<"position"<<right_rs->robot_position["eef"](0)<<","<<right_rs->robot_position["eef"](1)<<","<<right_rs->robot_position["eef"](2)<<std::endl;
 
         //use CBF to compute the desired joint angle rate
         kuka_right_arm->update_cbf_controller();
