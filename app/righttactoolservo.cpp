@@ -65,12 +65,13 @@
 #ifdef HAVE_ROS
 // ROS objects
 tf::TransformBroadcaster *br;
-sensor_msgs::JointState js;
-ros::Publisher jsPub;
+sensor_msgs::JointState js_la, js_ra;
+ros::Publisher jsPub_la, jsPub_ra;
 ros::NodeHandle *nh;
 //ros::Publisher gamma_force_marker_pub;
 ros::Publisher nv_est_marker_pub;
 ros::Publisher nv_est_marker_update_pub;
+ros::Publisher tactool_pose_pub,tactool_pose_update_pub;
 //four target markers
 ros::Publisher Marker_1_pub,Marker_2_pub,Marker_3_pub,Marker_4_pub;
 #endif
@@ -770,11 +771,12 @@ void ros_publisher(){
     //prepare joint state data
     for(unsigned int i=0 ; i< 7;++i){
         //there is a arm name changed because the confliction between openkc and kukas in rviz
-        js.position[i]=right_rs->JntPosition_mea[i];
-        js.position[i+7]=0;
+        js_la.position[i]=right_rs->JntPosition_mea[i];
+        js_ra.position[i]=0;
     }
 
-    js.header.stamp=ros::Time::now();
+    js_la.header.stamp=ros::Time::now();
+    js_ra.header.stamp=ros::Time::now();
     //publish marker of target
     //publish the actived taxel
     if ((Marker_1_pub.getNumSubscribers() >= 1)){
@@ -962,8 +964,8 @@ void ros_publisher(){
         visualization_msgs::Marker nv_est_marker_update;
         Eigen::Vector3d g_est_trans;
         g_est_trans.setZero();
-        g_est_trans = right_rs->robot_position["robot_eef"];
-//        g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
+//        g_est_trans = right_rs->robot_position["robot_eef"];
+        g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
         mutex_tac.lock();
         // Set the color -- be sure to set alpha to something non-zero!
         nv_est_marker_update.color.r = 1.0f;
@@ -1012,24 +1014,101 @@ void ros_publisher(){
     Eigen::Vector3d g_est_trans;
     g_est_trans.setZero();
     tf::Matrix3x3 tfR;
+    tf::Quaternion rep_q;
     tf::Transform transform;
     cur_est_tool_ort = right_rs->robot_orien["robot_eef"] * mt_ptr->ts.rel_o;
     tf::matrixEigenToTF (cur_est_tool_ort, tfR);
+    g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
 
     if(vis_first_contact_flag == true){
-        g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
+        visualization_msgs::Marker tactool_marker_update_1;
         transform.setOrigin( tf::Vector3(g_est_trans(0), g_est_trans(1), g_est_trans(2)) );
         transform.setBasis(tfR);
         br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "est_tactool_frame"));
+//        //visualize the tactool
+//        // Set the color -- be sure to set alpha to something non-zero!
+//        tactool_marker_update_1.color.r = 1.0f;
+//        tactool_marker_update_1.color.g = 0.0f;
+//        tactool_marker_update_1.color.b = 0.0f;
+//        tactool_marker_update_1.color.a = 1.0;
+
+//        tactool_marker_update_1.header.frame_id = "frame";
+//        tactool_marker_update_1.header.stamp = ros::Time::now();
+//        // Set the namespace and id for this marker.  This serves to create a unique ID
+//        // Any marker sent with the same namespace and id will overwrite the old one
+//        tactool_marker_update_1.ns = "KukaRos";
+//        tactool_marker_update_1.id = 0;
+//        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+//        tactool_marker_update_1.type = visualization_msgs::Marker::CUBE;
+//        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+//        tactool_marker_update_1.action = visualization_msgs::Marker::ADD;
+
+//        tactool_marker_update_1.pose.position.x = g_est_trans(0);
+//        tactool_marker_update_1.pose.position.y = g_est_trans(1);
+//        tactool_marker_update_1.pose.position.z = g_est_trans(2);
+
+//        tfR.getRotation(rep_q);
+//        tactool_marker_update_1.pose.orientation.x = rep_q.x();
+//        tactool_marker_update_1.pose.orientation.y = rep_q.y();
+//        tactool_marker_update_1.pose.orientation.z = rep_q.z();
+//        tactool_marker_update_1.pose.orientation.w = rep_q.w();
+
+
+//        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+//        tactool_marker_update_1.scale.x = .08;
+//        tactool_marker_update_1.scale.y = .08;
+//        tactool_marker_update_1.scale.z = .02;
+
+//        tactool_marker_update_1.lifetime = ros::Duration();
+//        tactool_pose_pub.publish(tactool_marker_update_1);
+
     }
 
     if(update_rotationtm_flag == true){
+        visualization_msgs::Marker tactool_marker_update_2;
         //update contact frame after the tac exploration action
         real_tactool_ctcframe =  cur_est_tool_ort * mt_ptr->ts.rotate_s2sdot;
         tf::matrixEigenToTF (real_tactool_ctcframe, tfR);
         transform.setOrigin( tf::Vector3(g_est_trans(0), g_est_trans(1), g_est_trans(2)) );
         transform.setBasis(tfR);
         br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "updated_tactool_frame"));
+
+        //visualize the tactool
+        // Set the color -- be sure to set alpha to something non-zero!
+        tactool_marker_update_2.color.r = 0.0f;
+        tactool_marker_update_2.color.g = 1.0f;
+        tactool_marker_update_2.color.b = 0.0f;
+        tactool_marker_update_2.color.a = 1.0;
+
+        tactool_marker_update_2.header.frame_id = "frame";
+        tactool_marker_update_2.header.stamp = ros::Time::now();
+        // Set the namespace and id for this marker.  This serves to create a unique ID
+        // Any marker sent with the same namespace and id will overwrite the old one
+        tactool_marker_update_2.ns = "KukaRos";
+        tactool_marker_update_2.id = 0;
+        // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+        tactool_marker_update_2.type = visualization_msgs::Marker::CUBE;
+        // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+        tactool_marker_update_2.action = visualization_msgs::Marker::ADD;
+
+        tactool_marker_update_2.pose.position.x = g_est_trans(0);
+        tactool_marker_update_2.pose.position.y = g_est_trans(1);
+        tactool_marker_update_2.pose.position.z = g_est_trans(2);
+
+        tfR.getRotation(rep_q);
+        tactool_marker_update_2.pose.orientation.x = rep_q.x();
+        tactool_marker_update_2.pose.orientation.y = rep_q.y();
+        tactool_marker_update_2.pose.orientation.z = rep_q.z();
+        tactool_marker_update_2.pose.orientation.w = rep_q.w();
+
+
+        // Set the scale of the marker -- 1x1x1 here means 1m on a side
+        tactool_marker_update_2.scale.x = .08;
+        tactool_marker_update_2.scale.y = .08;
+        tactool_marker_update_2.scale.z = .02;
+
+        tactool_marker_update_2.lifetime = ros::Duration();
+        tactool_pose_update_pub.publish(tactool_marker_update_2);
     }
 
     //update and check manipulation chain
@@ -1041,7 +1120,8 @@ void ros_publisher(){
     }
 
     // send a joint_state
-    jsPub.publish(js);
+    jsPub_la.publish(js_la);
+    jsPub_ra.publish(js_ra);
 //    ros::spinOnce();
 }
 
@@ -1228,34 +1308,42 @@ void init(){
 #ifdef HAVE_ROS
     std::string left_kuka_arm_name="la";
     std::string right_kuka_arm_name="ra";
-    js.name.push_back(left_kuka_arm_name+"_arm_0_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_1_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_2_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_3_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_4_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_5_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_6_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_0_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_1_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_2_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_3_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_4_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_5_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_6_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_0_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_1_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_2_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_3_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_4_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_5_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_6_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_0_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_1_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_2_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_3_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_4_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_5_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_6_joint");
 
-    js.position.resize(14);
-    js.velocity.resize(14);
-    js.effort.resize(14);
+    js_la.position.resize(7);
+    js_la.velocity.resize(7);
+    js_la.effort.resize(7);
 
-    js.header.frame_id="frame";
+    js_ra.position.resize(7);
+    js_ra.velocity.resize(7);
+    js_ra.effort.resize(7);
+
+    js_la.header.frame_id="frame_la";
+    js_ra.header.frame_id="frame_ra";
     nv_est_marker_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker", 2);
     nv_est_marker_update_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker_update", 2);
     Marker_1_pub = nh->advertise<visualization_msgs::Marker>("marker1", 2);
     Marker_2_pub = nh->advertise<visualization_msgs::Marker>("marker2", 2);
     Marker_3_pub = nh->advertise<visualization_msgs::Marker>("marker3", 2);
     Marker_4_pub = nh->advertise<visualization_msgs::Marker>("marker4", 2);
+    tactool_pose_pub = nh->advertise<visualization_msgs::Marker>("tactool_virtual", 2);
+    tactool_pose_update_pub = nh->advertise<visualization_msgs::Marker>("tactool_update", 2);
 
-    jsPub = nh->advertise<sensor_msgs::JointState> ("joint_states", 2);
+    jsPub_la = nh->advertise<sensor_msgs::JointState> ("/la/joint_states", 2);
+    jsPub_ra = nh->advertise<sensor_msgs::JointState> ("/ra/joint_states", 2);
     ros::spinOnce();
 
     br = new tf::TransformBroadcaster();
