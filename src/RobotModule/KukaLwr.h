@@ -4,7 +4,6 @@
 #include "Robot.h"
 #include "UtilModule/RebaType.h"
 
-
 #include <fri_okc_comm.h>
 #include <fri_okc_types.h>
 #include <fri_okc_helper.h>

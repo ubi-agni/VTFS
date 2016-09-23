@@ -2,11 +2,13 @@
 #include <iostream>
 
 ParameterManager::ParameterManager(){
+    std::cout<<"empty constructor function"<<std::endl;
 
 }
 
 ParameterManager::ParameterManager(const std::string s = "left_arm_param.xml",TacSensorType t)
 {
+    std::cout<<"loading parameters"<<std::endl;
     map_name_dim[0] = "x";
     map_name_dim[1] = "y";
     map_name_dim[2] = "z";
@@ -57,6 +59,7 @@ ParameterManager::ParameterManager(const std::string s = "left_arm_param.xml",Ta
     force_map_task_name[F_MAINTAIN] = "ForceMaintain";
     force_map_task_name[F_CURVETRACKING] = "ForceCurveTracking";
     tst = t;
+    std::cout<<"loading part finsihed"<<std::endl;
 
     loadCtrlParam(s);
 }

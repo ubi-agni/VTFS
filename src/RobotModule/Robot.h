@@ -30,6 +30,10 @@
 #include <cbf/dummy_resource.h>
 #include <cbf/dummy_reference.h>
 
+//#include <cbf/cddyn_filter.h>
+//#include <cbf/bypass_filter.h>
+//#include <cbf/error_controllers.h>
+
 class ActController;
 class Robot
 {

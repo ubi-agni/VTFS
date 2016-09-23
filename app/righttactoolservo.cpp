@@ -617,6 +617,7 @@ void moveto_cb(boost::shared_ptr<std::string> data){
     right_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
     right_task_vec.back()->mt = JOINTS;
     right_task_vec.back()->mft = GLOBAL;
+    right_task_vec.back()->emt = NOEXPLORE;
     right_task_vec.back()->set_desired_p_eigen(p);
     right_task_vec.back()->set_desired_o_ax(o);
     rmt = NormalMode;
@@ -728,6 +729,8 @@ void lineylen_cb(boost::shared_ptr<std::string> data){
 void update_chain_cb(boost::shared_ptr<std::string> data){
     update_chain_flag = true;
     kuka_right_arm->toolname = tactool;
+    std::cout<<"translation is"<<mt_ptr->est_trans(0)<<","\
+               <<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<std::endl;
     kuka_right_arm->addSegmentinChain(mt_ptr->ts.tac_sensor_cfm_local,mt_ptr->est_trans);
     kuka_right_arm->initCbf();
     kuka_right_arm->get_joint_position_act();
@@ -1362,8 +1365,8 @@ void run_rightarm(){
         //contact status detection
         if(cdt->get_ctc_status(left_myrmex_msg.contactflag) == initcontact){
             //the normal direction will be esimated while the first contact is done.
-//            std::cout<<"init contact "<<std::endl;
-//            std::cout<<cdt->tac_ctc_deque.at(0)<<"," <<cdt->tac_ctc_deque.at(1)<<","<<cdt->tac_ctc_deque.at(2)<<","<<cdt->tac_ctc_deque.at(3)<<","<<cdt->tac_ctc_deque.at(4)<<std::endl;
+            std::cout<<"init contact "<<std::endl;
+            std::cout<<cdt->tac_ctc_deque.at(0)<<"," <<cdt->tac_ctc_deque.at(1)<<","<<cdt->tac_ctc_deque.at(2)<<","<<cdt->tac_ctc_deque.at(3)<<","<<cdt->tac_ctc_deque.at(4)<<std::endl;
             nv_est();
             vis_first_contact_flag = true;
         }

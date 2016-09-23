@@ -160,6 +160,7 @@ void KukaLwr::set_joint_command(){
 //        Jnt_rec<<std::endl;
 }
 
+
 void KukaLwr::no_move(){
     for(int i = 0; i < 7; i++){
         jnt_command[i] = jnt_position_act[i];
