@@ -28,7 +28,14 @@ Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
     double varx = sum_x2 - sum_x * mean_x;
     double cov = sum_xy - sum_x * mean_y;
 
-    rgp.k = atan(cov / varx);
+    if( std::fabs(cov) < 1e-7 ) {
+          // Fail: it seems a vertical line
+        rgp.k = M_PI/2;
+        rgp.b = 0;
+        std::cout<<"the line is a vertical line"<<std::endl;
+        }
+
+    rgp.k = cov / varx;
     rgp.b = mean_y - rgp.k * mean_x;
 
     double a;

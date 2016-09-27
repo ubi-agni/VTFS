@@ -357,95 +357,106 @@ void KukaLwr::initChains(ToolNameT tn){
         perror ("CbfPlanner: setReference(): could not lock mutex");
         exit (EXIT_FAILURE);
     }
+    baseToTool = new Chain();
+    worldToTool = new Chain();
+
 /*
     DH representation referecen paper:Visual Estimation and Control of Robot Manipulating Systems(phd thesis)
 */
     toolname = tn;
     if (kuka_right == rn){
 #ifdef DJALLIL_CONF
-    worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.4,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
+    worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.4,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
 #else
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0.0823, 0.897, 0.2975))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0.0823, 0.897, 0.2975))));
 //        //initial orientation kuka base local y then local z
-//        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(1.047)))));
-//        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(0.5236)))));
+//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(1.047)))));
+//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(0.5236)))));
         // Orientation identical to ROS model from kuka_cal.xml (fixed axis roll pitch yaw  = x y z)
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(M_PI-2.28576)))));
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(0.8484)))));
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotX(0.71215)))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(M_PI-2.28576)))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(0.8484)))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotX(0.71215)))));
 
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.4,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.4,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
         //please comment the next line code if you are doing the robot calibration.
         if(tn == sensing_pole){
-            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
-            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
         }
         if(tn == teensy_finger){
-            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
         }
         if(tn == none){
             //nothing tool is assembled
              std::cout<<"nothing in the end-effector on right arm"<<std::endl;
         }
 
+        if(tn == tactool){
+            //nothing tool is assembled
+             std::cout<<"using tactile tool on right arm"<<std::endl;
+        }
 
 #endif
     }
     if (kuka_left == rn){
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(-0.0803, 0.8966, 0.2948))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(-0.0803, 0.8966, 0.2948))));
         //initial orientation kuka base local y then local z
-//        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(-1.047)))));
-//        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(2.6180)))));
+//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(-1.047)))));
+//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(2.6180)))));
         // Orientation identical to ROS model from kuka_cal.xml (fixed axis roll pitch yaw  = x y z)
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(2.2734)))));
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(0.8318)))));
-        worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotX(-0.7071)))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(2.2734)))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(0.8318)))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotX(-0.7071)))));
 
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.4,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-        worldToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078+0.0286+0.008,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.4,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078+0.0286+0.008,0.0))));
         //please comment the next line code if you are doing the robot calibration.
         if(tn == sensing_pole){
-            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
-            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
         }
         if(tn == teensy_finger){
-            worldToTool.addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
         }
         if(tn == none){
             //nothing tool is assembled
             std::cout<<"nothing in the end-effector on left arm"<<std::endl;
         }
+        if(tn == tactool){
+            //nothing tool is assembled
+             std::cout<<"using tactile tool on left arm"<<std::endl;
+        }
     }
-    baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
-    baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-    baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.4,0.0))));
-    baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
-    baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
-    baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-    baseToTool.addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
+    baseToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
+    baseToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
+    baseToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.4,0.0))));
+    baseToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
+    baseToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
+    baseToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
+    baseToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
 
-    worldToToolFkSolver = new ChainFkSolverPos_recursive (worldToTool);
-    baseToToolFkSolver = new ChainFkSolverPos_recursive (baseToTool);
-    worldToToolIkSolver = new ChainIkSolverVel_pinv (worldToTool);
-    worldToToolJacSolver = new ChainJntToJacSolver (worldToTool);
+    worldToToolFkSolver = new ChainFkSolverPos_recursive (*worldToTool);
+    baseToToolFkSolver = new ChainFkSolverPos_recursive (*baseToTool);
+    worldToToolIkSolver = new ChainIkSolverVel_pinv (*worldToTool);
+    worldToToolJacSolver = new ChainJntToJacSolver (*worldToTool);
     if (0 != pthread_mutex_unlock (&primitiveControllerMutex)){
         perror ("CbfPlanner: setReference(): could not unlock mutex");
         exit (EXIT_FAILURE);
@@ -463,13 +474,32 @@ void KukaLwr::addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p){
     }
     delete worldToToolFkSolver;
     delete  worldToToolJacSolver;
-    worldToTool.addSegment (Segment(Joint(Joint::None),Frame(kdl_R,kdl_p)));
-    worldToToolFkSolver = new ChainFkSolverPos_recursive (worldToTool);
-    worldToToolJacSolver = new ChainJntToJacSolver (worldToTool);
+    worldToTool->addSegment (Segment(Joint(Joint::None),Frame(kdl_R,kdl_p)));
+    worldToToolFkSolver = new ChainFkSolverPos_recursive (*worldToTool);
+    worldToToolJacSolver = new ChainJntToJacSolver (*worldToTool);
     if (0 != pthread_mutex_unlock (&primitiveControllerMutex)){
         perror ("CbfPlanner: setReference(): could not unlock mutex");
         exit (EXIT_FAILURE);
     }
+}
+
+void KukaLwr::backKukaChain(ToolNameT tn){
+    if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not lock mutex");
+        exit (EXIT_FAILURE);
+    }
+    delete baseToTool;
+    delete worldToTool;
+    delete worldToToolFkSolver;
+    delete  worldToToolJacSolver;
+    delete baseToToolFkSolver;
+    delete worldToToolIkSolver;
+    std::cout<<"in back chain sub-routine, rn and tn are "<<rn<<","<<tn<<std::endl;
+    if (0 != pthread_mutex_unlock (&primitiveControllerMutex)){
+        perror ("CbfPlanner: setReference(): could not unlock mutex");
+        exit (EXIT_FAILURE);
+    }
+    initChains(tn);
 }
 
 
@@ -479,7 +509,7 @@ void KukaLwr::initCbf (){
             perror ("CbfPlanner: setReference(): could not lock mutex");
             exit (EXIT_FAILURE);
         }
-        boost::shared_ptr<KDL::Chain> chain (new KDL::Chain(worldToTool));
+        boost::shared_ptr<KDL::Chain> chain (new KDL::Chain(*worldToTool));
         currentTaskReferenceP = CBF::DummyReferencePtr (new CBF::DummyReference(1,6));
         currentTaskTargetP = CBF::DummyReferencePtr (new CBF::DummyReference(1,6));
         kukaResourceP = CBF::DummyResourcePtr (new CBF::DummyResource(7));
@@ -573,7 +603,7 @@ void KukaLwr::initCbf (){
             perror ("CbfPlanner: initCbf(): could not lock mutex");
             exit (EXIT_FAILURE);
         }
-        boost::shared_ptr<KDL::Chain> chain (new KDL::Chain(worldToTool));
+        boost::shared_ptr<KDL::Chain> chain (new KDL::Chain(*worldToTool));
         currentTaskReferenceP = CBF::DummyReferencePtr (new CBF::DummyReference(1,6));
         currentTaskTargetP = CBF::DummyReferencePtr (new CBF::DummyReference(1,6));
         kukaResourceP = CBF::DummyResourcePtr (new CBF::DummyResource(7));

@@ -59,7 +59,7 @@
 #include <math.h>       /* acos */
 
 //desired contact pressure
-#define TAC_F 0.05
+#define TAC_F 0.08
 #define NV_EST_LEN 50
 
 #ifdef HAVE_ROS
@@ -150,6 +150,7 @@ Eigen::Matrix3d rel_eef_tactool;
 //for update the tactool contact frame xy-tangent surface to the real tac sensor frame
 Eigen::Matrix3d real_tactool_ctcframe,rotationmatrix;
 MyrmexTac *myrtac;
+double cur_cp;
 
 struct ExploreAction{
     double ra_xaxis;
@@ -274,6 +275,33 @@ void go_a_cb(boost::shared_ptr<std::string> data){
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point a"<<std::endl;
 }
+void go_segment_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    double cp[2];
+    cp[0] = 3;
+    cp[1] = cur_cp + 2;
+    cur_cp = cur_cp + 2;
+    std::cout<<"cp[1] "<<cp[1]<<std::endl;
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
+    right_ac_vec.push_back(new TacServoController(*pm));
+    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
+    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
+    right_task_vec.back()->mt = TACTILE;
+    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    right_task_vec.back()->set_desired_cp_myrmex(cp);
+    translation_est_flag = false;
+    rmt = NormalMode;
+
+    //in order to update the normal direciton, we need initialize the normal direction
+    //from the kinestheic teaching
+
+    update_nv_flag = true;
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for sliding to go segment by segment"<<std::endl;
+}
 
 void go_b_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
@@ -332,6 +360,31 @@ void go_d_cb(boost::shared_ptr<std::string> data){
     double cp[2];
     cp[0] = 12;
     cp[1] = 3;
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
+    right_ac_vec.push_back(new TacServoController(*pm));
+    right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
+    right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+    right_task_vec.back()->emt = NOEXPLORE;
+    right_task_vec.back()->mt = TACTILE;
+    right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    right_task_vec.back()->set_desired_cp_myrmex(cp);
+    rmt = NormalMode;
+    //in order to update the normal direciton, we need initialize the normal direction
+    //from the kinestheic teaching
+//    mt_ptr->est_nv = real_tactool_ctcframe.col(2);
+    update_nv_flag = true;
+    translation_est_flag = false;
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for sliding to the desired point d"<<std::endl;
+}
+
+void go_e_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    double cp[2];
+    cp[0] = 7.5;
+    cp[1] = 7.5;
     right_ac_vec.clear();
     right_task_vec.clear();
     right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
@@ -456,8 +509,8 @@ void tactool_normal_ctrl_cb(boost::shared_ptr<std::string> data){
 
 void init_nv_cb(boost::shared_ptr<std::string> data){
     //before update nv, init it with kinesthetic teching result.
-    std::cout<<"init nv correctly"<<mt_ptr->est_nv<<std::endl;
     mt_ptr->est_nv = real_tactool_ctcframe.col(2);
+    std::cout<<"init nv correctly"<<mt_ptr->est_nv<<std::endl;
 }
 
 void update_nv_cb(boost::shared_ptr<std::string> data){
@@ -536,9 +589,9 @@ void nv_est_cb(boost::shared_ptr<std::string> data){
 void xy_est_cb(){
     rec_flag_xy_est = false;
     rgp = rg2d->get_kb_batch(tac_tra_vec);
+    std::cout<<"size of tactile trajectory's collectd data "<<tac_tra_vec.size()<<std::endl;
     for (std::vector<Eigen::Vector2d>::iterator it = tac_tra_vec.begin() ; it != tac_tra_vec.end(); ++it){
-        P_ctc << (*it)(0)<<","<<(*it)(1);
-        P_ctc << '\n';
+        P_ctc << (*it)(0)<<","<<(*it)(1)<<std::endl;
     }
     //clear vector in order to estimate xy next time.
     tac_tra_vec.clear();
@@ -547,22 +600,23 @@ void xy_est_cb(){
     double DeltaGama;
     if(rgp.sign_k == 1){
         if((rgp.deltay>0)&&(rgp.deltax>0)){
-            DeltaGama = rgp.k + M_PI;
+            DeltaGama = atan(rgp.k) + M_PI;
         }
         else{
-            DeltaGama = rgp.k;
+            DeltaGama = atan(rgp.k);
         }
     }
     else{
         if((rgp.deltay<0)&&(rgp.deltax>0)){
-            DeltaGama = rgp.k + M_PI;
+            DeltaGama = atan(rgp.k) + M_PI;
         }
         else{
-            DeltaGama = rgp.k;
+            DeltaGama = atan(rgp.k);
         }
     }
 
     std::cout<<"sign_k is "<<rgp.sign_k<<" ,deltagamma "<<DeltaGama<<std::endl;
+    std::cout<<"k and b are "<<rgp.k<<" ,"<<rgp.b<<std::endl;
     //rotation matrix of sdot related to s (sdot is virtual arbitary sensor frame defined by the normal direction
     //s is the estimated real tactile sensor frame)
     rotationmatrix(0,0) = cos(DeltaGama);
@@ -727,6 +781,7 @@ void lineylen_cb(boost::shared_ptr<std::string> data){
 }
 
 void update_chain_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
     update_chain_flag = true;
     kuka_right_arm->toolname = tactool;
     std::cout<<"translation is"<<mt_ptr->est_trans(0)<<","\
@@ -747,7 +802,7 @@ void update_chain_cb(boost::shared_ptr<std::string> data){
     p(2) = right_rs->robot_position["eef"](2);
 
     o = tm2axisangle(right_rs->robot_orien["eef"]);
-    mutex_act.lock();
+
     right_ac_vec.clear();
     right_task_vec.clear();
     right_ac_vec.push_back(new ProActController(*pm));
@@ -761,6 +816,41 @@ void update_chain_cb(boost::shared_ptr<std::string> data){
     std::cout<<"update chain and cbf, then stay in the origin place"<<std::endl;
 }
 
+
+void back_kukachain_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    update_chain_flag = true;
+    kuka_right_arm->toolname = none;
+
+    kuka_right_arm->backKukaChain(none);
+    std::cout<<"back to initialized kuka chain"<<std::endl;
+    kuka_right_arm->initCbf();
+    kuka_right_arm->get_joint_position_act();
+    kuka_right_arm->update_robot_state();
+    right_rs->updated(kuka_right_arm);
+
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+
+    //get start point position in cartesian space
+    p(0) = right_rs->robot_position["robot_eef"](0);
+    p(1) = right_rs->robot_position["robot_eef"](1);
+    p(2) = right_rs->robot_position["robot_eef"](2);
+
+    o = tm2axisangle(right_rs->robot_orien["robot_eef"]);
+
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_ac_vec.push_back(new ProActController(*pm));
+    right_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
+    right_task_vec.back()->mt = JOINTS;
+    right_task_vec.back()->mft = GLOBAL;
+    right_task_vec.back()->set_desired_p_eigen(p);
+    right_task_vec.back()->set_desired_o_ax(o);
+    rmt = NormalMode;
+    mutex_act.unlock();
+}
 #ifdef HAVE_ROS
 void run(){
     ros::Rate r(500);
@@ -1023,6 +1113,14 @@ void ros_publisher(){
     tf::matrixEigenToTF (cur_est_tool_ort, tfR);
     g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
 
+//    static int cyc_count = 0;
+//    cyc_count ++;
+//    if(cyc_count >=50){
+//        Eigen::Vector3d o_tmp;
+//        cyc_count = 0;
+//        o_tmp = tm2axisangle(cur_est_tool_ort);
+//        std::cout<<"current tool orien"<<o_tmp(0)<<","<<o_tmp(1)<<","<<o_tmp(2)<<std::endl;
+//    }
     if(vis_first_contact_flag == true){
         visualization_msgs::Marker tactool_marker_update_1;
         transform.setOrigin( tf::Vector3(g_est_trans(0), g_est_trans(1), g_est_trans(2)) );
@@ -1157,6 +1255,7 @@ std::string get_selfpath() {
 }
 
 void init(){
+    cur_cp = 3;
     cdt = new ContactDetector();
     myrtac = new MyrmexTac();
     std::string selfpath = get_selfpath();
@@ -1193,11 +1292,14 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> load_tool_param(load_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> store_tool_param(store_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> update_chain(update_chain_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> back_kukachain(back_kukachain_cb);
     boost::function<void(boost::shared_ptr<std::string>)> init_nv(init_nv_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> go_segment(go_segment_cb);
     boost::function<void(boost::shared_ptr<std::string>)> go_a(go_a_cb);
     boost::function<void(boost::shared_ptr<std::string>)> go_b(go_b_cb);
     boost::function<void(boost::shared_ptr<std::string>)> go_c(go_c_cb);
     boost::function<void(boost::shared_ptr<std::string>)> go_d(go_d_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> go_e(go_e_cb);
     boost::function<void(boost::shared_ptr<std::string>)> update_nv(update_nv_cb);
 
     std::string config_filename = selfpath + "/etc/right_arm_param.xml";
@@ -1301,11 +1403,14 @@ void init(){
     com_rsb->register_external("/foo/load_tool_param",load_tool_param);
     com_rsb->register_external("/foo/store_tool_param",store_tool_param);
     com_rsb->register_external("/foo/update_chain",update_chain);
+    com_rsb->register_external("/foo/back_kukachain",back_kukachain);
     com_rsb->register_external("/foo/init_nv",init_nv);
+    com_rsb->register_external("/foo/go_segment",go_segment);
     com_rsb->register_external("/foo/go_a",go_a);
     com_rsb->register_external("/foo/go_b",go_b);
     com_rsb->register_external("/foo/go_c",go_c);
     com_rsb->register_external("/foo/go_d",go_d);
+    com_rsb->register_external("/foo/go_e",go_e);
     com_rsb->register_external("/foo/update_nv",update_nv);
 
 #ifdef HAVE_ROS

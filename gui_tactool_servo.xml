@@ -22,11 +22,14 @@
   <button args="store_tool_param" handle="store_tool_param"/>
   <button args="update_chain" handle="update_chain"/>
   <button args="init_nv" handle="init_nv"/>
+  <button args="go_segment" handle="go_segment"/>
   <button args="go_a" handle="go_a"/>
   <button args="go_b" handle="go_b"/>
   <button args="go_c" handle="go_c"/>
   <button args="go_d" handle="go_d"/>
+  <button args="go_e" handle="go_e"/>
   <button args="update_nv" handle="update_nv"/>
+  <button args="back_kukachain" handle="back_kukachain"/>
   <button args="Close Prog" handle="closeprog"/>
   <checkbox args="rotatex,true" handle="rotatex"/>
   <checkbox args="rotatey,true" handle="rotatey"/>

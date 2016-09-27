@@ -61,6 +61,7 @@ public:
     void calibForce(int sampletimes);
     void getTcpFtCalib (Eigen::Vector3d &cf);
     void addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p);
+    void backKukaChain(ToolNameT tn);
     void initCbf();
 private:
     void initChains(ToolNameT tn=sensing_pole);
