@@ -16,7 +16,6 @@ Regression2d::Regression2d()
 }
 
 Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
-    Reg_param rgp;
     for (std::vector<Eigen::Vector2d>::iterator it = ps.begin(); it != ps.end(); ++it){
         sum_x += (*it)(0); sum_y += (*it)(1); sum_xy += (*it)(0) * (*it)(1); sum_x2 += (*it)(0) * (*it)(0);
     }
@@ -41,6 +40,7 @@ Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
     double a;
     rgp.deltay = (*(ps.end()-1))(1) - (*ps.begin())(1);
     rgp.deltax = (*(ps.end()-1))(0) - (*ps.begin())(0);
+    std::cout<<"cov, varx are "<<cov<<","<<varx<<std::endl;
     std::cout<<"end is "<<(*(ps.end()-1))(1)<<","<<(*(ps.end()-1))(0)<<std::endl;
     std::cout<<"start is "<<(*ps.begin())(1)<<","<<(*ps.begin())(0)<<std::endl;
     a = atan2(rgp.deltay,rgp.deltax);
@@ -54,11 +54,81 @@ Reg_param Regression2d::get_kb_batch(std::vector<Eigen::Vector2d> ps){
     sum_x2 = 0;
     sum_y = 0;
     cov_xy = 0;
-    varx = 0;
     return rgp;
 }
 
 
 
-
-
+double Regression2d::get_rotation_angle(EXPDIR ed){
+    double DeltaGama;
+    switch ( ed ) {
+    case XP:
+        if(rgp.sign_k == 1){
+            if((rgp.deltay>0)&&(rgp.deltax>0)){
+                DeltaGama = atan(rgp.k) + M_PI;
+            }
+            else{
+                DeltaGama = atan(rgp.k);
+            }
+        }
+        else{
+            if((rgp.deltay<0)&&(rgp.deltax>0)){
+                DeltaGama = atan(rgp.k) + M_PI;
+            }
+            else{
+                DeltaGama = atan(rgp.k);
+            }
+        }
+        return DeltaGama;
+        break;
+    case XN:
+        if((rgp.deltay>0)&&(rgp.deltax>0)){
+            DeltaGama = atan(rgp.k);
+        }
+        else if((rgp.deltay>0)&&(rgp.deltax<0)){
+            DeltaGama = atan(rgp.k)+  M_PI;
+        }
+        else if((rgp.deltay<0)&&(rgp.deltax>0)){
+            DeltaGama = atan(rgp.k);
+        }
+        else{
+            DeltaGama = atan(rgp.k) +  M_PI;
+        }
+        return DeltaGama;
+        break;
+    case YP:
+        if((rgp.deltay>0)&&(rgp.deltax>0)){
+            DeltaGama = atan(rgp.k)+M_PI/2;
+        }
+        else if((rgp.deltay>0)&&(rgp.deltax<0)){
+            DeltaGama = atan(rgp.k)-M_PI/2;
+        }
+        else if((rgp.deltay<0)&&(rgp.deltax>0)){
+            DeltaGama = atan(rgp.k) + M_PI/2;
+        }
+        else{
+            DeltaGama = atan(rgp.k) -  M_PI/2;
+        }
+        return DeltaGama;
+        break;
+    case YN:
+        if((rgp.deltay>0)&&(rgp.deltax>0)){
+            DeltaGama = atan(rgp.k)-M_PI/2;
+        }
+        else if((rgp.deltay>0)&&(rgp.deltax<0)){
+            DeltaGama = atan(rgp.k)+M_PI/2;
+        }
+        else if((rgp.deltay<0)&&(rgp.deltax>0)){
+            DeltaGama = atan(rgp.k) - M_PI/2;
+        }
+        else{
+            DeltaGama = atan(rgp.k) +  M_PI/2;
+        }
+        return DeltaGama;
+        break;
+    default:
+        std::cout<<"wrong direction you ar using";
+        return 0;
+        break;
+    }
+}

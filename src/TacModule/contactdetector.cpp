@@ -47,3 +47,22 @@ bool ContactDetector::isContactArea(double x,double y){
     }
 
 }
+
+bool ContactDetector::isSlideOK(double x, double y, double dirx, double diry){
+    if((x<=2)&&(diry<0)){
+        return true;
+    }
+    else if((x>=13)&&(diry>0)){
+        return true;
+    }
+    else if((y<=2)&&(dirx<0)){
+        return true;
+    }
+    else if((y>=13)&&(dirx>0)){
+        return true;
+    }
+    else{
+        return false;
+    }
+
+}

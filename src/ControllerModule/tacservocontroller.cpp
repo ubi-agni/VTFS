@@ -419,7 +419,7 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
             Kpi[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * deltais_int + \
             Kpd[tst.curtaskname.tact] * tjkm[tst.curtaskname.tact] * sm[tst.curtaskname.tact] * (deltais - deltais_old);
     if (t->emt == LINEAREXPLORE){
-        llv_tac = mt->ts.rel_o* deltape.head(3);
+        llv_tac = mt->ts.tac_sensor_cfm_local* deltape.head(3);
     }
     else{
         if(robot->toolname == none)
@@ -438,6 +438,8 @@ void TacServoController::get_desired_lv(ManipTool *mt, Robot *robot, Task *t,myr
 }
 
 void TacServoController::update_robot_reference(ManipTool *mt, Robot *robot, Task *t,myrmex_msg *tacfb){
+    TacServoTask tst(t->curtaskname.tact);
+    tst = *(TacServoTask*)t;
     Eigen::Vector3d o_target,p_target;
     p_target.setZero();
     o_target.setZero();
@@ -450,6 +452,14 @@ void TacServoController::update_robot_reference(ManipTool *mt, Robot *robot, Tas
             if(cdet_ptr->isContactArea(tacfb->cogx,tacfb->cogy) == true){
                 llv = llv + llv_tac;
                 lov = lov + lov_tac;
+            }
+            else if(cdet_ptr->isSlideOK(tacfb->cogx,tacfb->cogy,tst.dir_x,tst.dir_y) == true){
+                llv = llv + llv_tac;
+                lov = lov + lov_tac;
+            }
+            else{
+                llv = llv;
+                lov = lov;
             }
         }
         else{

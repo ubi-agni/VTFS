@@ -37,5 +37,6 @@
   <slider args="-5,5,0" handle="lineylen"/>
   <slider args="-10,10,0" handle="rotatexangle"/>
   <slider args="-10,10,0" handle="rotateyangle"/>
+  <slider args="-10,10,0" handle="rotatezangle"/>
   <image handle="image2"/>
 </vbox>

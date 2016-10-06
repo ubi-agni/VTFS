@@ -59,7 +59,7 @@
 #include <math.h>       /* acos */
 
 //desired contact pressure
-#define TAC_F 0.08
+#define TAC_F 0.03
 #define NV_EST_LEN 50
 
 #ifdef HAVE_ROS
@@ -152,16 +152,22 @@ Eigen::Matrix3d real_tactool_ctcframe,rotationmatrix;
 MyrmexTac *myrtac;
 double cur_cp;
 
+bool force_rec;
+
 struct ExploreAction{
     double ra_xaxis;
     double ra_yaxis;
     double la_xaxis;
     double la_yaxis;
+    double ra_zaxis;
+    double la_zaxis;
     ExploreAction(){
         ra_xaxis = 0;
         ra_yaxis = 0;
+        ra_zaxis = 0;
         la_xaxis = 0;
         la_yaxis = 0;
+        la_zaxis = 0;
     }
 };
 //exploration action for tactool learning
@@ -175,7 +181,8 @@ bool update_nv_flag;
 bool vis_first_contact_flag;
 bool update_rotationtm_flag;
 
-
+// in order to improve the rotation angle estimation, we add exploring motion
+EXPDIR ed;
 
 void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
@@ -233,8 +240,8 @@ void tactool_tactile_cb(boost::shared_ptr<std::string> data){
 void tactool_taxel_sliding_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     double cp[2];
-    cp[0] = 7.5;
-    cp[1] = 7.5;
+    cp[0] = 5;
+    cp[1] = 5;
     right_ac_vec.clear();
     right_task_vec.clear();
     right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
@@ -246,6 +253,7 @@ void tactool_taxel_sliding_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
     right_task_vec.back()->set_desired_cp_myrmex(cp);
     rmt = NormalMode;
+    force_rec = true;
     mutex_act.unlock();
     std::cout<<"tactile servoing for sliding to the desired point"<<std::endl;
 }
@@ -383,8 +391,8 @@ void go_d_cb(boost::shared_ptr<std::string> data){
 void go_e_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     double cp[2];
-    cp[0] = 7.5;
-    cp[1] = 7.5;
+    cp[0] = 5;
+    cp[1] = 5;
     right_ac_vec.clear();
     right_task_vec.clear();
     right_taskname.tact = CONTACT_POINT_FORCE_TRACKING;
@@ -525,6 +533,7 @@ void update_nv_cb(boost::shared_ptr<std::string> data){
     }
     std::cout<<"update nv and relative nv finished "<<std::endl;
     mt_ptr->ts.rel_o = rel_eef_tactool;
+    mt_ptr->ts.tac_sensor_cfm_local = mt_ptr->ts.rel_o;
     update_nv_flag = false;
 }
 
@@ -550,6 +559,7 @@ void nv_est(){
         mt_ptr->ts.eef_pose.push_back(init_tool_pose);
         mt_ptr->ts.rel_o = rel_eef_tactool;
         mt_ptr->est_trans.setZero();
+        mt_ptr->ts.tac_sensor_cfm_local = mt_ptr->ts.rel_o * mt_ptr->ts.rotate_s2sdot;
         vis_est_ort = true;
         mutex_act.lock();
         right_ac_vec.clear();
@@ -598,22 +608,23 @@ void xy_est_cb(){
     //rgp.sign_k is using atan2 to esimate the quadrant in which the contact points trajectory is located
     //assume that tactool is take a linear exploration moving along +x axis
     double DeltaGama;
-    if(rgp.sign_k == 1){
-        if((rgp.deltay>0)&&(rgp.deltax>0)){
-            DeltaGama = atan(rgp.k) + M_PI;
-        }
-        else{
-            DeltaGama = atan(rgp.k);
-        }
-    }
-    else{
-        if((rgp.deltay<0)&&(rgp.deltax>0)){
-            DeltaGama = atan(rgp.k) + M_PI;
-        }
-        else{
-            DeltaGama = atan(rgp.k);
-        }
-    }
+//    if(rgp.sign_k == 1){
+//        if((rgp.deltay>0)&&(rgp.deltax>0)){
+//            DeltaGama = atan(rgp.k) + M_PI;
+//        }
+//        else{
+//            DeltaGama = atan(rgp.k);
+//        }
+//    }
+//    else{
+//        if((rgp.deltay<0)&&(rgp.deltax>0)){
+//            DeltaGama = atan(rgp.k) + M_PI;
+//        }
+//        else{
+//            DeltaGama = atan(rgp.k);
+//        }
+//    }
+    DeltaGama = rg2d->get_rotation_angle(ed);
 
     std::cout<<"sign_k is "<<rgp.sign_k<<" ,deltagamma "<<DeltaGama<<std::endl;
     std::cout<<"k and b are "<<rgp.k<<" ,"<<rgp.b<<std::endl;
@@ -623,8 +634,13 @@ void xy_est_cb(){
     rotationmatrix(0,1) = (-1)*sin(DeltaGama);
     rotationmatrix(1,0) = sin(DeltaGama);
     rotationmatrix(1,1) = cos(DeltaGama);
-
-    mt_ptr->ts.rotate_s2sdot = rotationmatrix.transpose();
+    if(fabs(DeltaGama)>M_PI/2){
+        rotationmatrix.setIdentity();
+    }
+    else{
+        mt_ptr->ts.rotate_s2sdot = rotationmatrix.transpose();
+    }
+    mt_ptr->update_tac_sensor_cfm_local();
 }
 
 void update_contact_frame_cb(boost::shared_ptr<std::string> data){
@@ -742,8 +758,34 @@ void rotateyangle_cb(boost::shared_ptr<std::string> data){
    std::cout<<"tactile servoing for rolling to the desired point y"<<std::endl;
 }
 
+void rotatezangle_cb(boost::shared_ptr<std::string> data){
+   ea.ra_zaxis = 0.005 * std::stoi(*data);
+   std::cout<<"rot along z "<<ea.ra_zaxis<<std::endl;
+   mutex_act.lock();
+   right_ac_vec.clear();
+   right_task_vec.clear();
+   right_taskname.tact = LEARN_TACTOOL_ROLLING;
+   right_ac_vec.push_back(new TacServoController(*pm));
+   right_ac_vec.back()->set_init_TM(kuka_right_arm->get_cur_cart_o());
+   right_task_vec.push_back(new TacServoTask(right_taskname.tact));
+   right_task_vec.back()->emt = ROTATEEXPLORE;
+   right_task_vec.back()->mt = TACTILE;
+   right_task_vec.back()->set_desired_cf_myrmex(TAC_F);
+   right_task_vec.back()->set_desired_rotation_range(0,0,ea.ra_zaxis);
+   translation_est_flag = true;
+   mutex_act.unlock();
+   std::cout<<"tactile servoing for rolling to the desired point z"<<std::endl;
+}
+
 void linexlen_cb(boost::shared_ptr<std::string> data){
+   ea.la_yaxis = 0;
    ea.la_xaxis = 0.5 * std::stoi(*data);
+   if(ea.la_xaxis > 0){
+       ed = XP;
+   }
+   else{
+       ed = XN;
+   }
    std::cout<<"vel along x "<<ea.la_xaxis<<std::endl;
    mutex_act.lock();
    right_ac_vec.clear();
@@ -762,7 +804,14 @@ void linexlen_cb(boost::shared_ptr<std::string> data){
 }
 
 void lineylen_cb(boost::shared_ptr<std::string> data){
+   ea.la_xaxis = 0;
    ea.la_yaxis = 0.5 * std::stoi(*data);
+   if(ea.la_yaxis > 0){
+       ed = YP;
+   }
+   else{
+       ed = YN;
+   }
    std::cout<<"vel along y "<<ea.la_yaxis<<std::endl;
    mutex_act.lock();
    right_ac_vec.clear();
@@ -1109,7 +1158,7 @@ void ros_publisher(){
     tf::Matrix3x3 tfR;
     tf::Quaternion rep_q;
     tf::Transform transform;
-    cur_est_tool_ort = right_rs->robot_orien["robot_eef"] * mt_ptr->ts.rel_o;
+    cur_est_tool_ort = right_rs->robot_orien["robot_eef"] * mt_ptr->ts.tac_sensor_cfm_local;
     tf::matrixEigenToTF (cur_est_tool_ort, tfR);
     g_est_trans = right_rs->robot_position["robot_eef"] + right_rs->robot_orien["robot_eef"] * mt_ptr->est_trans;
 
@@ -1256,6 +1305,8 @@ std::string get_selfpath() {
 
 void init(){
     cur_cp = 3;
+    force_rec = false;
+    ed = NOMOVE;
     cdt = new ContactDetector();
     myrtac = new MyrmexTac();
     std::string selfpath = get_selfpath();
@@ -1287,8 +1338,9 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_closeprog(closeprog_cb);
     boost::function<void(boost::shared_ptr<std::string>)> slider_linexlen(linexlen_cb);
     boost::function<void(boost::shared_ptr<std::string>)> slider_lineylen(lineylen_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> slider_rotatexangle(rotatexangle_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> slider_rotateyangle(rotateyangle_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> roller_rotatexangle(rotatexangle_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> roller_rotateyangle(rotateyangle_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> roller_rotatezangle(rotatezangle_cb);
     boost::function<void(boost::shared_ptr<std::string>)> load_tool_param(load_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> store_tool_param(store_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> update_chain(update_chain_cb);
@@ -1398,8 +1450,9 @@ void init(){
     com_rsb->register_external("/foo/closeprog",button_closeprog);
     com_rsb->register_external("/foo/linexlen",slider_linexlen);
     com_rsb->register_external("/foo/lineylen",slider_lineylen);
-    com_rsb->register_external("/foo/rotatexangle",slider_rotatexangle);
-    com_rsb->register_external("/foo/rotateyangle",slider_rotateyangle);
+    com_rsb->register_external("/foo/rotatexangle",roller_rotatexangle);
+    com_rsb->register_external("/foo/rotateyangle",roller_rotateyangle);
+    com_rsb->register_external("/foo/rotatezangle",roller_rotatezangle);
     com_rsb->register_external("/foo/load_tool_param",load_tool_param);
     com_rsb->register_external("/foo/store_tool_param",store_tool_param);
     com_rsb->register_external("/foo/update_chain",update_chain);
@@ -1498,14 +1551,13 @@ void run_rightarm(){
         Eigen::Vector3d store_temp;
         store_temp.setZero();
         right_rs->Est_eef_twist_local(kuka_right_arm,linear_v,omega_v);
-        mt_ptr->update_tac_sensor_cfm_local();
         if((translation_est_flag == true)&&(myrtac->contactflag == true)&&(myrtac->cog_x > 0)&&(myrtac->cog_y > 0)){
             //every taxel is 5mm, every control step is 4ms
             myrtac->cal_ctc_lv();
             store_temp = mt_ptr->update_translation_est(linear_v,omega_v,right_rs->robot_orien["robot_eef"],myrtac);
             P_est<<linear_v(0)<<","<<linear_v(1)<<","<<linear_v(2)<<","<<omega_v(0)<<","<<omega_v(1)<<","<<omega_v(2)<<",";
             P_est<<mt_ptr->est_trans(0)<<","<<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<","<<myrtac->ctc_vel(0)\
-                  <<","<<myrtac->ctc_vel(1) <<","<<myrtac->ctc_vel(2)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<","\
+                  <<","<<myrtac->ctc_vel(1) <<","<<myrtac->ctc_vel(2)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<","<<myrtac->cf<<","\
                  <<store_temp(0)<<","<<store_temp(1)<<","<<store_temp(2)<<std::endl;
         }
 
@@ -1517,9 +1569,14 @@ void run_rightarm(){
             myrtac->cal_ctc_lv();
             mt_ptr->update_nv(right_rs->robot_orien["robot_eef"]*linear_v,mt_ptr->est_nv,temp_vel);
             P_nv_est<<store_vel(0)<<","<<store_vel(1)<<","<<store_vel(2)<<","<<myrtac->ctc_vel(0)\
-                   <<","<<myrtac->ctc_vel(1)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<","\
+                   <<","<<myrtac->ctc_vel(1)<<","<<myrtac->cog_x<<","<<myrtac->cog_y<<","<<myrtac->cf<<","\
                   <<mt_ptr->est_nv(0)<<","<<mt_ptr->est_nv(1)<<","<<mt_ptr->est_nv(2)<<","\
                     <<temp_vel(0)<<","<<temp_vel(1)<<","<<temp_vel(2)<<std::endl;
+        }
+
+        if(force_rec == true){
+//            P_est<<myrtac->cf<<std::endl;
+//            std::cout<<myrtac->cf<<std::endl;
         }
 
         //using all kinds of controllers to update the reference

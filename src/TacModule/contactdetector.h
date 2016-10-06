@@ -23,5 +23,6 @@ public:
     ctc_status ctcs;
     ctc_status get_ctc_status(bool b);
     bool isContactArea(double x,double y);
+    bool isSlideOK(double x, double y, double dirx, double diry);
 };
 #endif // CONTACTDETECTOR_H

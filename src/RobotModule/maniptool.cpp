@@ -4,7 +4,7 @@
 ManipTool::ManipTool(RobotState *rs)
 {
     mtt = Notool;
-    Gama_r = 2*Eigen::Matrix3d::Identity();
+    Gama_r = 1.5*Eigen::Matrix3d::Identity();
     L_r = Eigen::Matrix3d::Zero();
     L_r_dot = Eigen::Matrix3d::Zero();
     c_r.setZero();
@@ -21,26 +21,38 @@ ManipTool::ManipTool(RobotState *rs)
 }
 
 void ManipTool::update_tac_sensor_cfm_local(){
-    ts.tac_sensor_cfm_local = ts.rel_o* ts.rotate_s2sdot;
+    ts.tac_sensor_cfm_local = ts.tac_sensor_cfm_local* ts.rotate_s2sdot;
 }
 
 Eigen::Vector3d ManipTool::update_translation_est(Eigen::Vector3d lv,Eigen::Vector3d rv,\
                                        Eigen::Matrix3d robot_eef_rm, MyrmexTac *myrtac){
     Eigen::Matrix3d omiga_skmatrix;
     Eigen::Vector3d temp_lv;
+    Eigen::Vector3d r_hat;
+    r_hat.setZero();
     temp_lv.setZero();
     omiga_skmatrix.setZero();
     omiga_skmatrix = vectortoskew(rv);
     temp_lv(1) = myrtac->ctc_vel(0);
     temp_lv(0) = myrtac->ctc_vel(1);
+
+    //get the vector from center of tactile sensor to the contact point
+    r_hat(0) = myrtac->cog_y -7.5;
+    r_hat(1) = myrtac->cog_x -7.5;
+
     L_r_dot = (-1)*beta_r*L_r-omiga_skmatrix*omiga_skmatrix;
 
-    c_r_dot = (-1)*beta_r*c_r+omiga_skmatrix*(ts.tac_sensor_cfm_local*(temp_lv*0.005/0.004) - lv);
+    //compute the ve, comparing with Yannis's paper, I am using -v as the Tao.
+    //because tao = r /cross (f), and v = omega /cross (r)
+
+    c_r_dot = (-1)*beta_r*c_r+omiga_skmatrix*(-1)*((ts.tac_sensor_cfm_local*((-1)*temp_lv*0.005/0.004)-\
+                                               rv.cross(ts.tac_sensor_cfm_local*r_hat*0.005)) - lv);
     est_trans_dot = (-1)*Gama_r*(L_r*est_trans-c_r);
     L_r = L_r + L_r_dot;
     c_r = c_r + c_r_dot;
     est_trans = est_trans + est_trans_dot;
-    return ts.tac_sensor_cfm_local*(temp_lv*0.005/0.004);
+    return ((ts.tac_sensor_cfm_local*(temp_lv*0.005/0.004)-\
+             rv.cross(ts.tac_sensor_cfm_local*r_hat*0.005)) - lv);
 }
 
 

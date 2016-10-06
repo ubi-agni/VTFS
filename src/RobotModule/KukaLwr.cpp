@@ -375,14 +375,23 @@ void KukaLwr::initChains(ToolNameT tn){
         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
         worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
 #else
-        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0.0823, 0.897, 0.2975))));
-//        //initial orientation kuka base local y then local z
-//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(1.047)))));
-//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(0.5236)))));
-        // Orientation identical to ROS model from kuka_cal.xml (fixed axis roll pitch yaw  = x y z)
-        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(M_PI-2.28576)))));
-        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(0.8484)))));
-        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotX(0.71215)))));
+//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0.0823, 0.897, 0.2975))));
+////        //initial orientation kuka base local y then local z
+////        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(1.047)))));
+////        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(0.5236)))));
+//        // Orientation identical to ROS model from kuka_cal.xml (fixed axis roll pitch yaw  = x y z)
+//        //04,10,2016, the parameters in this code is correct version, currently in ROS, the right arm (left arm--Guillaume defined)
+//        //has the different parameters because it comes from the vision calbration result from Christof.
+//        // the prameters of kuka_left is computed from the humanoids2015 tactile-based calibration result.
+//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(M_PI-2.28576)))));
+//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(0.8484)))));
+//        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotX(0.71215)))));
+
+
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0.0871, 0.9011, 0.2981))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(0.8490)))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotY(0.8512)))));
+        worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotX(0.7227)))));
 
         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));

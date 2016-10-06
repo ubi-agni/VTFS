@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <iostream>
 #include <vector>
+#include "RebaType.h"
 
 //this class is designed for 2d linear regression to compute
 //use the math from https://en.wikipedia.org/wiki/Simple_linear_regression#Fitting_the_regression_line
@@ -27,6 +28,8 @@ public:
     Regression2d();
     //get the linear slope [0] and intercept [1]
     Reg_param get_kb_batch(std::vector<Eigen::Vector2d>);
+    double get_rotation_angle(EXPDIR);
+    Reg_param rgp;
 private:
     int data_num;
     double sum_x,sum_y,sum_xy,sum_x2;

@@ -89,6 +89,14 @@ struct RG_Pose{
     }
 };
 
+enum EXPDIR{
+    NOMOVE = 0,
+    XP = 1,
+    XN = 2,
+    YP = 3,
+    YN = 4
+};
+
 
 // class ctrlpara{
 // public:

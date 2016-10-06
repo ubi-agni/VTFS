@@ -61,8 +61,8 @@ RobotState::RobotState(Robot *r){
     old_roboteef_hm.setIdentity(4,4);
     cur_roboteef_hm.setIdentity(4,4);
     adj_matrix.setZero(6,6);
-    linear_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(100,Average,Eigen::Vector3d(0,0,0));
-    angle_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(100,Average,Eigen::Vector3d(0,0,0));
+    linear_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(200,Average,Eigen::Vector3d(0,0,0));
+    angle_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(200,Average,Eigen::Vector3d(0,0,0));
 }
 
 void RobotState::updated(Robot *r){
