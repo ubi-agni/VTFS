@@ -22,7 +22,9 @@ struct ToolState {
   //Ttool = Teef * rel_eef_tactool;
   Eigen::Matrix3d rel_o;
   //rotation matrix from tactile sensor frame to arbitary tactile sensor tangent frame
+  //store a fixed rotation for the demo experiment
   Eigen::Matrix3d rotate_s2sdot;
+  Eigen::Matrix3d m_fixed_rel_o;
   //estimated sensor frame after the update.
   Eigen::Matrix3d tac_sensor_cfm_local;
 
@@ -40,6 +42,7 @@ struct ToolState {
           rel_o.setIdentity();
           rotate_s2sdot.setIdentity();
           tac_sensor_cfm_local.setIdentity();
+          m_fixed_rel_o.setIdentity();
       }
 } ;
 
@@ -73,9 +76,9 @@ public:
     Eigen::Vector3d est_trans_dot;
     Eigen::Vector3d est_nv;
     void update_tac_sensor_cfm_local();
-    void store_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans);
-    void load_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans);
-    std::fstream f_nv,f_rotate,f_trans;
+    void store_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans,std::string fixed_rel);
+    void load_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans,std::string fixed_rel);
+    std::fstream f_nv,f_rotate,f_trans,f_fixed_rel_o;
 };
 
 #endif // MANIPTOOL_H

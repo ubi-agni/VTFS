@@ -68,23 +68,27 @@ void ManipTool::update_nv(Eigen::Vector3d lv,Eigen::Vector3d& n_hat,Eigen::Vecto
 }
 
 
-void ManipTool::load_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans){
+void ManipTool::load_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans,std::string fixed_rel){
     if((is_file_exist(fn_nv.c_str()) == true)&&(is_file_exist(fn_rorate.c_str()) == true)&&\
-            (is_file_exist(fn_trans.c_str()) == true)){
+            (is_file_exist(fn_trans.c_str()) == true)&&(is_file_exist(fixed_rel.c_str()) == true)){
         f_nv.open(fn_nv.c_str());
         ts.rel_o = readMatrix(f_nv);
         f_nv.close();
+        f_fixed_rel_o.open(fixed_rel.c_str());
+        ts.m_fixed_rel_o= readMatrix(f_fixed_rel_o);
+        f_fixed_rel_o.close();
         f_rotate.open(fn_rorate.c_str());
         ts.rotate_s2sdot = readMatrix(f_rotate);
         f_rotate.close();
         f_trans.open(fn_trans.c_str());
         est_trans = readMatrix(f_trans);
         std::cout<<"init position "<<est_trans<<std::endl;
+        std::cout<<"rel_o "<<ts.rel_o<<std::endl;
+        std::cout<<"rotation are "<<ts.rotate_s2sdot<<std::endl;
         f_trans.close();
 //        est_trans(0) += 0.5*(double) rand() / (RAND_MAX);
 //        est_trans(1) += 0.5*(double) rand() / (RAND_MAX);
 //        est_trans(2) += 0.5*(double) rand() / (RAND_MAX);
-
     }
     else{
         std::cout<<"tool parameters files are not exist"<<std::endl;
@@ -93,15 +97,18 @@ void ManipTool::load_parameters(std::string fn_nv, std::string fn_rorate,std::st
 
 }
 
-void ManipTool::store_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans){
+void ManipTool::store_parameters(std::string fn_nv, std::string fn_rorate,std::string fn_trans,std::string fixed_rel){
     if((is_file_exist(fn_nv.c_str()) == true)&&(is_file_exist(fn_rorate.c_str()) == true)&&\
-            (is_file_exist(fn_trans.c_str()) == true)){
+            (is_file_exist(fn_trans.c_str()) == true)&&(is_file_exist(fixed_rel.c_str()) == true)){
         f_nv.open(fn_nv.c_str());
         f_nv<<ts.rel_o<<std::endl;
         f_nv.close();
         f_rotate.open(fn_rorate.c_str());
         f_rotate<<ts.rotate_s2sdot<<std::endl ;
         f_rotate.close();
+        f_fixed_rel_o.open(fixed_rel.c_str());
+        f_fixed_rel_o<<ts.tac_sensor_cfm_local<<std::endl;
+        f_fixed_rel_o.close();
         f_trans.open(fn_trans.c_str());
         f_trans<<est_trans<<std::endl ;
         f_trans.close();

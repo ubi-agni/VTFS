@@ -21,6 +21,7 @@
   <button args="load_tool_param" handle="load_tool_param"/>
   <button args="store_tool_param" handle="store_tool_param"/>
   <button args="update_chain" handle="update_chain"/>
+  <button args="default_update_chain" handle="default_update_chain"/>
   <button args="init_nv" handle="init_nv"/>
   <button args="go_segment" handle="go_segment"/>
   <button args="go_a" handle="go_a"/>

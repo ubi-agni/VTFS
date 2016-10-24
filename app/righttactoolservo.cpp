@@ -105,7 +105,7 @@ ContactDetector *cdt;
 
 std::ofstream P_ctc, P_est, P_nv_est;
 
-std::string fn_nv,fn_rotate,fn_trans;
+std::string fn_nv,fn_rotate,fn_trans,fixed_rel_o;
 #define newP_x 0.1
 #define newP_y 0.4
 #define newP_z 0.30
@@ -673,7 +673,7 @@ void moveto_cb(boost::shared_ptr<std::string> data){
     o.setZero();
 
     //get start point position in cartesian space
-    p(0) =  0.3;
+    p(0) =  0.1;
     p(1) =  right_rs->robot_position["eef"](1);
     p(2) = right_rs->robot_position["eef"](2);;
 
@@ -710,12 +710,12 @@ void nobrake_cb(boost::shared_ptr<std::string> data){
 
 void load_tool_param_cb(boost::shared_ptr<std::string> data){
     std::cout<<"store the learned data into files"<<std::endl;
-    mt_ptr->load_parameters(fn_nv,fn_rotate,fn_trans);
+    mt_ptr->load_parameters(fn_nv,fn_rotate,fn_trans,fixed_rel_o);
 }
 
 void store_tool_param_cb(boost::shared_ptr<std::string> data){
     std::cout<<"store the learned data into files"<<std::endl;
-    mt_ptr->store_parameters(fn_nv,fn_rotate,fn_trans);
+    mt_ptr->store_parameters(fn_nv,fn_rotate,fn_trans,fixed_rel_o);
 }
 
 void rotatexangle_cb(boost::shared_ptr<std::string> data){
@@ -835,6 +835,46 @@ void update_chain_cb(boost::shared_ptr<std::string> data){
     kuka_right_arm->toolname = tactool;
     std::cout<<"translation is"<<mt_ptr->est_trans(0)<<","\
                <<mt_ptr->est_trans(1)<<","<<mt_ptr->est_trans(2)<<std::endl;
+    kuka_right_arm->addSegmentinChain(mt_ptr->ts.tac_sensor_cfm_local,mt_ptr->est_trans);
+    kuka_right_arm->initCbf();
+    kuka_right_arm->get_joint_position_act();
+    kuka_right_arm->update_robot_state();
+    right_rs->updated(kuka_right_arm);
+
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+
+    //get start point position in cartesian space
+    p(0) = right_rs->robot_position["eef"](0);
+    p(1) = right_rs->robot_position["eef"](1);
+    p(2) = right_rs->robot_position["eef"](2);
+
+    o = tm2axisangle(right_rs->robot_orien["eef"]);
+
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_ac_vec.push_back(new ProActController(*pm));
+    right_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
+    right_task_vec.back()->mt = JOINTS;
+    right_task_vec.back()->mft = GLOBAL;
+    right_task_vec.back()->set_desired_p_eigen(p);
+    right_task_vec.back()->set_desired_o_ax(o);
+    rmt = NormalMode;
+    mutex_act.unlock();
+    std::cout<<"update chain and cbf, then stay in the origin place"<<std::endl;
+}
+
+void default_update_chain_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    update_chain_flag = true;
+    kuka_right_arm->toolname = tactool;
+    mt_ptr->est_trans(0) = 0.0;
+    mt_ptr->est_trans(1) = 0.14;
+    mt_ptr->est_trans(2) = 0.20;
+    mt_ptr->ts.tac_sensor_cfm_local = mt_ptr->ts.m_fixed_rel_o;
+    std::cout<<"update rel_o "<<mt_ptr->ts.rel_o<<std::endl;
+    std::cout<<"update rotation are "<<mt_ptr->ts.rotate_s2sdot<<std::endl;
     kuka_right_arm->addSegmentinChain(mt_ptr->ts.tac_sensor_cfm_local,mt_ptr->est_trans);
     kuka_right_arm->initCbf();
     kuka_right_arm->get_joint_position_act();
@@ -1344,6 +1384,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> load_tool_param(load_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> store_tool_param(store_tool_param_cb);
     boost::function<void(boost::shared_ptr<std::string>)> update_chain(update_chain_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> default_update_chain(default_update_chain_cb);
     boost::function<void(boost::shared_ptr<std::string>)> back_kukachain(back_kukachain_cb);
     boost::function<void(boost::shared_ptr<std::string>)> init_nv(init_nv_cb);
     boost::function<void(boost::shared_ptr<std::string>)> go_segment(go_segment_cb);
@@ -1389,7 +1430,8 @@ void init(){
     std::cout<<"file full path is "<<fn_nv<<std::endl;
     fn_rotate = selfpath + "/etc/f_s2sdot.txt";
     fn_trans = selfpath + "/etc/f_trans.txt";
-    mt_ptr->load_parameters(fn_nv,fn_rotate,fn_trans);
+    fixed_rel_o = selfpath + "/etc/f_fixed_rel_o.txt";
+    mt_ptr->load_parameters(fn_nv,fn_rotate,fn_trans,fixed_rel_o);
     rg2d = new Regression2d();
     real_tactool_ctcframe.setIdentity();
     rotationmatrix.setIdentity();
@@ -1456,6 +1498,7 @@ void init(){
     com_rsb->register_external("/foo/load_tool_param",load_tool_param);
     com_rsb->register_external("/foo/store_tool_param",store_tool_param);
     com_rsb->register_external("/foo/update_chain",update_chain);
+    com_rsb->register_external("/foo/default_update_chain",default_update_chain);
     com_rsb->register_external("/foo/back_kukachain",back_kukachain);
     com_rsb->register_external("/foo/init_nv",init_nv);
     com_rsb->register_external("/foo/go_segment",go_segment);
