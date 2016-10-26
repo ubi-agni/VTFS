@@ -13,7 +13,7 @@ TacServoTask::TacServoTask(TACTaskNameT taskname)
     dir_x = 0;
     dir_y = 0;
     desired_pose_range.setZero();
-    desired_orien_myrmex = M_PI/2;
+    desired_orien_myrmex = 0;
 }
 
 

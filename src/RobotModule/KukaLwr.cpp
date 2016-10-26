@@ -408,9 +408,10 @@ void KukaLwr::initChains(ToolNameT tn){
         if(tn == teensy_finger){
             worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
         }
-        if(tn == none){
-            //nothing tool is assembled
-             std::cout<<"nothing in the end-effector on right arm"<<std::endl;
+        if(tn == myrmex_sensor){
+            //myrmex_sensor tool is assembled
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
+             std::cout<<"myrmex_sensor in the end-effector on right arm"<<std::endl;
         }
 
         if(tn == tactool){
@@ -445,9 +446,10 @@ void KukaLwr::initChains(ToolNameT tn){
         if(tn == teensy_finger){
             worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
         }
-        if(tn == none){
-            //nothing tool is assembled
-            std::cout<<"nothing in the end-effector on left arm"<<std::endl;
+        if(tn == myrmex_sensor){
+            //myrmex_sensor tool is assembled
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
+            std::cout<<"myrmex_sensor in the end-effector on left arm"<<std::endl;
         }
         if(tn == tactool){
             //nothing tool is assembled

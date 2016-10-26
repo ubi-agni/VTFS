@@ -21,6 +21,9 @@ bool is_get_right_tac_msg = false;
 bool is_get_vis_msg = false;
 bool is_get_dirtps_msg = false;
 
+bool is_RobotMsg_reg = false;
+bool is_TacMsg_reg = false;
+bool is_PCsMsg_reg = false;
 
 
 void handle_lefttac(boost::shared_ptr<TacMsg> data) {
@@ -225,19 +228,29 @@ void ComRSB::add_msg(RsbDataType& rdt){
     case LeftKukaEff:
         converterRobot = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<RobotMsg> >
                 (new rsb::converter::ProtocolBufferConverter<RobotMsg>());
-        rsb::converter::converterRepository<std::string>()->registerConverter(*converterRobot);
+        if(is_RobotMsg_reg == false){
+            rsb::converter::converterRepository<std::string>()->registerConverter(*converterRobot);
+            is_RobotMsg_reg = true;
+        }
+
         inf_robot["leftkuka"] = factory->createInformer<RobotMsg> ("/left/RobotMsg");
         break;
     case RightKukaEff:
         converterRobot = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<RobotMsg> >
                 (new rsb::converter::ProtocolBufferConverter<RobotMsg>());
-//        rsb::converter::converterRepository<std::string>()->registerConverter(*converterRobot);
+        if(is_RobotMsg_reg == false){
+            rsb::converter::converterRepository<std::string>()->registerConverter(*converterRobot);
+            is_RobotMsg_reg = true;
+        }
         inf_robot["rightkuka"] = factory->createInformer<RobotMsg> ("/right/RobotMsg");
         break;
     case LeftMyrmex:
         converterTac = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<TacMsg> > \
                 (new rsb::converter::ProtocolBufferConverter<TacMsg>());
-        rsb::converter::converterRepository<std::string>()->registerConverter(*converterTac);
+        if(is_TacMsg_reg == false){
+            rsb::converter::converterRepository<std::string>()->registerConverter(*converterTac);
+            is_TacMsg_reg = true;
+        }
         scope_tac["leftmyrmex"] = new Scope("/left/TacMsg");
         lis_tac["leftmyrmex"] = factory->createListener(*scope_tac["leftmyrmex"]);
         lis_tac["leftmyrmex"]->addHandler(HandlerPtr(new DataFunctionHandler<TacMsg>(handle_lefttac)));
@@ -245,7 +258,10 @@ void ComRSB::add_msg(RsbDataType& rdt){
     case RightMyrmex:
         converterTac = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<TacMsg> > \
                 (new rsb::converter::ProtocolBufferConverter<TacMsg>());
-        rsb::converter::converterRepository<std::string>()->registerConverter(*converterTac);
+        if(is_TacMsg_reg == false){
+            rsb::converter::converterRepository<std::string>()->registerConverter(*converterTac);
+            is_TacMsg_reg = true;
+        }
         scope_tac["rightmyrmex"] = new Scope("/right/TacMsg");
         lis_tac["rightmyrmex"] = factory->createListener(*scope_tac["rightmyrmex"]);
         lis_tac["rightmyrmex"]->addHandler(HandlerPtr(new DataFunctionHandler<TacMsg>(handle_righttac)));
@@ -253,13 +269,19 @@ void ComRSB::add_msg(RsbDataType& rdt){
     case LeftTacPointClouds:
         converterPCs = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<PCsMsg> >
                 (new rsb::converter::ProtocolBufferConverter<PCsMsg>());
-        rsb::converter::converterRepository<std::string>()->registerConverter(*converterPCs);
+        if(is_PCsMsg_reg == false){
+            rsb::converter::converterRepository<std::string>()->registerConverter(*converterPCs);
+            is_PCsMsg_reg = true;
+        }
         inf_pcs["leftmyrmex"] = factory->createInformer<PCsMsg> ("/left/PCsMsg");
         break;
     case RightTacPointClouds:
         converterPCs = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<PCsMsg> >
                 (new rsb::converter::ProtocolBufferConverter<PCsMsg>());
-        rsb::converter::converterRepository<std::string>()->registerConverter(*converterPCs);
+        if(is_PCsMsg_reg == false){
+            rsb::converter::converterRepository<std::string>()->registerConverter(*converterPCs);
+            is_PCsMsg_reg = true;
+        }
         inf_pcs["rightmyrmex"] = factory->createInformer<PCsMsg> ("/right/PCsMsg");
         break;
     default:

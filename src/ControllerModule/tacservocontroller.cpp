@@ -306,14 +306,16 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, myrmex_msg *tacfb
     tst = *(TacServoTask*)t;
     double desired_cp[2];
     double desiredf;
+    double desiredorien;
     //robot current state
     tst.get_desired_cp_myrmex(desired_cp);
     tst.get_desired_cf_myrmex(desiredf);
+    tst.get_desired_orien_myrmex(desiredorien);
 //    std::cout<<"desired contact p in myrmex "<<desired_cp[0]<<","<<desired_cp[1]<<std::endl;
     if(tacfb->contactflag == true){
         deltais(1) = tacfb->cogx - desired_cp[0];
         deltais(0) = tacfb->cogy - desired_cp[1];
-        deltais(5) = 0- tacfb->lineorien;
+        deltais(5) = desiredorien- tacfb->lineorien;
     }
     else{
         deltais(0) = 0;
@@ -322,6 +324,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, myrmex_msg *tacfb
         deltais_int.setZero();
     }
     deltais(2) =  desiredf - tacfb->cf;
+    std::cout<<"desiredf and current f are "<<desiredf<<","<<tacfb->cf<<std::endl;
     //!this two value can be updated by other feedback in future
     deltais(3) = 0;
     deltais(4) = 0;
@@ -364,7 +367,7 @@ void TacServoController::update_robot_reference(Robot *robot, Task *t, myrmex_ms
         cart_command[i] = p_target(i);
         cart_command[i+3] = o_target(i);
     }
-    std::cout<<"o_target "<<o_target(0)<<","<<o_target(1)<<","<<o_target(2)<<std::endl;
+//    std::cout<<"o_target "<<o_target(0)<<","<<o_target(1)<<","<<o_target(2)<<std::endl;
     for(int i = 0; i < 6; i++)
         robot->set_cart_command(cart_command);
 }

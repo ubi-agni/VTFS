@@ -29,7 +29,8 @@ enum ToolNameT{
     none,
     sensing_pole,
     teensy_finger,
-    tactool
+    tactool,
+    myrmex_sensor
 };
 
 enum MotionDirT{
