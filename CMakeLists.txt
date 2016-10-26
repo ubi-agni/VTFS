@@ -108,13 +108,17 @@ else()
   message(WARNING "ROS environment not found, building without ROS support")
 endif()
 
-find_library(OPENKC_LIB openkcfri HINTS /vol/nirobots/lib)
-find_file(OPENKC_INCLUDE fri_okc_comm.h HINTS /vol/nirobots/include)
+find_library(OPENKC_LIB openkcfri HINTS ${CMAKE_PREFIX_PATH}/../lib)
+find_file(OPENKC_INCLUDE fri_okc_comm.h HINTS ${CMAKE_PREFIX_PATH}/../include)
 get_filename_component(OPENKC_INCLUDE_DIRS ${OPENKC_INCLUDE} PATH)
 include_directories("${OPENKC_INCLUDE_DIRS}")
 
-set(CORE_LIBS ${ICL_LIBRARIES} ${CBF_LIBRARIES} ${orocos_kdl_LIBRARIES} ${catkin_LIBRARIES}
-  ${RSB_LIBRARIES} ${RST_LIBRARIES} ${OPENKC_LIB})
+
+set(CORE_LIBS ${OPENKC_LIB} ${CBF_LIBRARIES} ${orocos_kdl_LIBRARIES} ${catkin_LIBRARIES}
+  ${RSB_LIBRARIES} ${RST_LIBRARIES} )
+message("CORE_LIBS" ${CORE_LIBS})
+
+
 
 #==============================================================================
 
