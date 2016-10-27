@@ -206,7 +206,7 @@ void moveto_cb(boost::shared_ptr<std::string> data){
     o.setZero();
 
     //get start point position in cartesian space
-    if(robot_name == "rkuka"){
+    if(robot_name == "kukaR"){
     p(0) =  0.1;
     p(1) =  0.3;
     p(2) = 0.3;
@@ -260,7 +260,7 @@ void run(){
 void ros_publisher(){
     //prepare joint state data
     for(unsigned int i=0 ; i< 7;++i){
-        if(robot_name == "rkuka"){
+        if(robot_name == "kukaR"){
             //there is a arm name changed because the confliction between openkc and kukas in rviz
             js_la.position[i]=robot_rs->JntPosition_mea[i];
             js_ra.position[i]=0;
@@ -329,7 +329,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_closeprog(closeprog_cb);
-    if(robot_name == "rkuka"){
+    if(robot_name == "kukaR"){
         config_filename = selfpath + "/etc/right_arm_param.xml";
         //    std::cout<<"config name is "<<config_filename<<std::endl;
         if(is_file_exist(config_filename.c_str()) == false){
@@ -353,7 +353,7 @@ void init(){
     }
 
     pm = new ParameterManager(config_filename,TacST);
-    if(robot_name == "rkuka"){
+    if(robot_name == "kukaR"){
         com_okc = new ComOkc(kuka_right,OKC_HOST,OKC_PORT);
         com_okc->connect();
         kuka_arm = new KukaLwr(kuka_right,*com_okc,tn);
