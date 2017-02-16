@@ -48,6 +48,7 @@ SET(APPS
 #        NewappTest
         RemoteGUITest
         RemoteGuiControl
+        VisMarkerComTest
 #        anotherapp
    )
 
