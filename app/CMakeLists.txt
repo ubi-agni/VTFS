@@ -46,6 +46,7 @@ SET(APPS
 #        RightKukaTest
 #        TwistFollowTest
 #        NewappTest
+        Schunkreader
         RemoteGUITest
         RemoteGuiControl
         VisMarkerComTest

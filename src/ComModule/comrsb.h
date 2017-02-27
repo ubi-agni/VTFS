@@ -31,11 +31,13 @@
 #include <rsb/converter/Repository.h>
 #include <rsb/converter/ProtocolBufferConverter.h>
 #include "ComModule/mydata.pb.h"
+#include <rst/generic/Value.pb.h>
 
 #include <string>
 #include <map>
 #include <mutex>
 #include "UtilModule/msgcontenttype.h"
+
 
 using namespace rsb;
 // The generated protocol buffer class is in this namespace.
@@ -50,6 +52,7 @@ enum RsbDataType{
     RightMyrmex,
     LeftTacPointClouds,
     RightTacPointClouds,
+    SchunkJS,
 };
 
 class ComRSB : public Com
@@ -59,6 +62,7 @@ public:
     bool tactile_receive(myrmex_msg& msg, std::string tacpart);
     bool fiducialmarker_receive(markered_object_msg & msg);
     bool markerpoints_receive(dirt_points_msg& msg);
+    bool schunkjs_receive(std::vector<double>& msg_js);
     void add_msg(RsbDataType& rdt);
     void kuka_msg_send(kuka_msg& msg, std::string tacpart);
     void tacpcs_msg_send(tacpcs_msg& msg, std::string tacpart);
@@ -69,14 +73,17 @@ private:
     boost::shared_ptr< rsb::converter::ProtocolBufferConverter<MarkerPointsMsg> > *converterMarkerPoints;
     boost::shared_ptr< rsb::converter::ProtocolBufferConverter<PCsMsg> >* converterPCs;
     boost::shared_ptr< rsb::converter::ProtocolBufferConverter<RobotMsg> >* converterRobot;
+    boost::shared_ptr< rsb::converter::ProtocolBufferConverter<rst::generic::Value> >* converterschunkjs;
 
     std::map<std::string,Informer<PCsMsg>::Ptr> inf_pcs;
     std::map<std::string,Informer<RobotMsg>::Ptr> inf_robot;
     std::map<std::string,Scope *> scope_tac;
     Scope* scope_vis;
     Scope* scope_Markerpoints;
+    Scope* scope_schunkjs;
     std::map<std::string,ListenerPtr> lis_tac;
     ListenerPtr lis_vis,lis_Markerpoints;
+    ListenerPtr lis_schunkjs;
     std::map<std::string,ListenerPtr> lis_gui;
     Factory* factory;
 };

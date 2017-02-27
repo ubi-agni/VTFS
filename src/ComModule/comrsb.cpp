@@ -4,7 +4,7 @@
 
 
 std::mutex mutex_lefttac,mutex_righttac,mutex_vis1,\
-        mutex_pcs,mutex_markerpoints,mutex_gui;
+        mutex_pcs,mutex_markerpoints,mutex_gui,mutex_schunkjs;
 double right_position3d[3],right_CPnormal[3],\
         right_position3d_Object[3],right_CPnormal_Object[3];
 double left_position3d[3],left_CPnormal[3],\
@@ -15,6 +15,7 @@ tacpcs_msg  left_tacpcs_msg, right_tacpcs_msg;
 myrmex_msg left_myrmex, right_myrmex;
 markered_object_msg obj;
 dirt_points_msg dirt_ps;
+std::vector<double> schunkjs;
 
 bool is_get_left_tac_msg = false;
 bool is_get_right_tac_msg = false;
@@ -24,6 +25,7 @@ bool is_get_dirtps_msg = false;
 bool is_RobotMsg_reg = false;
 bool is_TacMsg_reg = false;
 bool is_PCsMsg_reg = false;
+bool is_get_schunkjs_msg = false;
 
 
 void handle_lefttac(boost::shared_ptr<TacMsg> data) {
@@ -75,6 +77,17 @@ void handle_vis(boost::shared_ptr<VisMsg> data) {
     }
     is_get_vis_msg = true;
     mutex_vis1.unlock();
+}
+
+void handle_schunkjs(boost::shared_ptr<rst::generic::Value> data) {
+    mutex_schunkjs.lock();
+    schunkjs.clear();
+    for(int i = 0; i < data->array_size(); i++){
+        rst::generic::Value val = data->array(i);
+        schunkjs.push_back(val.double_());
+    }
+    is_get_schunkjs_msg = true;
+    mutex_schunkjs.unlock();
 }
 
 void handle_MarkerPoints(boost::shared_ptr<MarkerPointsMsg> data) {
@@ -192,6 +205,21 @@ bool ComRSB::fiducialmarker_receive(markered_object_msg& msg){
     }
 
 }
+
+bool ComRSB::schunkjs_receive(std::vector<double>& msg_js){
+    mutex_schunkjs.lock();
+    msg_js = schunkjs;
+    mutex_schunkjs.unlock();
+    if(is_get_schunkjs_msg == true){
+        is_get_schunkjs_msg = false;
+        return true;
+    }
+    else{
+        return false;
+    }
+    
+}
+
 bool ComRSB::markerpoints_receive(dirt_points_msg& msg){
     mutex_markerpoints.lock();
     msg = dirt_ps;
@@ -283,6 +311,14 @@ void ComRSB::add_msg(RsbDataType& rdt){
             is_PCsMsg_reg = true;
         }
         inf_pcs["rightmyrmex"] = factory->createInformer<PCsMsg> ("/right/PCsMsg");
+        break;
+    case SchunkJS:
+        converterschunkjs = new boost::shared_ptr< rsb::converter::ProtocolBufferConverter<rst::generic::Value> >
+                (new rsb::converter::ProtocolBufferConverter<rst::generic::Value>());
+        rsb::converter::converterRepository<std::string>()->registerConverter(*converterschunkjs);
+        scope_schunkjs = new Scope("/sdh/js");
+        lis_schunkjs = factory->createListener(*scope_schunkjs);
+        lis_schunkjs->addHandler(HandlerPtr(new DataFunctionHandler<rst::generic::Value>(handle_schunkjs)));
         break;
     default:
         std::cout<<"you are adding the wrong msg"<<std::endl;

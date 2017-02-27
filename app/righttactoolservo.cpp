@@ -65,8 +65,9 @@
 #ifdef HAVE_ROS
 // ROS objects
 tf::TransformBroadcaster *br;
-sensor_msgs::JointState js_la, js_ra;
+sensor_msgs::JointState js_la, js_ra, js_schunk;
 ros::Publisher jsPub_la, jsPub_ra;
+ros::Publisher jsPub_schunk;
 ros::NodeHandle *nh;
 //ros::Publisher gamma_force_marker_pub;
 ros::Publisher nv_est_marker_pub;
@@ -86,6 +87,7 @@ ComRSB *com_rsb;
 RsbDataType rdtleftkuka;
 RsbDataType rdtlefttac;
 RsbDataType rdtfiducial;
+RsbDataType rdtschunkjs;
 myrmex_msg left_myrmex_msg;
 markered_object_msg tactoolmarker;
 ParameterManager* pm;
@@ -120,7 +122,7 @@ double initO_x,initO_y,initO_z;
 
 
 //using mutex locking controller ptr while it is switching.
-std::mutex mutex_act, mutex_force,mutex_tac,mutex_ft,mutex_vis;
+std::mutex mutex_act, mutex_force,mutex_tac,mutex_ft,mutex_vis,mutex_schunkjs_app;
 //estimated force/torque from fri
 Eigen::Vector3d estkukaforce,estkukamoment;
 Eigen::Vector3d filtered_force;
@@ -184,6 +186,9 @@ bool update_rotationtm_flag;
 // in order to improve the rotation angle estimation, we add exploring motion
 EXPDIR ed;
 
+//get schunk joint angle
+std::vector<double> schunkjs;
+
 void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
     mutex_tac.lock();
@@ -192,6 +197,18 @@ void tactileviarsb(){
     myrtac->update_initial_data(left_myrmex_msg);
     mutex_tac.unlock();
 }
+
+void schunkJSviarsb(){
+    mutex_schunkjs_app.lock();
+    com_rsb->schunkjs_receive(schunkjs);
+//     std::cout<<"schunk joint angle are ";
+//     for(int i = 0; i < schunkjs.size(); i++){
+//         std::cout<<schunkjs.at(i)<<",";
+//     }
+//     std::cout<<std::endl;
+    mutex_schunkjs_app.unlock();
+}
+
 
 void vismarkerviarsb(){
     mutex_vis.lock();
@@ -956,9 +973,20 @@ void ros_publisher(){
         js_la.position[i]=right_rs->JntPosition_mea[i];
         js_ra.position[i]=0;
     }
+    std::cout<<std::endl;
+
+    mutex_schunkjs_app.lock();
+    std::cout<<"ros pub schunk js ";
+    for(int i = 0; i < schunkjs.size(); i++){
+        js_schunk.position[i] = schunkjs.at(i)*M_PI/180.0;
+        std::cout<<js_schunk.position[i]<<",";
+    }
+    std::cout<<std::endl;
+    mutex_schunkjs_app.unlock();
 
     js_la.header.stamp=ros::Time::now();
     js_ra.header.stamp=ros::Time::now();
+    js_schunk.header.stamp=ros::Time::now();
     //publish marker of target
     //publish the actived taxel
     if ((Marker_1_pub.getNumSubscribers() >= 1)){
@@ -1312,6 +1340,7 @@ void ros_publisher(){
     // send a joint_state
     jsPub_la.publish(js_la);
     jsPub_ra.publish(js_ra);
+    jsPub_schunk.publish(js_schunk);
 //    ros::spinOnce();
 }
 
@@ -1467,9 +1496,11 @@ void init(){
     rdtleftkuka = LeftKukaEff;
     rdtlefttac = LeftMyrmex;
     rdtfiducial = FiducialMarkerFeature;
+    rdtschunkjs = SchunkJS;
     com_rsb->add_msg(rdtleftkuka);
     com_rsb->add_msg(rdtlefttac);
     com_rsb->add_msg(rdtfiducial);
+    com_rsb->add_msg(rdtschunkjs);
     ft.setZero(6);
     estkukaforce.setZero();
     estkukamoment.setZero();
@@ -1512,6 +1543,7 @@ void init(){
 #ifdef HAVE_ROS
     std::string left_kuka_arm_name="la";
     std::string right_kuka_arm_name="ra";
+    std::string left_schunk_hand_name ="lh";
     js_la.name.push_back(left_kuka_arm_name+"_arm_0_joint");
     js_la.name.push_back(left_kuka_arm_name+"_arm_1_joint");
     js_la.name.push_back(left_kuka_arm_name+"_arm_2_joint");
@@ -1527,6 +1559,16 @@ void init(){
     js_ra.name.push_back(right_kuka_arm_name+"_arm_5_joint");
     js_ra.name.push_back(right_kuka_arm_name+"_arm_6_joint");
 
+    //for schunk
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_knuckle_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_finger_22_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_finger_23_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_thumb_2_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_thumb_3_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_finger_12_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_finger_13_joint");
+
+
     js_la.position.resize(7);
     js_la.velocity.resize(7);
     js_la.effort.resize(7);
@@ -1535,8 +1577,13 @@ void init(){
     js_ra.velocity.resize(7);
     js_ra.effort.resize(7);
 
+    js_schunk.position.resize(7);
+    js_schunk.velocity.resize(7);
+    js_schunk.effort.resize(7);
+
     js_la.header.frame_id="frame_la";
     js_ra.header.frame_id="frame_ra";
+    js_ra.header.frame_id="frame_lh";
     nv_est_marker_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker", 2);
     nv_est_marker_update_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker_update", 2);
     Marker_1_pub = nh->advertise<visualization_msgs::Marker>("marker1", 2);
@@ -1548,6 +1595,7 @@ void init(){
 
     jsPub_la = nh->advertise<sensor_msgs::JointState> ("/la/joint_states", 2);
     jsPub_ra = nh->advertise<sensor_msgs::JointState> ("/ra/joint_states", 2);
+    jsPub_schunk = nh->advertise<sensor_msgs::JointState> ("/lh/joint_states", 2);
     ros::spinOnce();
 
     br = new tf::TransformBroadcaster();
@@ -1571,6 +1619,7 @@ void run_rightarm(){
             nv_est();
             vis_first_contact_flag = true;
         }
+
 
 //        kuka_right_arm->update_robot_stiffness();
         kuka_right_arm->get_joint_position_act();
@@ -1694,6 +1743,13 @@ int main(int argc, char* argv[])
     thrd_kuka_ctrl.setSingleShot(false);
     thrd_kuka_ctrl.setInterval(Timer::Interval(1));
     thrd_kuka_ctrl.start(true);
+
+    //start Schunk hand read thread
+    Timer thrd_schunk_read(schunkJSviarsb);
+    thrd_schunk_read.setSingleShot(false);
+    thrd_schunk_read.setInterval(Timer::Interval(100));
+    thrd_schunk_read.start(true);
+
     #ifdef HAVE_ROS
     //start ros publisher thread
     Timer thrd_rospublisher(ros_publisher);
