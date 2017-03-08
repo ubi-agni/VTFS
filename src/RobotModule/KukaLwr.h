@@ -63,6 +63,7 @@ public:
     void addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p);
     void backKukaChain(ToolNameT tn);
     void initCbf();
+    bool IsFTAssembled();
 private:
     void initChains(ToolNameT tn=sensing_pole);
     void initReference (CBF::FloatVector& f);

@@ -11,7 +11,7 @@
 //for ROS
 #ifdef HAVE_ROS
 #include <ros/ros.h>
-#include <sr_robot_msgs/UBI0All.h>
+#include <tactile_msgs/TactileState.h>
 #include <geometry_msgs/WrenchStamped.h>
 //#include <agni_utils/tactile_calibration.hpp>
 #include <visualization_msgs/Marker.h>
@@ -55,13 +55,13 @@
 //teensy fingertip taxel num
 #define TAC_NUM 12
 //desired contact pressure
-#define TAC_F 0.8
+#define TAC_F 0.3
 
 #ifdef HAVE_ROS
 // ROS objects
 tf::TransformBroadcaster *br;
-sensor_msgs::JointState js;
-ros::Publisher jsPub;
+sensor_msgs::JointState js_la, js_ra;
+ros::Publisher jsPub_la,jsPub_ra;
 ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,gamma_force_marker_pub,act_taxel_pub,act_taxel_nv_pub;
@@ -97,7 +97,7 @@ Eigen::Vector3d tool_vec_g;
 
 
 //using mutex locking controller ptr while it is switching.
-std::mutex mutex_act, mutex_force,mutex_tac,mutex_ft;
+std::mutex mutex_act,mutex_force,mutex_tac,mutex_ft;
 //estimated force/torque from fri
 Eigen::Vector3d estkukaforce,estkukamoment;
 Eigen::Vector3d filtered_force;
@@ -145,7 +145,7 @@ void tip_force_cb(boost::shared_ptr<std::string> data){
     std::cout<<"maintain the force"<<std::endl;
 }
 
-void vogc_cb(boost::shared_ptr<std::string> data){
+void approaching_ctc_cb(boost::shared_ptr<std::string> data){
     std::cout<<"now you are in the approaching and geting contact task"<<std::endl;
     bool ctc_flag, approaching_flag;
     ctc_flag = false;
@@ -395,7 +395,7 @@ void tacindex_cb(boost::shared_ptr<std::string> data){
 #ifdef HAVE_ROS
 // receive Tactile data from UBI Fingertips
 void
-recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg){
+recvTipTactile(const tactile_msgs::TactileStateConstPtr& msg){
     // for first sensor each taxel
     //Todo: clear data and all estimated value;
     mutex_tac.lock();
@@ -403,16 +403,16 @@ recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg){
     Eigen::Vector3d pos_val,nv_val;
 //    std::cout <<"0"<<"\t"<<"1"<<"\t"<<"2"<<"\t"<<"3"<<"\t"<<"4"<<"\t"<<"5"<<"\t"<<"6"<<"\t"<<"7"<<"\t"<<"8"<<"\t"<<"9"<<"\t"<<"10"<<"\t"<<"11"<<"\t"<<std::endl;
 //    std::cout << std::fixed;
-    ROS_ASSERT(ftt->data.fingertip_tac_pressure.size() == msg->tactiles[0].distal.size());
-    for(size_t j = 0; j < msg->tactiles[0].distal.size(); ++j) {
-        press_val= 1.0-(msg->tactiles[0].distal[j]/1023.0);
-        if(press_val < MID_THRESHOLD) press_val = 0.0;
+    ROS_ASSERT(ftt->data.fingertip_tac_pressure.size() == msg->sensors[0].values.size());
+    for(size_t j = 0; j < msg->sensors[0].values.size(); ++j) {
+        press_val= msg->sensors[0].values[j];
         ftt->data.fingertip_tac_pressure[j] = press_val;
 //        std::cout<<std::setprecision(5)<<press_val<<"\t";
     }
 //    std::cout<<std::endl;
     mutex_tac.unlock();
 }
+
 
 int counter_t = 0;
 // receive FT Sensor data
@@ -476,11 +476,12 @@ void ros_publisher(){
     //prepare joint state data
     for(unsigned int i=0 ; i< 7;++i){
         //there is a arm name changed because the confliction between openkc and kukas in rviz
-        js.position[i]=0;
-        js.position[i+7]=left_rs->JntPosition_mea[i];
+        js_la.position[i]=0;
+        js_ra.position[i]=left_rs->JntPosition_mea[i];
     }
 
-    js.header.stamp=ros::Time::now();
+    js_la.header.stamp=ros::Time::now();
+    js_ra.header.stamp=ros::Time::now();
     bool contact_f = false;
     mutex_tac.lock();
     contact_f = ftt->isContact(ftt->data);
@@ -904,7 +905,8 @@ void ros_publisher(){
         marker_nvarray_pub.publish(marker_nvarray_msg);
     }
     // send a joint_state
-    jsPub.publish(js);
+    jsPub_la.publish(js_la);
+    jsPub_ra.publish(js_ra);
 //    ros::spinOnce();
 }
 
@@ -951,7 +953,7 @@ void init(){
     //declare the cb function
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_force(tip_force_cb);
 //    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(tip_tactile_cb);
-    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(vogc_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(approaching_ctc_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_sliding(tip_taxel_sliding_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_rolling(tip_taxel_rolling_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_exploring(tip_exploring_cb);
@@ -1050,26 +1052,31 @@ void init(){
 #ifdef HAVE_ROS
     std::string left_kuka_arm_name="la";
     std::string right_kuka_arm_name="ra";
-    js.name.push_back(left_kuka_arm_name+"_arm_0_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_1_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_2_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_3_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_4_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_5_joint");
-    js.name.push_back(left_kuka_arm_name+"_arm_6_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_0_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_1_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_2_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_3_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_4_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_5_joint");
-    js.name.push_back(right_kuka_arm_name+"_arm_6_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_0_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_1_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_2_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_3_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_4_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_5_joint");
+    js_la.name.push_back(left_kuka_arm_name+"_arm_6_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_0_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_1_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_2_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_3_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_4_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_5_joint");
+    js_ra.name.push_back(right_kuka_arm_name+"_arm_6_joint");
 
-    js.position.resize(14);
-    js.velocity.resize(14);
-    js.effort.resize(14);
+    js_la.position.resize(7);
+    js_la.velocity.resize(7);
+    js_la.effort.resize(7);
 
-    js.header.frame_id="frame";
+    js_ra.position.resize(7);
+    js_ra.velocity.resize(7);
+    js_ra.effort.resize(7);
+
+    js_la.header.frame_id="frame_la";
+    js_ra.header.frame_id="frame_ra";
 
     marker_shape = visualization_msgs::Marker::CUBE;
     marker_pub = nh->advertise<visualization_msgs::Marker>("visualization_marker", 2);
@@ -1083,7 +1090,8 @@ void init(){
     des_ct_marker_pub = nh->advertise<visualization_msgs::Marker>("des_ct_marker", 2);
     des_ct_nv_marker_pub = nh->advertise<visualization_msgs::Marker>("des_ct_nv_marker", 2);
 
-    jsPub = nh->advertise<sensor_msgs::JointState> ("joint_states", 2);
+    jsPub_la = nh->advertise<sensor_msgs::JointState> ("/la/joint_states", 2);
+    jsPub_ra = nh->advertise<sensor_msgs::JointState> ("/ra/joint_states", 2);
     ros::spinOnce();
 
     br = new tf::TransformBroadcaster();
@@ -1175,7 +1183,8 @@ void run_leftarm(){
         //using mid for control, get contact information
         get_mid_info();
         //get ft visulization information
-        get_ft_vis_info();
+        //read ft sensor
+        //get_ft_vis_info();
         //using all kinds of controllers to update the reference
         mutex_act.lock();
         for(unsigned int i = 0; i < left_ac_vec.size();i++){

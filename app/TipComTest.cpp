@@ -15,7 +15,7 @@
 //for ROS
 #ifdef HAVE_ROS
 #include <ros/ros.h>
-#include <sr_robot_msgs/UBI0All.h>
+#include <tactile_msgs/TactileState.h>
 //#include <agni_utils/tactile_calibration.hpp>
 #endif
 #include <iomanip>
@@ -36,7 +36,7 @@ bool StopFlag;
 #ifdef HAVE_ROS
 // receive Tactile data from UBI Fingertips
 void
-recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg)
+recvTipTactile(const tactile_msgs::TactileStateConstPtr& msg)
 {
     double val=0;
     // get access at all
@@ -51,9 +51,9 @@ recvTipTactile(const sr_robot_msgs::UBI0AllConstPtr& msg)
 //        val= 1.0-(msg->tactiles[0].distal[j]/1023.0); //agni::tactileCalibration(msg->tactiles[0].distal[j], 1024, agni::UBI0);
 //        std::cout<<std::setprecision(5)<<val<<"\t";
 //    }
-    for(size_t j = 0; j < msg->tactiles[0].distal.size(); ++j) {
-        val= msg->tactiles[0].distal[j]; //agni::tactileCalibration(msg->tactiles[0].distal[j], 1024, agni::UBI0);
-        std::cout<<(int)val<<"\t";
+    for(size_t j = 0; j < msg->sensors[0].values.size(); ++j) {
+        val= msg->sensors[0].values[j]; //agni::tactileCalibration(msg->tactiles[0].distal[j], 1024, agni::UBI0);
+        std::cout<<val<<"\t";
     }
     std::cout<<std::endl;
 }

@@ -6,8 +6,8 @@
   <button args="tip_taxel_sliding" handle="tip_taxel_sliding"/>
   <button args="tip_taxel_rolling" handle="tip_taxel_rolling"/>
   <button args="tip_exploring" handle="tip_exploring"/>
-  <button args="tip_grav_comp_ctrl" handle="tip_grav_comp_ctrl"/>
-  <button args="tip_normal_ctrl" handle="tip_normal_ctrl"/>
+  <button args="obj_grav_comp_ctrl" handle="obj_grav_comp_ctrl"/>
+  <button args="obj_normal_ctrl" handle="obj_normal_ctrl"/>
   <button args="opensdh" handle="opensdh"/>
   <button args="closesdh" handle="closesdh"/>
   <button args="stopsdh" handle="stopsdh"/>

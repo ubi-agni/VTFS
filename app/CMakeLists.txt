@@ -50,6 +50,7 @@ SET(APPS
         RemoteGUITest
         RemoteGuiControl
         VisMarkerComTest
+        BiManualArticulatedObj
 #        anotherapp
    )
 
