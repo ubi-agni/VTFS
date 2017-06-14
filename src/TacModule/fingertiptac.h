@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
+#include "UtilModule/TemporalSmoothingFilter.h"
 
 #define MID_THRESHOLD 0.02
 
@@ -72,6 +73,9 @@ public:
     //get the esimated slope of contact line
     void get_slope(Eigen::Vector3d s);
     void slope_clear();
+    TemporalSmoothingFilter<double>* ct_pressure_filtered;
+    TemporalSmoothingFilter<Eigen::Vector3d>* ct_position_filtered;
+    TemporalSmoothingFilter<Eigen::Vector3d>* ct_nv_filtered;
 private:
     //sub routine to find the min distance taxel id
     int find_near_taxelid(tac_data t_data);

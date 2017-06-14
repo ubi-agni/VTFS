@@ -8,7 +8,7 @@ ParameterManager::ParameterManager(){
 
 ParameterManager::ParameterManager(const std::string s = "left_arm_param.xml",TacSensorType t)
 {
-    std::cout<<"loading parameters"<<std::endl;
+    std::cout<<"loading parameters "<<s<<std::endl;
     map_name_dim[0] = "x";
     map_name_dim[1] = "y";
     map_name_dim[2] = "z";
@@ -132,10 +132,13 @@ void ParameterManager::load(FORCETaskNameT fnt,ptree pt){
 void ParameterManager::load(PROTaskNameT tnt,ptree pt){
     pro_task_ctrl_param[tnt].kpp.setZero(6,6);
     pro_task_ctrl_param[tnt].psm.setZero(6,6);
+    std::cout<<"tnt is "<<tnt<<std::endl;
     for(int i = 0; i < 6; i++){
         pro_task_ctrl_param[tnt].kpp(i,i) = pt.get<double>("SelfCtrlParams."+pro_map_task_name[tnt]+".kp");
         pro_task_ctrl_param[tnt].psm(i,i) = pt.get<double>("SelfCtrlParams."+pro_map_task_name[tnt]+".psm"+map_name_dim3[i]);
+        std::cout<<pro_task_ctrl_param[tnt].kpp(i,i)<<",";
     }
+    std::cout<<std::endl;
 }
 void ParameterManager::loadCtrlParam(std::string s){
     ptree pt;

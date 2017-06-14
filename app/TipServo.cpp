@@ -20,6 +20,8 @@
 #include <tf_conversions/tf_eigen.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/Vector3Stamped.h>
+#include <std_msgs/Bool.h>
 #endif
 #include <iomanip>
 
@@ -55,13 +57,14 @@
 //teensy fingertip taxel num
 #define TAC_NUM 12
 //desired contact pressure
-#define TAC_F 0.3
+#define TAC_F 0.5
 
 #ifdef HAVE_ROS
 // ROS objects
 tf::TransformBroadcaster *br;
 sensor_msgs::JointState js_la, js_ra;
 ros::Publisher jsPub_la,jsPub_ra;
+ros::Publisher p_ct_pub, lvel_ct_pub,start_rec_pub;
 ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,gamma_force_marker_pub,act_taxel_pub,act_taxel_nv_pub;
@@ -82,13 +85,24 @@ RobotState *left_rs;
 kuka_msg left_kuka_msg;
 gamaFT *ft_gama;
 
-#define newP_x -0.1
-#define newP_y 0.3
-#define newP_z 0.30
 
-#define newO_x 0.0
-#define newO_y M_PI/2;
-#define newO_z 0.0;
+// #define newP_x -0.1
+// #define newP_y 0.3
+// #define newP_z 0.30
+// 
+// #define newO_x 0.0
+// #define newO_y M_PI/2;
+// #define newO_z 0.0;
+
+
+#define newP_x -0.25219
+#define newP_y 0.1438
+#define newP_z 0.42161
+
+#define newO_x 0.49867
+#define newO_y -0.56376
+#define newO_z 0.60149
+#define newO_w 0.2678
 
 
 double initP_x,initP_y,initP_z;
@@ -113,6 +127,7 @@ float tac_index;
 bool StopFlag;
 TemporalSmoothingFilter<Eigen::Vector3d>* gama_f_filter;
 TemporalSmoothingFilter<Eigen::Vector3d>* gama_t_filter;
+TemporalSmoothingFilter<Eigen::Vector3d>* position_ct_filter;
 
 //flag to record data in order to use gamma ft sensor to calbirate mid tactile fingertip
 bool start_taccalib_rec;
@@ -123,6 +138,7 @@ RobotModeT rmt;
 MidTacFeature *mtf;
 //estimated contact point position, normal direction
 Eigen::Vector3d cp_g,cendp_g,cnv_g,cendp_g_gamma;
+Eigen::Vector3d cp_g_old;
 //estimated contact taxel posion and normal direction
 Eigen::Vector3d c_taxel_p_l,c_taxel_nv_l,c_taxel_p_g,c_taxel_endp_g,c_taxel_nv_g;
 
@@ -183,6 +199,7 @@ void approaching_ctc_cb(boost::shared_ptr<std::string> data){
 
 
 void tip_tactile_cb(boost::shared_ptr<std::string> data){
+    std_msgs::Bool rec_msg;
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -193,6 +210,9 @@ void tip_tactile_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->mt = TACTILE;
     left_task_vec.back()->set_desired_cf_mid(TAC_F);
     mutex_act.unlock();
+    //publish start record via ros
+    rec_msg.data = false;
+    start_rec_pub.publish(rec_msg);
     std::cout<<"tactile servoing for maintain contact"<<std::endl;
 }
 
@@ -213,6 +233,7 @@ void tip_taxel_sliding_cb(boost::shared_ptr<std::string> data){
 
 
 void tip_exploring_cb(boost::shared_ptr<std::string> data){
+    std_msgs::Bool rec_msg;
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -234,7 +255,40 @@ void tip_exploring_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
     left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
     mutex_act.unlock();
+    
+    //publish start record via ros
+    rec_msg.data = true;
+    start_rec_pub.publish(rec_msg);
     std::cout<<"tactile servoing for sliding/rolling to the desired point"<<std::endl;
+}
+
+void tip_reverse_exploring_cb(boost::shared_ptr<std::string> data){
+    std_msgs::Bool rec_msg;
+    mutex_act.lock();
+    left_ac_vec.clear();
+    left_task_vec.clear();
+    left_taskname.prot = RLXP;
+    left_ac_vec.push_back(new ProActController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
+    left_task_vec.back()->mft = LOCAL;
+    left_task_vec.back()->mt = JOINTS;
+
+    left_taskname.tact = COVER_OBJECT_SURFACE;
+    left_ac_vec.push_back(new TacServoController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new TacServoTask(left_taskname.tact));
+    left_task_vec.back()->mt = TACTILE;
+    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+    //compute the desired cp on fingertip-Area I
+    left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+    left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
+    mutex_act.unlock();
+    //publish start record via ros
+    rec_msg.data = true;
+    start_rec_pub.publish(rec_msg);
+    std::cout<<"tactile servoing for sliding/rolling with inverse direction"<<std::endl;
 }
 
 void tip_cablefollow_cb(boost::shared_ptr<std::string> data){
@@ -333,9 +387,16 @@ void moveto_cb(boost::shared_ptr<std::string> data){
     p(1) = newP_y;
     p(2) = newP_z;
 
-    o(0) = newO_x;
-    o(1) = newO_y;
-    o(2) = newO_z;
+    //o is computed from quatenion
+    tf::Quaternion quat(newO_x,newO_y,newO_z,newO_w);
+    Eigen::Vector3d unit_o;
+    tf::vectorTFToEigen(quat.getAxis(),unit_o);
+    double val = quat.getAngle();
+    o = val*unit_o;
+    
+//     o(0) = newO_x;
+//     o(1) = newO_y;
+//     o(2) = newO_z;
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -621,6 +682,8 @@ void ros_publisher(){
     //publish the actived position
     if ((act_marker_pub.getNumSubscribers() >= 1)){
         visualization_msgs::Marker act_marker;
+        geometry_msgs::Vector3Stamped vec3_msg;
+        geometry_msgs::Vector3Stamped vec3_vel_msg;
         mutex_tac.lock();
         // Set the color -- be sure to set alpha to something non-zero!
         act_marker.color.r = ftt->pressure;
@@ -632,8 +695,8 @@ void ros_publisher(){
             act_marker.color.a = 0;
         mutex_tac.unlock();
 
-        act_marker.header.frame_id = "frame";
-        act_marker.header.stamp = ros::Time::now();
+        vec3_vel_msg.header.frame_id = vec3_msg.header.frame_id = act_marker.header.frame_id = "frame";
+        vec3_vel_msg.header.stamp = vec3_msg.header.stamp = act_marker.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
         act_marker.ns = "KukaRos";
@@ -657,6 +720,23 @@ void ros_publisher(){
 
         act_marker.lifetime = ros::Duration();
         act_marker_pub.publish(act_marker);
+        
+        //also publish the contact position via ROS
+        Eigen::Vector3d filtered_cp_g;
+        Eigen::Vector3d vel_cp_g;
+        filtered_cp_g = position_ct_filter->push(cp_g);
+        vec3_msg.vector.x = filtered_cp_g(0);
+        vec3_msg.vector.y = filtered_cp_g(1);
+        vec3_msg.vector.z = filtered_cp_g(2);
+        //0.05s means 20hz
+        vel_cp_g = (filtered_cp_g - cp_g_old)/0.02;
+        vec3_vel_msg.vector.x = vel_cp_g(0);
+        vec3_vel_msg.vector.y = vel_cp_g(1);
+        vec3_vel_msg.vector.z = vel_cp_g(2);
+        //assign the current position as old position
+        cp_g_old = filtered_cp_g;
+        lvel_ct_pub.publish(vec3_vel_msg);
+        p_ct_pub.publish(vec3_msg);
     }
     //publish the actived normal vector
     if(act_marker_nv_pub.getNumSubscribers() >= 1){
@@ -957,6 +1037,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_sliding(tip_taxel_sliding_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_rolling(tip_taxel_rolling_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_exploring(tip_exploring_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_reverse_exploring(tip_reverse_exploring_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_moveto(moveto_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_ftcalib(ftcalib_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_gamaftcalib(gamaftcalib_cb);
@@ -1018,9 +1099,11 @@ void init(){
     cf_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
     gama_f_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
     gama_t_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
+    position_ct_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
     int len = 50;
     mtf = new MidTacFeature(len);
     cp_g.setZero();
+    cp_g_old.setZero();
     cendp_g.setZero();
     cendp_g_gamma.setZero();
     cnv_g.setZero();
@@ -1036,6 +1119,7 @@ void init(){
     com_rsb->register_external("/foo/tip_taxel_sliding",button_tip_taxel_sliding);
     com_rsb->register_external("/foo/tip_taxel_rolling",button_tip_taxel_rolling);
     com_rsb->register_external("/foo/tip_exploring",button_tip_exploring);
+    com_rsb->register_external("/foo/tip_reverse_exploring",button_tip_reverse_exploring);
     com_rsb->register_external("/foo/ftcalib",button_ftcalib);
     com_rsb->register_external("/foo/gamaftcalib",button_gamaftcalib);
     com_rsb->register_external("/foo/taccalib_rec",button_taccalib_rec);
@@ -1151,10 +1235,11 @@ void get_mid_info(){
 
 
         //compute the slope of accumulated tactile linear feature
-        slope = mtf->getSlope(cp_g.transpose());
-        ftt->get_slope(left_rs->robot_orien["eef"].transpose()*slope);
-        Tposition<<slope[0]<<","<<slope[1]<<","<<slope[2]<<","\
-                          <<cp_g[0]<<","<<cp_g[1]<<","<<cp_g[2]<<std::endl;
+//         slope = mtf->getSlope(cp_g.transpose());
+//         ftt->get_slope(left_rs->robot_orien["eef"].transpose()*slope);
+        Tposition<<ftt->data.fingertip_tac_pressure.at(0)<<","<<ftt->data.fingertip_tac_pressure.at(3)<<","<<ftt->data.fingertip_tac_pressure.at(8)<<","<<ftt->data.fingertip_tac_pressure.at(11)<<",";
+
+        Tposition<<ftt->pos[0]/1000<<","<<ftt->pos[1]/1000<<","<<ftt->pos[2]/1000<<","<<ftt->pressure<<std::endl;
     }
     else{
         ftt->slope_clear();
@@ -1221,6 +1306,7 @@ int main(int argc, char* argv[])
     std::string data_f ("/tmp/");
     Tposition.open((data_f+std::string("position.txt")).c_str());
     Tft.open((data_f+std::string("ft.txt")).c_str());
+    
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);
         nh = new ros::NodeHandle();
@@ -1240,8 +1326,9 @@ int main(int argc, char* argv[])
         std::cout<<"Connect to ATI FT sensor"<<std::endl;
         GammaFtSub=nh->subscribe("/ft_sensor/wrench", 1, // buffer size
                                 &recvFT);
-
-
+    p_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("position_ct", 1);
+    lvel_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("lvel_ct", 1);
+    start_rec_pub = nh->advertise<std_msgs::Bool>("start_rec", 1);
     #endif
     init();
     #ifdef HAVE_ROS

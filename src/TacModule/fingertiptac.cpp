@@ -213,6 +213,9 @@ FingertipTac::FingertipTac(int num)
     pressure = 0.0;
     act_taxel_num = 0;
     contactarea = NoContact;
+    ct_pressure_filtered = new TemporalSmoothingFilter<double>(5,Average,0);
+    ct_position_filtered = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
+    ct_nv_filtered = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
 }
 
 void FingertipTac::init_taxelmap(){
@@ -267,7 +270,8 @@ void FingertipTac::est_cop(tac_data t_data){
         for(int i = 0; i < act_taxel_num; i++){
             pos_sum += weighted_press[i] * data.fingertip_tac_position[act_Ids[i]];
         }
-        pos = pos_sum;
+        pos = ct_position_filtered->push(pos_sum);
+//         pos = pos_sum;
     }
     else{
         pos.setZero();
@@ -291,7 +295,8 @@ void FingertipTac::est_nv(tac_data t_data){
         for(int i = 0; i < act_taxel_num; i++){
             nv_sum += weighted_press[i] * data.fingertip_tac_nv[act_Ids[i]];
         }
-        nv = nv_sum;
+        nv = ct_nv_filtered->push(nv_sum);
+//         nv = nv_sum;
         nv = nv/nv.norm();
     }
     else{
@@ -314,7 +319,8 @@ void FingertipTac::est_pressure(tac_data t_data){
     }
     if(act_taxel_num != 0){
 //        pressure = sum_press_act / act_taxel_num;
-        pressure = sum_press_act;
+        pressure = ct_pressure_filtered->push(sum_press_act);
+//         pressure = sum_press_act;
     }
     else{
         pressure = 0;

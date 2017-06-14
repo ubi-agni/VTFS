@@ -56,7 +56,7 @@
 //teensy fingertip taxel num
 #define TAC_NUM 12
 //desired contact pressure
-#define TAC_F 0.3
+#define TAC_F 0.5
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -121,7 +121,7 @@ gamaFT *ft_gama;
 //predefined pose of right arm should go
 #define right_newP_x 0.1
 #define right_newP_y 0.3
-#define right_newP_z 0.5
+#define right_newP_z 0.4
 
 #define right_newO_x 0.0
 #define right_newO_y M_PI;
@@ -314,8 +314,62 @@ void tip_exploring_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
     left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
     mutex_act.unlock();
-    std::cout<<"tactile servoing for sliding/rolling to the desired point"<<std::endl;
+    std::cout<<"tactile servoing exploration________________________________________"<<std::endl;
 }
+
+void tip_stop_exploring_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    left_ac_vec.clear();
+    left_task_vec.clear();
+    left_ac_vec.push_back(new ProActController(*left_pm));
+    left_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
+    left_task_vec.back()->mt = JOINTS;
+    left_task_vec.back()->mft = GLOBAL;
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+
+    //get start point position in cartesian space
+    p(0) = initP_x = left_rs->robot_position["eef"](0);
+    p(1) = initP_y= left_rs->robot_position["eef"](1);
+    p(2) = initP_z= left_rs->robot_position["eef"](2);
+
+    o = tm2axisangle(left_rs->robot_orien["eef"]);
+    initO_x = o(0);
+    initO_y = o(1);
+    initO_z = o(2);
+    left_task_vec.back()->set_desired_p_eigen(p);
+    left_task_vec.back()->set_desired_o_ax(o);
+    mutex_act.unlock();
+    std::cout<<"tactile servoing stop exploring"<<std::endl;
+}
+
+
+void tip_reverse_exploring_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    left_ac_vec.clear();
+    left_task_vec.clear();
+    left_taskname.prot = RLXP;
+    left_ac_vec.push_back(new ProActController(*left_pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
+    left_task_vec.back()->mft = LOCAL;
+    left_task_vec.back()->mt = JOINTS;
+
+    left_taskname.tact = COVER_OBJECT_SURFACE;
+    left_ac_vec.push_back(new TacServoController(*left_pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new TacServoTask(left_taskname.tact));
+    left_task_vec.back()->mt = TACTILE;
+    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+    //compute the desired cp on fingertip-Area I
+    left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+    left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
+    mutex_act.unlock();
+    std::cout<<"tactile servoing reverse exploration****************************************************************************"<<std::endl;
+}
+
 
 
 void tip_taxel_rolling_cb(boost::shared_ptr<std::string> data){
@@ -977,6 +1031,8 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_sliding(tip_taxel_sliding_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_rolling(tip_taxel_rolling_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_exploring(tip_exploring_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_stop_exploring(tip_stop_exploring_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_reverse_exploring(tip_reverse_exploring_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_sdh_moveto(sdh_moveto_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_gamaftcalib(gamaftcalib_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_taccalib_rec(taccalib_rec_cb);
@@ -1106,6 +1162,8 @@ void init(){
     com_rsb->register_external("/foo/tip_taxel_sliding",button_tip_taxel_sliding);
     com_rsb->register_external("/foo/tip_taxel_rolling",button_tip_taxel_rolling);
     com_rsb->register_external("/foo/tip_exploring",button_tip_exploring);
+    com_rsb->register_external("/foo/tip_stop_exploring",button_tip_stop_exploring);
+    com_rsb->register_external("/foo/tip_reverse_exploring",button_tip_reverse_exploring);
     com_rsb->register_external("/foo/gamaftcalib",button_gamaftcalib);
     com_rsb->register_external("/foo/taccalib_rec",button_taccalib_rec);
     com_rsb->register_external("/foo/obj_grav_comp_ctrl",button_obj_grav_comp_ctrl);
