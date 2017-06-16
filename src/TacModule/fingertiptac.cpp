@@ -270,7 +270,9 @@ void FingertipTac::est_cop(tac_data t_data){
         for(int i = 0; i < act_taxel_num; i++){
             pos_sum += weighted_press[i] * data.fingertip_tac_position[act_Ids[i]];
         }
+//         std::cout<<"before filter postion "<<pos_sum(0)<<","<<pos_sum(1)<<","<<pos_sum(2)<<std::endl;
         pos = ct_position_filtered->push(pos_sum);
+//         std::cout<<"after filter postion "<<pos(0)<<","<<pos(1)<<","<<pos(2)<<std::endl;
 //         pos = pos_sum;
     }
     else{
@@ -380,4 +382,67 @@ void FingertipTac::get_act_taxelId(tac_data t_data){
 void FingertipTac::clear_data(){
     data.fingertip_tac_pressure.clear();
     act_Ids.clear();
+}
+
+double FingertipTac::est_twist_angle(tac_data t_data){
+    //in area I there are only four taxels
+    //------------
+    // I10 | I11
+    //------------
+    // I00 | I01
+    //-----------
+    //check https://projects.cit-ec.uni-bielefeld.de/projects/agni-grasplab/wiki/MID_Tactile_tips
+    //for the real tacxel distribution in the mid sensor
+    double I00,I01,I10,I11;
+    I00 = t_data.fingertip_tac_pressure[11];
+    I01 = t_data.fingertip_tac_pressure[0];
+    I10 = t_data.fingertip_tac_pressure[8];
+    I11 = t_data.fingertip_tac_pressure[3];
+    
+    std::cout<<"0,3,8,11 :   "<<I01<<","<<I11<<","<<I10<<","<<I00<<std::endl;
+    
+    double x_bar, z_bar;
+    x_bar = (data.fingertip_tac_position.at(11)(0) * I00 \
+           +data.fingertip_tac_position.at(0)(0) * I01 \
+           +data.fingertip_tac_position.at(8)(0) * I10 \
+           +data.fingertip_tac_position.at(3)(0) * I11)/(I00+I01+I10+I11);
+    z_bar = (data.fingertip_tac_position.at(11)(2) * I00 \
+           +data.fingertip_tac_position.at(0)(2) * I01 \
+           +data.fingertip_tac_position.at(8)(2) * I10 \
+           +data.fingertip_tac_position.at(3)(2) * I11)/(I00+I01+I10+I11);
+           
+    std::cout<<"x_bar,  z_Bar is "<<x_bar<<","<<z_bar<<std::endl;
+    std::cout<<"pos(0),  pos(2) is "<<pos(0)<<","<<pos(2)<<std::endl;
+    
+    //fomula is mu_pq = sum(x^p*y^q*I(x,y))
+    //theta = 1/2*arctan(2*mu11/(mu20-mu02))
+    double mu11,mu20,mu02;
+    mu11 = (data.fingertip_tac_position.at(11)(0) - pos(0))*(data.fingertip_tac_position.at(11)(2) - pos(2))*I00 \ 
+    +(data.fingertip_tac_position.at(8)(0) - pos(0))*(data.fingertip_tac_position.at(8)(2) - pos(2))*I10 \ 
+    +(data.fingertip_tac_position.at(0)(0) - pos(0))*(data.fingertip_tac_position.at(0)(2) - pos(2))*I01 \ 
+    +(data.fingertip_tac_position.at(3)(0) - pos(0))*(data.fingertip_tac_position.at(3)(2) - pos(2))*I11;
+    mu20 = pow(t_data.fingertip_tac_position.at(11)(0) - pos(0),2.0)*I00 \
+    +pow(data.fingertip_tac_position.at(8)(0) - pos(0),2.0)*I10 \
+    +pow(data.fingertip_tac_position.at(0)(0) - pos(0),2.0)*I01 \
+    +pow(data.fingertip_tac_position.at(3)(0) - pos(0),2.0)*I11;
+    
+    mu02 = pow(data.fingertip_tac_position.at(11)(2) - pos(2),2.0)*I00 \
+    +pow(data.fingertip_tac_position.at(8)(2) - pos(2),2.0)*I10 \
+    +pow(data.fingertip_tac_position.at(0)(2) - pos(2),2.0)*I01 \
+    +pow(data.fingertip_tac_position.at(3)(2) - pos(2),2.0)*I11;
+    
+    double ecc;
+    double lamda1, lamda2;
+    double mu20_pie,mu02_pie,mu11_pie,mu00;
+    mu00 = I00+I01+I10+I11;
+    mu20_pie = mu20/mu00;
+    mu02_pie = mu02/mu00;
+    mu11_pie = mu11/mu00;
+    
+    lamda1 = (mu20_pie+mu02_pie)/2.0 + sqrt(4*pow(mu11_pie,2.0) + pow(mu20_pie - mu02_pie,2.0)) / 2.0;
+    lamda2 = (mu20_pie+mu02_pie)/2.0 - sqrt(4*pow(mu11_pie,2.0) + pow(mu20_pie - mu02_pie,2.0)) / 2.0;
+    
+    std::cout<<"ecc is "<<sqrt(1-lamda2/lamda1)<<std::endl;
+    
+    return (1.0/2)*atan(2*mu11/(mu20-mu02));
 }

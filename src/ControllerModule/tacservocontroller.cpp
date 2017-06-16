@@ -268,8 +268,8 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
 //             std::cout<<"rot_nv "<<rot_nv(0)<<","<<rot_nv(1)<<","<<rot_nv(2)<<std::endl;
             des_nv_normalize = desired_nv.normalized();
             ctc_nv_normalize = ctc_nv.normalized();
-            lov_tac = lov_tac + 1*(1-(des_nv_normalize.dot(ctc_nv_normalize)))*rot_nv;
-            std::cout<<"after the normal direction control "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
+//             lov_tac = lov_tac + 1*(1-(des_nv_normalize.dot(ctc_nv_normalize)))*rot_nv;
+//             std::cout<<"after the normal direction control "<<lov_tac(0)<<","<<lov_tac(1)<<","<<lov_tac(2)<<std::endl;
             //twist component, only use x z component of slope to compute the deviation angle between current estimated linear and z axis
             //only superimposing twist motion while following the cable.
             if(t->curtaskname.tact == LINEAR_TRACKING){

@@ -6,7 +6,7 @@ See http://www.boost.org/LICENSE_1_0.txt
 -->
 <SelfCtrlParams>
         <Rlxp>
-            <kp>0.006</kp>
+            <kp>0.002</kp>
             <psm>
                 <e00>1</e00>
                 <e11>0</e11>
@@ -17,7 +17,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rlxp>
         <Rlyp>
-            <kp>0.006</kp>
+            <kp>0.002</kp>
             <psm>
                 <e00>0</e00>
                 <e11>1</e11>
@@ -28,7 +28,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rlyp>
         <Rlzp>
-            <kp>0.006</kp>
+            <kp>0.002</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>
@@ -665,17 +665,17 @@ See http://www.boost.org/LICENSE_1_0.txt
 
         <CoverObjectSurface>
             <x>
-                <kp>0.002</kp>
+                <kp>-0.0005</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </x>
             <y>
-                <kp>0.01</kp>
+                <kp>0.0005</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </y>
             <z>
-                <kp>0.005</kp>
+                <kp>0.0005</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </z>
@@ -695,7 +695,7 @@ See http://www.boost.org/LICENSE_1_0.txt
                 <kd>0</kd>
             </yaw>
             <roll2>
-                <kp>0</kp>
+                <kp>2</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </roll2>

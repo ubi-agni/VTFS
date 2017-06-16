@@ -57,7 +57,7 @@
 //teensy fingertip taxel num
 #define TAC_NUM 12
 //desired contact pressure
-#define TAC_F 0.5
+#define TAC_F 0.4
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -1240,6 +1240,7 @@ void get_mid_info(){
         Tposition<<ftt->data.fingertip_tac_pressure.at(0)<<","<<ftt->data.fingertip_tac_pressure.at(3)<<","<<ftt->data.fingertip_tac_pressure.at(8)<<","<<ftt->data.fingertip_tac_pressure.at(11)<<",";
 
         Tposition<<ftt->pos[0]/1000<<","<<ftt->pos[1]/1000<<","<<ftt->pos[2]/1000<<","<<ftt->pressure<<std::endl;
+        std::cout<<"line direction is "<<ftt->est_twist_angle(ftt->data)<<std::endl;
     }
     else{
         ftt->slope_clear();
@@ -1299,6 +1300,15 @@ void run_leftarm(){
     }
 }
 
+void rcv_surfnv_cb(const geometry_msgs::Vector3Stamped::ConstPtr &msg_nv){
+    Eigen::Vector3d nv_v;
+    nv_v.setZero();
+    nv_v(0) = msg_nv->vector.x;
+    nv_v(1) = msg_nv->vector.y;
+    nv_v(2) = msg_nv->vector.z;
+    std::cout<<"nv messurement are "<<nv_v(0)<<","<<nv_v(1)<<","<<nv_v(2)<<std::endl;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -1329,6 +1339,7 @@ int main(int argc, char* argv[])
     p_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("position_ct", 1);
     lvel_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("lvel_ct", 1);
     start_rec_pub = nh->advertise<std_msgs::Bool>("start_rec", 1);
+    ros::Subscriber sub_surf_nv = nh->subscribe("surf_nv",1,rcv_surfnv_cb);
     #endif
     init();
     #ifdef HAVE_ROS

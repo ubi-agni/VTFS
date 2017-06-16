@@ -76,6 +76,8 @@ public:
     TemporalSmoothingFilter<double>* ct_pressure_filtered;
     TemporalSmoothingFilter<Eigen::Vector3d>* ct_position_filtered;
     TemporalSmoothingFilter<Eigen::Vector3d>* ct_nv_filtered;
+    //this is an adhoc function to extract the line feature from four texels in the contact I area
+    double est_twist_angle(tac_data t_data);
 private:
     //sub routine to find the min distance taxel id
     int find_near_taxelid(tac_data t_data);
