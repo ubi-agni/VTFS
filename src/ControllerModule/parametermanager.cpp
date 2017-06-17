@@ -59,7 +59,7 @@ ParameterManager::ParameterManager(const std::string s = "left_arm_param.xml",Ta
     force_map_task_name[F_MAINTAIN] = "ForceMaintain";
     force_map_task_name[F_CURVETRACKING] = "ForceCurveTracking";
     
-    vis_map_task_name[NVVERTALIGN] = "NvVertAlign";
+    vis_map_task_name[NV_VERT_ALIGN] = "NvVertAlign";
     
     tst = t;
     std::cout<<"loading part finsihed"<<std::endl;
