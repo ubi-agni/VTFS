@@ -141,6 +141,8 @@ Eigen::Vector3d cp_g,cendp_g,cnv_g,cendp_g_gamma;
 Eigen::Vector3d cp_g_old;
 //estimated contact taxel posion and normal direction
 Eigen::Vector3d c_taxel_p_l,c_taxel_nv_l,c_taxel_p_g,c_taxel_endp_g,c_taxel_nv_g;
+//normal direction of manipulated surface
+Eigen::Vector3d nv_v;
 
 void closeprog_cb(boost::shared_ptr<std::string> data){
     StopFlag = true;
@@ -377,6 +379,24 @@ void tip_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->set_desired_o_ax(o);
     rmt = NormalMode;
 }
+
+void vis_surf_tracking_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"start visuo servoing controller"<<std::endl;
+    left_ac_vec.clear();
+    left_task_vec.clear();
+
+    left_taskname.vist = NV_VERT_ALIGN;
+    left_ac_vec.push_back(new VisActController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new VisServoTask(left_taskname.vist));
+    left_task_vec.back()->mt = VISION3D;
+//     left_task_vec.back()->set_desired_cf_mid(TAC_F);
+//     left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+//     //compute the desired cp on fingertip-Area I
+//     left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+//     left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
+}
+
 
 
 void moveto_cb(boost::shared_ptr<std::string> data){
@@ -1030,6 +1050,8 @@ void init(){
     tn = teensy_finger;
     StopFlag = false;
     tac_index = 0.0;
+    //init normal direction of vision information
+    nv_v.setZero();
     //declare the cb function
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_force(tip_force_cb);
 //    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(tip_tactile_cb);
@@ -1045,6 +1067,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_follow(tip_cablefollow_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_grav_comp_ctrl(tip_grav_comp_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_normal_ctrl(tip_normal_ctrl_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_vis_surf_tracking(vis_surf_tracking_cb); 
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_updateadmittance(updateadmittance_cb);
@@ -1126,6 +1149,7 @@ void init(){
     com_rsb->register_external("/foo/tip_follow",button_tip_follow);
     com_rsb->register_external("/foo/tip_grav_comp_ctrl",button_tip_grav_comp_ctrl);
     com_rsb->register_external("/foo/tip_normal_ctrl",button_tip_normal_ctrl);
+    com_rsb->register_external("/foo/vis_surf_tracking",button_vis_surf_tracking);
     com_rsb->register_external("/foo/brake",button_brake);
     com_rsb->register_external("/foo/nobrake",button_nobrake);
     com_rsb->register_external("/foo/updateadmittance",button_updateadmittance);
@@ -1286,6 +1310,11 @@ void run_leftarm(){
                 left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],ftt);
                 mutex_tac.unlock();
             }
+            if(left_task_vec[i]->mt == VISION3D){
+                mutex_tac.lock();
+                left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],nv_v);
+                mutex_tac.unlock();
+            }
         }
         //update with act_vec
         left_ac_vec[0]->llv.setZero();
@@ -1301,8 +1330,6 @@ void run_leftarm(){
 }
 
 void rcv_surfnv_cb(const geometry_msgs::Vector3Stamped::ConstPtr &msg_nv){
-    Eigen::Vector3d nv_v;
-    nv_v.setZero();
     nv_v(0) = msg_nv->vector.x;
     nv_v(1) = msg_nv->vector.y;
     nv_v(2) = msg_nv->vector.z;

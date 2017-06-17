@@ -58,6 +58,9 @@ ParameterManager::ParameterManager(const std::string s = "left_arm_param.xml",Ta
 
     force_map_task_name[F_MAINTAIN] = "ForceMaintain";
     force_map_task_name[F_CURVETRACKING] = "ForceCurveTracking";
+    
+    vis_map_task_name[NVVERTALIGN] = "NvVertAlign";
+    
     tst = t;
     std::cout<<"loading part finsihed"<<std::endl;
 
@@ -99,6 +102,29 @@ void ParameterManager::load(TACTaskNameT tnt,ptree pt){
         tac_task_ctrl_param[tnt].ttjkm(4,1) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e44");
         //(5,0) map x deviation in fingertip frame to ratation
         tac_task_ctrl_param[tnt].ttjkm(5,0) = pt.get<double>("AdmittanceParams."+tac_map_task_name[tnt]+".ttjkm.e55");
+    }
+}
+
+void ParameterManager::load(VISTaskNameT tnt,ptree pt){
+    vis_task_ctrl_param[tnt].kpp.setZero(6,6);
+    vis_task_ctrl_param[tnt].kpi.setZero(6,6);
+    vis_task_ctrl_param[tnt].kpd.setZero(6,6);
+    vis_task_ctrl_param[tnt].kop.setZero(3,3);
+    vis_task_ctrl_param[tnt].tsm.setZero(6,6);
+    vis_task_ctrl_param[tnt].ttjkm.setZero(6,6);
+    vis_task_ctrl_param[tnt].vsm.setZero(6,6);
+    vis_task_ctrl_param[tnt].vtjkm.setZero(6,6);
+    for(int i = 0; i < 6; i++){
+        vis_task_ctrl_param[tnt].kpp(i,i) = pt.get<double>("AdmittanceParams."+vis_map_task_name[tnt]+"."+map_name_dim[i]+".kp");
+        vis_task_ctrl_param[tnt].kpi(i,i) = pt.get<double>("AdmittanceParams."+vis_map_task_name[tnt]+"."+map_name_dim[i]+".ki");
+        vis_task_ctrl_param[tnt].kpd(i,i) = pt.get<double>("AdmittanceParams."+vis_map_task_name[tnt]+"."+map_name_dim[i]+".kd");
+        vis_task_ctrl_param[tnt].tsm(i,i) = pt.get<double>("AdmittanceParams."+vis_map_task_name[tnt]+".tsm"+map_name_dim3[i]);
+        vis_task_ctrl_param[tnt].vsm(i,i) = pt.get<double>("AdmittanceParams."+vis_map_task_name[tnt]+".vsm"+map_name_dim3[i]);
+        vis_task_ctrl_param[tnt].vtjkm(i,i) = pt.get<double>("AdmittanceParams."+vis_map_task_name[tnt]+".vtjkm"+map_name_dim3[i]);
+        vis_task_ctrl_param[tnt].ttjkm(i,i) = pt.get<double>("AdmittanceParams."+vis_map_task_name[tnt]+".ttjkm"+map_name_dim3[i]);
+    }
+    for(int i = 0; i < 3; i++){
+        vis_task_ctrl_param[tnt].kop(i,i) =pt.get<double>("AdmittanceParams."+vis_map_task_name[tnt]+"."+map_name_dim2[i]+".kp");
     }
 }
 
@@ -169,6 +195,8 @@ void ParameterManager::loadCtrlParam(std::string s){
     load(RP_BOTHFOLLOW,pt);
     load(F_MAINTAIN,pt);
     load(F_CURVETRACKING,pt);
+    load(NV_VERTALIGN,pt);
+    
     //while myrmex is used for learning use the tool
     load(LEARN_TACTOOL_CONTACT,pt);
     load(LEARN_TACTOOL_SLIDING,pt);

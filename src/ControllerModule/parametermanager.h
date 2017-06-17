@@ -47,6 +47,7 @@ private:
     void load(PROTaskNameT,ptree);
     void load(FORCETaskNameT fnt,ptree pt);
     std::map<TACTaskNameT, std::string> tac_map_task_name;
+    std::map<VISTaskNameT, std::string> vis_map_task_name;
     std::map<PROTaskNameT, std::string> pro_map_task_name;
     std::map<FORCETaskNameT, std::string> force_map_task_name;
     std::map<int,std::string> map_name_dim;

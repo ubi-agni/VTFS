@@ -51,7 +51,8 @@ enum PROTaskNameT{
 };
 
 enum VISTaskNameT{
-    V_NOCONTROL
+    V_NOCONTROL = 0,
+    NV_VERT_ALIGN
 };
 
 enum FORCETaskNameT{
