@@ -82,10 +82,10 @@ void ProActController::get_desired_lv(Robot *robot, Task *t){
     identity_v.setOnes(6);
     KukaSelfCtrlTask tst(t->curtaskname.prot);
     tst = *(KukaSelfCtrlTask*)t;
-   std::cout<<"kpp and psm"<<tst.curtaskname.prot<<std::endl;
-   std::cout<<"old prot"<<t->curtaskname.prot<<std::endl;
-   std::cout<<Kpp[tst.curtaskname.prot]<<std::endl;
-   std::cout<<std::endl;
+//    std::cout<<"kpp and psm"<<tst.curtaskname.prot<<std::endl;
+//    std::cout<<"old prot"<<t->curtaskname.prot<<std::endl;
+//    std::cout<<Kpp[tst.curtaskname.prot]<<std::endl;
+//    std::cout<<std::endl;
     lv_pro = Kpp[tst.curtaskname.prot] * psm[tst.curtaskname.prot] * identity_v;
     llv_pro = lv_pro.head(3);
     lov_pro = Kop[tst.curtaskname.prot] * lv_pro.tail(3);

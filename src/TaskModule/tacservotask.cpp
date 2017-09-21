@@ -14,6 +14,7 @@ TacServoTask::TacServoTask(TACTaskNameT taskname)
     dir_y = 0;
     desired_pose_range.setZero();
     desired_orien_myrmex = 0;
+    desired_dis = 0;
 }
 
 

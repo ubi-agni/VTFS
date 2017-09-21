@@ -32,9 +32,9 @@ public:
     void set_taxelfb_type_mid(TacFBType type){}
     void set_desired_cp_moving_dir(double x, double y){}
     void set_desired_rotation_range(double,double,double){}
-    Eigen::Vector3d get_desired_rotation_range(){}
-    double get_desired_mv_dis(){}
-    void set_desired_mv_dis(double s){}
+    Eigen::Vector3d get_desired_rotation_range();
+    double get_desired_mv_dis();
+    void set_desired_mv_dis(double s);
 private:
     double desired_cf_kuka;
 };

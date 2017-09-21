@@ -44,7 +44,6 @@ public:
     Eigen::Vector3d get_desired_rotation_range();
     double dir_x;
     double dir_y;
-    Eigen::Vector3d desired_pose_range;
 private:
     double desired_cp_myrmex[2];
     double desired_cf_myrmex;

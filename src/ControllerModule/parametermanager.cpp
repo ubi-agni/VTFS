@@ -195,7 +195,7 @@ void ParameterManager::loadCtrlParam(std::string s){
     load(RP_BOTHFOLLOW,pt);
     load(F_MAINTAIN,pt);
     load(F_CURVETRACKING,pt);
-    load(NV_VERTALIGN,pt);
+    load(NV_VERT_ALIGN,pt);
     
     //while myrmex is used for learning use the tool
     load(LEARN_TACTOOL_CONTACT,pt);

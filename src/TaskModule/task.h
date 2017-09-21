@@ -123,11 +123,12 @@ public:
     ExploreModeT emt;
     Eigen::Vector3d velocity_p2p;
     TacFBType tft;
+    Eigen::Vector3d desired_pose_range;
+    double desired_dis;
 protected:
     Eigen::Vector3d desired_p_eigen,initial_p_eigen;
     Eigen::Matrix3d desired_o_eigen;
     Eigen::Vector3d desired_o_ax;
-    double desired_dis;
 };
 
 #endif // TASK_H

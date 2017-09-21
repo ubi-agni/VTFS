@@ -17,6 +17,7 @@ public:
     void update_robot_reference(Robot *, Task *,FingertipTac *){}
     void update_robot_reference(Robot *, Task *, Eigen::VectorXd, RobotState*);
     void update_robot_reference(ManipTool *, Robot *, Task *,myrmex_msg *){}
+    void update_robot_reference(Robot *, Task *,Eigen::Vector3d,Eigen::Vector3d ){}
     void update_controller_para(Eigen::Vector3d,PROTaskNameT){}
     void update_controller_para(std::pair<Eigen::Vector3d,double>&,PROTaskNameT){}
     void update_controller_para(Eigen::Vector3d vel,Eigen::Vector3d r_vel,PROTaskNameT tnt){}
@@ -26,12 +27,13 @@ public:
     void get_desired_lv(Robot *, Task *, FingertipTac *){}
     void get_desired_lv(Robot *, Task *, Eigen::VectorXd kukaft,RobotState*);
     void get_desired_lv(ManipTool *, Robot *, Task *,myrmex_msg *){}
+    void get_desired_lv(Robot *, Task *,Eigen::Vector3d,Eigen::Vector3d){}
     void updateTacServoCtrlParam(TACTaskNameT){}
     void updateProServoCtrlParam(PROTaskNameT tnt){}
     void updateForceServoCtrlParam(FORCETaskNameT fnt);
     void get_lv(Eigen::Vector3d& lv, Eigen::Vector3d& ov){}
     void set_pm(ParameterManager &p){}
-    void set_init_TM(Eigen::Matrix3d tm) {m_init_tm = tm;}
+    void set_init_TM(Eigen::Matrix3d tm) {m_init_tm = tm;pose_o_eigen_l.setZero();}
 private:
 //    void initForceServoCtrlParam(ForceTaskNameT);
     //!select matrix

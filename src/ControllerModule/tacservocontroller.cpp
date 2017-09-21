@@ -150,7 +150,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             des_nv_normalize = desired_nv.normalized();
             ctc_nv_normalize = ctc_nv.normalized();
 //             std::cout<<"dot product is"<<std::endl;
-            std::cout<<des_nv_normalize.dot(ctc_nv_normalize)<<std::endl;
+//             std::cout<<des_nv_normalize.dot(ctc_nv_normalize)<<std::endl;
             if(des_nv_normalize.dot(ctc_nv_normalize)>=0.5){
                 deltais(0) = midfb->pos[0] - desired_cp(0);
                 deltais(1) = midfb->pos[1] - desired_cp(1);
@@ -224,12 +224,12 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, FingertipTac *mid
             if(midfb->isContact(midfb->data) == true){
                 double deltaf;
                 deltaf = desiredf - midfb->pressure;
-                std::cout<<"before add force compensate "<<deltape(0)<<","<<deltape(1)<<","<<deltape(2)<<std::endl;
+//                 std::cout<<"before add force compensate "<<deltape(0)<<","<<deltape(1)<<","<<deltape(2)<<std::endl;
                 for(int i = 0; i < 3; i++){
                     deltape(i) = 0;
                     llv_tac(i) =  deltape(i) + (0.025)*deltaf*ctc_nv(i);
                 }
-                std::cout<<"after the force compensate "<<llv_tac(0)<<","<<llv_tac(1)<<","<<llv_tac(2)<<std::endl;
+//                 std::cout<<"after the force compensate "<<llv_tac(0)<<","<<llv_tac(1)<<","<<llv_tac(2)<<std::endl;
             }
             else{
                 llv_tac.setZero();
@@ -340,7 +340,7 @@ void TacServoController::get_desired_lv(Robot *robot, Task *t, myrmex_msg *tacfb
         deltais_int.setZero();
     }
     deltais(2) =  desiredf - tacfb->cf;
-    std::cout<<"desiredf and current f are "<<desiredf<<","<<tacfb->cf<<std::endl;
+//     std::cout<<"desiredf and current f are "<<desiredf<<","<<tacfb->cf<<std::endl;
     //!this two value can be updated by other feedback in future
     deltais(3) = 0;
     deltais(4) = 0;

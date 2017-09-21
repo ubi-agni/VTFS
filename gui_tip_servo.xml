@@ -12,6 +12,8 @@
   <button args="tip_follow" handle="tip_follow"/>
   <button args="tip_grav_comp_ctrl" handle="tip_grav_comp_ctrl"/>
   <button args="tip_normal_ctrl" handle="tip_normal_ctrl"/>
+  <button args="vis_surf_tracking" handle="vis_surf_tracking"/>
+  <button args="inverse_vis_surf_tracking" handle="inverse_vis_surf_tracking"/>
   <button args="brake" handle="brake"/>
   <button args="nobrake" handle="nobrake"/>
   <button args="updateadmittance" handle="updateadmittance"/>

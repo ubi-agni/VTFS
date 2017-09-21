@@ -973,15 +973,15 @@ void ros_publisher(){
         js_la.position[i]=right_rs->JntPosition_mea[i];
         js_ra.position[i]=0;
     }
-    std::cout<<std::endl;
+//    std::cout<<std::endl;
 
     mutex_schunkjs_app.lock();
-    std::cout<<"ros pub schunk js ";
-    for(int i = 0; i < schunkjs.size(); i++){
+//    std::cout<<"ros pub schunk js ";
+    for(unsigned int i = 0; i < schunkjs.size(); i++){
         js_schunk.position[i] = schunkjs.at(i)*M_PI/180.0;
-        std::cout<<js_schunk.position[i]<<",";
+//        std::cout<<js_schunk.position[i]<<",";
     }
-    std::cout<<std::endl;
+//    std::cout<<std::endl;
     mutex_schunkjs_app.unlock();
 
     js_la.header.stamp=ros::Time::now();

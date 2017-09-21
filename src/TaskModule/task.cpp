@@ -18,8 +18,12 @@ Task::Task()
     desired_o_ax(2) = initO_z;
     curtaskname.tact = CONTACT_FORCE_TRACKING;
     curtaskname.prot = RP_NOCONTROL;
+    curtaskname.vist = NV_VERT_ALIGN;
+    //modality type
     mt = JOINTS;
+    //motion frame type
     mft = GLOBAL;
+    //exploration mode type
     emt = NOEXPLORE;
     velocity_p2p.setZero();
     desired_dis = 4;

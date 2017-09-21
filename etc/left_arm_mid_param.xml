@@ -6,7 +6,7 @@ See http://www.boost.org/LICENSE_1_0.txt
 -->
 <SelfCtrlParams>
         <Rlxp>
-            <kp>0.002</kp>
+            <kp>0.008</kp>
             <psm>
                 <e00>1</e00>
                 <e11>0</e11>
@@ -17,7 +17,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rlxp>
         <Rlyp>
-            <kp>0.002</kp>
+            <kp>0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>1</e11>
@@ -28,7 +28,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rlyp>
         <Rlzp>
-            <kp>0.002</kp>
+            <kp>0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>
@@ -39,7 +39,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rlzp>
         <Rrxp>
-            <kp>0.002</kp>
+            <kp>0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>
@@ -50,7 +50,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rrxp>
         <Rryp>
-            <kp>0.002</kp>
+            <kp>0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>
@@ -61,7 +61,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rryp>
         <Rrzp>
-            <kp>0.002</kp>
+            <kp>0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>
@@ -72,7 +72,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rrzp>
         <Rlxn>
-            <kp>-0.005</kp>
+            <kp>-0.008</kp>
             <psm>
                 <e00>1</e00>
                 <e11>0</e11>
@@ -83,7 +83,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rlxn>
         <Rlyn>
-            <kp>-0.005</kp>
+            <kp>-0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>1</e11>
@@ -94,7 +94,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rlyn>
         <Rlzn>
-            <kp>-0.005</kp>
+            <kp>-0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>
@@ -105,7 +105,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rlzn>
         <Rrxn>
-            <kp>-0.002</kp>
+            <kp>-0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>
@@ -116,7 +116,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rrxn>
         <Rryn>
-            <kp>-0.002</kp>
+            <kp>-0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>
@@ -127,7 +127,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rryn>
         <Rrzn>
-            <kp>-0.002</kp>
+            <kp>-0.008</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>
@@ -1142,7 +1142,7 @@ See http://www.boost.org/LICENSE_1_0.txt
                 <e55>1</e55>
             </vtjkm>
         </LearnTactoolSliding>
-        <NvTracking>
+        <NvVertAlign>
             <x>
                 <kp>1</kp>
                 <ki>0</ki>
@@ -1184,7 +1184,7 @@ See http://www.boost.org/LICENSE_1_0.txt
                 <kd>0</kd>
             </pitch2>
             <yaw2>
-                <kp>2</kp>
+                <kp>5</kp>
                 <ki>0</ki>
                 <kd>0</kd>
             </yaw2>
@@ -1220,7 +1220,7 @@ See http://www.boost.org/LICENSE_1_0.txt
                 <e44>1</e44>
                 <e55>1</e55>
             </vtjkm>
-        </NvTracking>
+        </NvVertAlign>
 	
 	<LearnTactoolRolling>
             <x>

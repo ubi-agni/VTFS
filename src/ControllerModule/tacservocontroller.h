@@ -21,6 +21,7 @@ public:
     //mid tactile servo controller
     void update_robot_reference(Robot *, Task *,FingertipTac *);
     void update_robot_reference(Robot *, Task *, Eigen::VectorXd, RobotState*){}
+    void update_robot_reference(Robot *, Task *,Eigen::Vector3d,Eigen::Vector3d ){}
     //myrmex tool tactile servo controller
     void update_robot_reference(ManipTool *, Robot *, Task *,myrmex_msg *);
     void update_controller_para(Eigen::Vector3d,PROTaskNameT);
@@ -35,12 +36,13 @@ public:
     //myrmex tool tactile servo computing the desird vel
     void get_desired_lv(ManipTool *, Robot *, Task *,myrmex_msg *);
     void get_desired_lv(Robot *, Task *, Eigen::VectorXd kukaft,RobotState*){}
+    void get_desired_lv(Robot *, Task *,Eigen::Vector3d,Eigen::Vector3d){}
     void updateTacServoCtrlParam(TACTaskNameT);
     void updateProServoCtrlParam(PROTaskNameT tnt){}
     void updateForceServoCtrlParam(FORCETaskNameT fnt){}
     void get_lv(Eigen::Vector3d& lv, Eigen::Vector3d& ov);
     void set_pm(ParameterManager &p);
-    void set_init_TM(Eigen::Matrix3d tm) {m_init_tm = tm;}
+    void set_init_TM(Eigen::Matrix3d tm) {m_init_tm = tm;pose_o_eigen_l.setZero();}
 
 private:
     //!select matrix

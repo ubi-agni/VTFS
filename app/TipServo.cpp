@@ -43,6 +43,8 @@
 #include "forceservotask.h"
 #include "tacservocontroller.h"
 #include "tacservotask.h"
+#include "visactcontroller.h"
+#include "visservotask.h"
 #include "RobotState.h"
 #include "Util.h"
 #include <fstream>
@@ -64,7 +66,7 @@
 tf::TransformBroadcaster *br;
 sensor_msgs::JointState js_la, js_ra;
 ros::Publisher jsPub_la,jsPub_ra;
-ros::Publisher p_ct_pub, lvel_ct_pub,start_rec_pub;
+ros::Publisher p_ct_pub, lvel_ct_pub,start_rec_pub,change_dir_pub;
 ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,gamma_force_marker_pub,act_taxel_pub,act_taxel_nv_pub;
@@ -170,7 +172,7 @@ void approaching_ctc_cb(boost::shared_ptr<std::string> data){
     approaching_flag = false;
     while(ctc_flag!= true){
         ctc_flag = ftt->isContact(ftt->data);
-        std::cout<<"start approaching not contacted yet "<<std::endl;
+//         std::cout<<"start approaching not contacted yet "<<std::endl;
         if(approaching_flag == false){
             left_ac_vec.clear();
             left_task_vec.clear();
@@ -184,7 +186,7 @@ void approaching_ctc_cb(boost::shared_ptr<std::string> data){
         }
     }
     //contact is detected
-    std::cout<<"contact detected "<<std::endl;
+//     std::cout<<"contact detected "<<std::endl;
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -382,21 +384,81 @@ void tip_normal_ctrl_cb(boost::shared_ptr<std::string> data){
 
 void vis_surf_tracking_cb(boost::shared_ptr<std::string> data){
     std::cout<<"start visuo servoing controller"<<std::endl;
+    std_msgs::Bool rec_msg,dir_msg;
+    mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
 
     left_taskname.vist = NV_VERT_ALIGN;
     left_ac_vec.push_back(new VisActController(*pm));
     left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
-    left_task_vec.push_back(new VisServoTask(left_taskname.vist));
+    left_task_vec.push_back(new VisuoServoTask(left_taskname.vist));
     left_task_vec.back()->mt = VISION3D;
-//     left_task_vec.back()->set_desired_cf_mid(TAC_F);
-//     left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
-//     //compute the desired cp on fingertip-Area I
-//     left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
-//     left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
+    
+    left_taskname.prot = RLXP;
+    left_ac_vec.push_back(new ProActController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
+    left_task_vec.back()->mft = LOCAL;
+    left_task_vec.back()->mt = JOINTS;
+
+    left_taskname.tact = COVER_OBJECT_SURFACE;
+    left_ac_vec.push_back(new TacServoController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new TacServoTask(left_taskname.tact));
+    left_task_vec.back()->mt = TACTILE;
+    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+    //compute the desired cp on fingertip-Area I
+    left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+    left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
+    mutex_act.unlock();
+    //publish start record via ros
+    rec_msg.data = true;
+    dir_msg.data = false;
+    start_rec_pub.publish(rec_msg);
+    change_dir_pub.publish(dir_msg);
+    std::cout<<"tactile servoing for sliding/rolling with forward direction"<<std::endl;
 }
 
+void inverse_vis_surf_tracking_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"start visuo servoing controller"<<std::endl;
+    std_msgs::Bool rec_msg,dir_msg;
+    mutex_act.lock();
+    left_ac_vec.clear();
+    left_task_vec.clear();
+
+    left_taskname.vist = NV_VERT_ALIGN;
+    left_ac_vec.push_back(new VisActController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new VisuoServoTask(left_taskname.vist));
+    left_task_vec.back()->mt = VISION3D;
+    
+    left_taskname.prot = RLXN;
+    left_ac_vec.push_back(new ProActController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
+    left_task_vec.back()->mft = LOCAL;
+    left_task_vec.back()->mt = JOINTS;
+
+    left_taskname.tact = COVER_OBJECT_SURFACE;
+    left_ac_vec.push_back(new TacServoController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new TacServoTask(left_taskname.tact));
+    left_task_vec.back()->mt = TACTILE;
+    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+    //compute the desired cp on fingertip-Area I
+    left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+    left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
+    mutex_act.unlock();
+    //publish start record via ros
+    rec_msg.data = true;
+    dir_msg.data = true;
+    start_rec_pub.publish(rec_msg);
+    change_dir_pub.publish(dir_msg);
+    std::cout<<"tactile servoing for sliding/rolling with inverse direction"<<std::endl;
+}
 
 
 void moveto_cb(boost::shared_ptr<std::string> data){
@@ -744,18 +806,23 @@ void ros_publisher(){
         //also publish the contact position via ROS
         Eigen::Vector3d filtered_cp_g;
         Eigen::Vector3d vel_cp_g;
-        filtered_cp_g = position_ct_filter->push(cp_g);
-        vec3_msg.vector.x = filtered_cp_g(0);
-        vec3_msg.vector.y = filtered_cp_g(1);
-        vec3_msg.vector.z = filtered_cp_g(2);
+//         filtered_cp_g = position_ct_filter->push(cp_g);
+//         vec3_msg.vector.x = filtered_cp_g(0);
+//         vec3_msg.vector.y = filtered_cp_g(1);
+//         vec3_msg.vector.z = filtered_cp_g(2);
+        vec3_msg.vector.x = cp_g(0);
+        vec3_msg.vector.y = cp_g(1);
+        vec3_msg.vector.z = cp_g(2);
+//         std::cout<<"cp_g time stamp is "<<vec3_msg.header.stamp<<std::endl;
         //0.05s means 20hz
-        vel_cp_g = (filtered_cp_g - cp_g_old)/0.02;
-        vec3_vel_msg.vector.x = vel_cp_g(0);
-        vec3_vel_msg.vector.y = vel_cp_g(1);
-        vec3_vel_msg.vector.z = vel_cp_g(2);
+//         vel_cp_g = (filtered_cp_g - cp_g_old)/0.02;
+//         vec3_vel_msg.vector.x = vel_cp_g(0);
+//         vec3_vel_msg.vector.y = vel_cp_g(1);
+//         vec3_vel_msg.vector.z = vel_cp_g(2);
         //assign the current position as old position
-        cp_g_old = filtered_cp_g;
-        lvel_ct_pub.publish(vec3_vel_msg);
+//         cp_g_old = filtered_cp_g;
+        cp_g_old = cp_g;
+//         lvel_ct_pub.publish(vec3_vel_msg);
         p_ct_pub.publish(vec3_msg);
     }
     //publish the actived normal vector
@@ -1068,6 +1135,8 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_grav_comp_ctrl(tip_grav_comp_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_normal_ctrl(tip_normal_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_vis_surf_tracking(vis_surf_tracking_cb); 
+    boost::function<void(boost::shared_ptr<std::string>)> button_inverse_vis_surf_tracking(inverse_vis_surf_tracking_cb); 
+    
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_updateadmittance(updateadmittance_cb);
@@ -1150,6 +1219,7 @@ void init(){
     com_rsb->register_external("/foo/tip_grav_comp_ctrl",button_tip_grav_comp_ctrl);
     com_rsb->register_external("/foo/tip_normal_ctrl",button_tip_normal_ctrl);
     com_rsb->register_external("/foo/vis_surf_tracking",button_vis_surf_tracking);
+    com_rsb->register_external("/foo/inverse_vis_surf_tracking",button_inverse_vis_surf_tracking);
     com_rsb->register_external("/foo/brake",button_brake);
     com_rsb->register_external("/foo/nobrake",button_nobrake);
     com_rsb->register_external("/foo/updateadmittance",button_updateadmittance);
@@ -1223,6 +1293,11 @@ void get_ft_vis_info(){
     }
     mutex_tac.unlock();
 }
+
+void get_tip_nv_pose(Eigen::Vector3d& tip_nv){
+    local2global(ftt->get_Center_nv(1),\
+                     left_rs->robot_orien["eef"],tip_nv);
+}
 void get_mid_info(){
     //computingt the contact information from mid sensor--contact position,estimated
     //contact force vector, and line feature estimation
@@ -1264,7 +1339,7 @@ void get_mid_info(){
         Tposition<<ftt->data.fingertip_tac_pressure.at(0)<<","<<ftt->data.fingertip_tac_pressure.at(3)<<","<<ftt->data.fingertip_tac_pressure.at(8)<<","<<ftt->data.fingertip_tac_pressure.at(11)<<",";
 
         Tposition<<ftt->pos[0]/1000<<","<<ftt->pos[1]/1000<<","<<ftt->pos[2]/1000<<","<<ftt->pressure<<std::endl;
-        std::cout<<"line direction is "<<ftt->est_twist_angle(ftt->data)<<std::endl;
+//         std::cout<<"line direction is "<<ftt->est_twist_angle(ftt->data)<<std::endl;
     }
     else{
         ftt->slope_clear();
@@ -1272,7 +1347,7 @@ void get_mid_info(){
     mutex_tac.unlock();
 }
 
-
+int tem_counter;
 void run_leftarm(){
     //only call for this function, the ->jnt_position_act is updated
     if((com_okc->data_available == true)&&(com_okc->controller_update == false)){
@@ -1280,6 +1355,13 @@ void run_leftarm(){
         kuka_left_arm->get_joint_position_act();
         kuka_left_arm->update_robot_state();
         left_rs->updated(kuka_left_arm);
+//        tem_counter ++;
+//        if(tem_counter % 50 == 0){
+//        std::cout<<"tip position" <<left_rs->robot_position["eef"](0)<<","\
+//                   <<left_rs->robot_position["eef"](1)<<","\
+//                  <<left_rs->robot_position["eef"](2)<<std::endl;
+//        tem_counter = 0;
+//        }
         //using kuka estimated force/torque control
 //        kuka_left_arm->getTcpFtCalib(estkukaforce);
 //        filtered_force = cf_filter->push(estkukaforce);
@@ -1292,6 +1374,10 @@ void run_leftarm(){
 //        mutex_force.unlock();
         //using mid for control, get contact information
         get_mid_info();
+        //get fingertip orientation
+        Eigen::Vector3d tip_nv;
+        get_tip_nv_pose(tip_nv);
+        
         //get ft visulization information
         //read ft sensor
         //get_ft_vis_info();
@@ -1312,7 +1398,7 @@ void run_leftarm(){
             }
             if(left_task_vec[i]->mt == VISION3D){
                 mutex_tac.lock();
-                left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],nv_v);
+                left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],nv_v,tip_nv);
                 mutex_tac.unlock();
             }
         }
@@ -1333,7 +1419,7 @@ void rcv_surfnv_cb(const geometry_msgs::Vector3Stamped::ConstPtr &msg_nv){
     nv_v(0) = msg_nv->vector.x;
     nv_v(1) = msg_nv->vector.y;
     nv_v(2) = msg_nv->vector.z;
-    std::cout<<"nv messurement are "<<nv_v(0)<<","<<nv_v(1)<<","<<nv_v(2)<<std::endl;
+//     std::cout<<"nv messurement are "<<nv_v(0)<<","<<nv_v(1)<<","<<nv_v(2)<<std::endl;
 }
 
 
@@ -1343,6 +1429,8 @@ int main(int argc, char* argv[])
     std::string data_f ("/tmp/");
     Tposition.open((data_f+std::string("position.txt")).c_str());
     Tft.open((data_f+std::string("ft.txt")).c_str());
+
+    tem_counter = 0;
     
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);
@@ -1366,6 +1454,7 @@ int main(int argc, char* argv[])
     p_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("position_ct", 1);
     lvel_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("lvel_ct", 1);
     start_rec_pub = nh->advertise<std_msgs::Bool>("start_rec", 1);
+    change_dir_pub = nh->advertise<std_msgs::Bool>("dir_command", 1);
     ros::Subscriber sub_surf_nv = nh->subscribe("surf_nv",1,rcv_surfnv_cb);
     #endif
     init();

@@ -26,6 +26,7 @@
 #include "parametermanager.h"
 #include <mutex>
 #include "RebaType.h"
+#include "Util.h"
 
 using namespace rsb;
 ComRSB *com_rsb;
@@ -90,6 +91,7 @@ void local_cb(boost::shared_ptr<std::string> data){
 
 void lxp_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RLXP;
@@ -98,6 +100,7 @@ void lxp_cb(boost::shared_ptr<std::string> data){
 }
 void lyp_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RLYP;
@@ -106,6 +109,7 @@ void lyp_cb(boost::shared_ptr<std::string> data){
 }
 void lzp_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RLZP;
@@ -114,6 +118,7 @@ void lzp_cb(boost::shared_ptr<std::string> data){
 }
 void rxp_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RRXP;
@@ -122,6 +127,7 @@ void rxp_cb(boost::shared_ptr<std::string> data){
 }
 void ryp_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RRYP;
@@ -130,6 +136,7 @@ void ryp_cb(boost::shared_ptr<std::string> data){
 }
 void rzp_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RRZP;
@@ -138,6 +145,7 @@ void rzp_cb(boost::shared_ptr<std::string> data){
 }
 void lxn_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RLXN;
@@ -146,6 +154,7 @@ void lxn_cb(boost::shared_ptr<std::string> data){
 }
 void lyn_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RLYN;
@@ -154,6 +163,7 @@ void lyn_cb(boost::shared_ptr<std::string> data){
 }
 void lzn_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RLZN;
@@ -162,6 +172,7 @@ void lzn_cb(boost::shared_ptr<std::string> data){
 }
 void rxn_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RRXN;
@@ -170,6 +181,7 @@ void rxn_cb(boost::shared_ptr<std::string> data){
 }
 void ryn_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RRYN;
@@ -178,6 +190,7 @@ void ryn_cb(boost::shared_ptr<std::string> data){
 }
 void rzn_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RRZN;
@@ -187,6 +200,7 @@ void rzn_cb(boost::shared_ptr<std::string> data){
 
 void stop_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
+    ac->set_init_TM(kuka_left_arm->get_cur_cart_o());
     task->mt = JOINTS;
     task->mft = LOCAL;
     task->curtaskname.prot = RP_NOCONTROL;
@@ -197,6 +211,32 @@ void stop_cb(boost::shared_ptr<std::string> data){
 void closeprog_cb(boost::shared_ptr<std::string> data){
     StopFlag = true;
     std::cout<<"The program will be closed"<<std::endl;
+}
+
+std::string get_selfpath() {
+    char buff[PATH_MAX];
+    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
+    if (len != -1) {
+      buff[len] = '\0';
+
+      std::string path = std::string(buff);
+      //remove exec name
+      std::size_t found = path.find_last_of("/");
+      path = path.substr(0,found);
+      //remove bin
+      found = path.find_last_of("/");
+      path = path.substr(0,found);
+      //remove build
+      found = path.find_last_of("/");
+      path = path.substr(0,found);
+      return path;
+    }
+    else{
+        std::cout<<"get exacutable file path failaure"<<std::endl;
+        exit(0);
+    }
+
+    /* handle error condition */
 }
 
 void run(){
@@ -211,6 +251,8 @@ void run(){
         mutex_act.unlock();
         kuka_left_arm->update_cbf_controller();
         kuka_left_arm->set_joint_command();
+        ac->llv.setZero();
+        ac->lov.setZero();
         com_okc->controller_update = true;
         com_okc->data_available = false;
     }
@@ -237,8 +279,19 @@ int main(int argc, char** argv) {
     boost::function<void(boost::shared_ptr<std::string>)> button_stop(stop_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_closeprog(closeprog_cb);
 
+    std::string selfpath = get_selfpath();
+    std::string config_filename = selfpath + "/etc/left_arm_mid_param.xml";
+    std::cout<<"config file name is: "<<config_filename<<std::endl;
+    if(is_file_exist(config_filename.c_str()) == false){
+        config_filename = "left_arm_mid_param.xml";
+        if(is_file_exist(config_filename.c_str()) == false){
+            std::cout<<"not find the kuka controller configure file"<<std::endl;
+            exit(0);
+        }
+    }
+
     StopFlag = false;
-    pm = new ParameterManager("left_arm_param.xml");
+    pm = new ParameterManager(config_filename);
     com_okc = new ComOkc(kuka_left,OKC_HOST,OKC_PORT);
     com_okc->connect();
     kuka_left_arm = new KukaLwr(kuka_left,*com_okc);

@@ -67,9 +67,14 @@ if(EIGEN3_FOUND)
 endif()
 MESSAGE(STATUS ${EIGEN3_INCLUDE_DIR})
 
-find_package(CBF REQUIRED HINTS ${CBF_ROOT})
-include_directories(${CBF_INCLUDE_DIRS})
+# find_package(CBF REQUIRED HINTS ${CBF_ROOT})
+# include_directories(${CBF_INCLUDE_DIRS})
+# MESSAGE(STATUS "cbf_INCLUDE_DIR: ${CBF_INCLUDE_DIRS}")
+
+SET(CBF_INCLUDE_DIRS "/homes/qli/SWLib/CBF/build/cbf_install/include/cbf0.2")
+SET(CBF_LIBRARIES "/homes/qli/SWLib/CBF/build/cbf_install/lib/libcbf.so")
 MESSAGE(STATUS "cbf_INCLUDE_DIR: ${CBF_INCLUDE_DIRS}")
+include_directories(${CBF_INCLUDE_DIRS})
 
 find_package(orocos_kdl REQUIRED HINTS ${orocos_kdl_ROOT})
 include_directories(${orocos_kdl_INCLUDE_DIRS})
