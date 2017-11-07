@@ -84,8 +84,8 @@ void ProActController::get_desired_lv(Robot *robot, Task *t){
     tst = *(KukaSelfCtrlTask*)t;
 //    std::cout<<"kpp and psm"<<tst.curtaskname.prot<<std::endl;
 //    std::cout<<"old prot"<<t->curtaskname.prot<<std::endl;
-//    std::cout<<Kpp[tst.curtaskname.prot]<<std::endl;
-//    std::cout<<std::endl;
+   std::cout<<Kpp[tst.curtaskname.prot]<<std::endl;
+   std::cout<<std::endl;
     lv_pro = Kpp[tst.curtaskname.prot] * psm[tst.curtaskname.prot] * identity_v;
     llv_pro = lv_pro.head(3);
     lov_pro = Kop[tst.curtaskname.prot] * lv_pro.tail(3);
@@ -119,7 +119,7 @@ void ProActController::update_robot_reference(Robot *robot, Task *t){
     }
     if(t->mft == LOCAL){
         get_desired_lv(robot,t);
-//        limit_eef_euler(get_euler_limit());
+       limit_eef_euler(get_euler_limit());
 //        std::cout<<"lv before in proservo "<<llv<<std::endl;
 //        std::cout<<lov<<std::endl;
         llv = llv + llv_pro;

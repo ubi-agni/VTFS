@@ -64,7 +64,7 @@ public:
     virtual Eigen::Matrix3d get_init_TM() = 0;
     virtual void addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p) = 0;
     virtual void backKukaChain(ToolNameT tn) = 0;
-    virtual void initCbf() = 0;
+    virtual void initCbf(ControllerT ctrl=LSSolution_Ctrl) = 0;
     Eigen::Vector3d get_cur_cart_p();
     Eigen::Matrix3d get_cur_cart_o();
     virtual Eigen::Vector3d get_cur_vel() = 0;

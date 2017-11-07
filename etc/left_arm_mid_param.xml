@@ -50,7 +50,7 @@ See http://www.boost.org/LICENSE_1_0.txt
             </psm>
         </Rrxp>
         <Rryp>
-            <kp>0.008</kp>
+            <kp>0.02</kp>
             <psm>
                 <e00>0</e00>
                 <e11>0</e11>

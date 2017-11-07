@@ -4,6 +4,7 @@
   <button args="taccalib_rec" handle="taccalib_rec"/>
   <button args="tip_force" handle="tip_force"/>
   <button args="tip_tactile" handle="tip_tactile"/>
+  <button args="tip_taxel_twist" handle="tip_taxel_twist"/>
   <button args="tip_taxel_sliding" handle="tip_taxel_sliding"/>
   <button args="tip_taxel_rolling" handle="tip_taxel_rolling"/>
   <button args="tip_exploring" handle="tip_exploring"/>

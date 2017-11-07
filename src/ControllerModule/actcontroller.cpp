@@ -29,7 +29,7 @@ ActController::ActController(ParameterManager& p)
     m_llv_limit(1) = 0.05;
     m_llv_limit(2) = 0.05;
     m_euler_limit(0) = 0.6;
-    m_euler_limit(1) = 0.6;
+    m_euler_limit(1) = 1.57;
     m_euler_limit(2) = 0.6;
     pose_o_eigen_l.setZero();
     pm = p;
@@ -41,6 +41,7 @@ void ActController::local_to_global(const Eigen::Vector3d p_in, const Eigen::Mat
                                     const Eigen::Vector3d lv, const Eigen::Vector3d ov,\
                                     Eigen::Vector3d& p_out, Eigen::Vector3d& o_out)
 {
+    std::cout<<"current pose_o_eigen_l "<<pose_o_eigen_l<<std::endl;
     p_out = p_in + o_in * lv;
     pose_o_eigen_l += 0.004*ov;
     o_out = euler2axisangle(pose_o_eigen_l,m_init_tm);
@@ -61,7 +62,7 @@ void ActController::limit_vel(Eigen::Vector3d lim,\
 }
 
 void ActController::limit_eef_euler(Eigen::Vector3d lim){
-//    std::cout<<"pose_o_eigen_l "<<pose_o_eigen_l<<std::endl;
+   std::cout<<"limit pose_o_eigen_l "<<pose_o_eigen_l<<std::endl;
     for(int i = 0; i < 3; i++){
         if(pose_o_eigen_l(i) > fabs(lim(i))){
             pose_o_eigen_l(i) = fabs(lim(i));

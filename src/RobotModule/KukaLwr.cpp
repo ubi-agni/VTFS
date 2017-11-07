@@ -306,8 +306,8 @@ void KukaLwr::get_joint_position_mea(double *jnt){
 }
 
 void KukaLwr::initSubordinateReference(CBF::FloatVector &f){
-    f[0] = M_PI/2.0;
-    //f[0] = 0.0;
+    //f[0] = M_PI/2.0;
+    f[0] = 0.0;
     f[1] = 0.0;
     f[2] = 0.0;
     //f[3] = 0.0;
@@ -525,7 +525,7 @@ void KukaLwr::backKukaChain(ToolNameT tn){
 }
 
 
-void KukaLwr::initCbf (){
+void KukaLwr::initCbf (ControllerT ctrltype){
     if (kuka_left == rn){
         if (0 != pthread_mutex_lock (&primitiveControllerMutex)){
             perror ("CbfPlanner: setReference(): could not lock mutex");
@@ -552,8 +552,8 @@ void KukaLwr::initCbf (){
             CBF::FloatVector vmaxs = CBF::FloatVector::Constant(7,  limit);
 //            vmins(5) = M_PI* (-150.0 / 180.0);
 //            vmaxs(5) = M_PI* (150.0/ 180.0);
-            vmins(1) = M_PI* (-110.0 / 180.0);
-            vmaxs(1) = M_PI* (110.0/ 180.0);
+            vmins(1) = M_PI* (-100.0 / 180.0);
+            vmaxs(1) = M_PI* (100.0/ 180.0);
             vmins(3) = M_PI* (-110.0 / 180.0);
             vmaxs(3) = M_PI* (110.0/ 180.0);
             vmins(5) = M_PI* (-110.0 / 180.0);
@@ -564,18 +564,58 @@ void KukaLwr::initCbf (){
                     (ConvergenceCriterionPtr(new ResourceStepNormThreshold(0.001)));
 
             // create the subordinate controller
-            subordinateControllerP = SubordinateControllerPtr(new CBF::SubordinateController(
+//             subordinateControllerP = SubordinateControllerPtr(new CBF::SubordinateController(
+//                                                                   1.0,
+//                                                                   vConvergenceCriteria,
+//                                                                   currentSubordinateTaskReferenceP,
+//                                                                   PotentialPtr(new WuPotential(vmins, vmaxs, 0.01)),
+//                                                                   SensorTransformPtr(new CBF::IdentitySensorTransform(7)),
+//                                                                   EffectorTransformPtr(new CBF::GenericEffectorTransform(7,7)),
+//                                                                   std::vector<SubordinateControllerPtr>(),
+//                                                                   CombinationStrategyPtr(new AddingStrategy())));
+
+            std::vector<CBF::SubordinateControllerPtr> vSubOrdinateControllers;
+//            vSubOrdinateControllers.push_back(subordinateControllerP);
+            if(ctrltype == WuPotential_Ctrl){
+                subordinateControllerP = SubordinateControllerPtr(new CBF::SubordinateController(
                                                                   1.0,
                                                                   vConvergenceCriteria,
                                                                   currentSubordinateTaskReferenceP,
-                                                                  PotentialPtr(new WuPotential(vmins, vmaxs, 0.01)),
+//                                                                   PotentialPtr(new WuPotential(vmins, vmaxs, 0.2,0.01)),
+                                                                  PotentialPtr(new WuPotential(vmins,vmaxs,0.2,0.01)),
+                                                                  SensorTransformPtr(new CBF::IdentitySensorTransform(7)),
+                                                                  EffectorTransformPtr(new CBF::GenericEffectorTransform(7,7)),
+                                                                  std::vector<SubordinateControllerPtr>(),
+                                                                  CombinationStrategyPtr(new AddingStrategy())));
+                vSubOrdinateControllers.push_back(subordinateControllerP);
+            }
+            if(ctrltype == JLPotential_Ctrl){
+                subordinateControllerP = SubordinateControllerPtr(new CBF::SubordinateController(
+                                                                  1.0,
+                                                                  vConvergenceCriteria,
+                                                                  currentSubordinateTaskReferenceP,
+//                                                                   PotentialPtr(new WuPotential(vmins, vmaxs, 0.2,0.01)),
+                                                                  PotentialPtr(new JLPotential(vmins,vmaxs,0.2,5)),
                                                                   SensorTransformPtr(new CBF::IdentitySensorTransform(7)),
                                                                   EffectorTransformPtr(new CBF::GenericEffectorTransform(7,7)),
                                                                   std::vector<SubordinateControllerPtr>(),
                                                                   CombinationStrategyPtr(new AddingStrategy())));
 
-            std::vector<CBF::SubordinateControllerPtr> vSubOrdinateControllers;
-//            vSubOrdinateControllers.push_back(subordinateControllerP);
+                vSubOrdinateControllers.push_back(subordinateControllerP);
+            }
+            if(ctrltype == IMPotential_Ctrl){
+                subordinateControllerP = SubordinateControllerPtr(new CBF::SubordinateController(
+                                                                  1.0,
+                                                                  vConvergenceCriteria,
+                                                                  currentSubordinateTaskReferenceP,
+//                                                                   PotentialPtr(new WuPotential(vmins, vmaxs, 0.2,0.01)),
+                                                                  PotentialPtr(new IMPotential(0.2,0.1)),
+                                                                  SensorTransformPtr(new CBF::IdentitySensorTransform(7)),
+                                                                  EffectorTransformPtr(new CBF::GenericEffectorTransform(7,7)),
+                                                                  std::vector<SubordinateControllerPtr>(),
+                                                                  CombinationStrategyPtr(new AddingStrategy())));
+                vSubOrdinateControllers.push_back(subordinateControllerP);
+            }
 
             // create the composite potential
             xyzSquarePotential = CBF::SquarePotentialPtr(new CBF::SquarePotential(3,0.008));
@@ -709,7 +749,7 @@ void KukaLwr::initCbf (){
 }
 
 
-KukaLwr::KukaLwr(RobotNameT robotname, ComOkc& com, ToolNameT tn)
+KukaLwr::KukaLwr(RobotNameT robotname, ComOkc& com, ToolNameT tn, ControllerT ctrltype)
 {
     if (0 != pthread_mutex_init(&primitiveControllerMutex,NULL)){
         perror ("CbfPlanner: could not initialize Mutex");
@@ -718,7 +758,7 @@ KukaLwr::KukaLwr(RobotNameT robotname, ComOkc& com, ToolNameT tn)
     rn = robotname;
     okc_node = &com;
     initChains(tn);
-    initCbf();
+    initCbf(ctrltype);
     control_period = 4;
     Jac_kdl = KDL::Jacobian (7);
     updates.resize(7);

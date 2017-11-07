@@ -220,6 +220,34 @@ void tip_tactile_cb(boost::shared_ptr<std::string> data){
     std::cout<<"tactile servoing for maintain contact"<<std::endl;
 }
 
+void tip_taxel_twist_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    left_ac_vec.clear();
+    left_task_vec.clear();
+    left_taskname.prot = RRYP;
+    left_ac_vec.push_back(new ProActController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
+    left_task_vec.back()->mft = LOCAL;
+    left_task_vec.back()->mt = JOINTS;
+    
+    left_taskname.tact = COVER_OBJECT_SURFACE;
+    left_ac_vec.push_back(new TacServoController(*pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new TacServoTask(left_taskname.tact));
+    left_task_vec.back()->mt = TACTILE;
+    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    //using the sepcified taxel as the desired point
+//    left_task_vec.back()->set_desired_taxel_mid((int)tac_index);
+    //using the specified position
+    left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+    //compute the desired cp on fingertip-Area I
+    left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+    left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for twisting to the desired point"<<std::endl;
+}
+
 void tip_taxel_sliding_cb(boost::shared_ptr<std::string> data){
     mutex_act.lock();
     left_ac_vec.clear();
@@ -1123,6 +1151,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_force(tip_force_cb);
 //    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(tip_tactile_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(approaching_ctc_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_twist(tip_taxel_twist_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_sliding(tip_taxel_sliding_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_rolling(tip_taxel_rolling_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_exploring(tip_exploring_cb);
@@ -1157,7 +1186,7 @@ void init(){
     pm = new ParameterManager(config_filename);
     com_okc = new ComOkc(kuka_left,OKC_HOST,OKC_PORT);
     com_okc->connect();
-    kuka_left_arm = new KukaLwr(kuka_left,*com_okc,tn);
+    kuka_left_arm = new KukaLwr(kuka_left,*com_okc,tn,JLPotential_Ctrl);
     left_rs = new RobotState(kuka_left_arm);
     kuka_left_arm->get_joint_position_act();
     kuka_left_arm->update_robot_state();
@@ -1208,6 +1237,7 @@ void init(){
     com_rsb->register_external("/foo/moveto",button_moveto);
     com_rsb->register_external("/foo/tip_force",button_tip_force);
     com_rsb->register_external("/foo/tip_tactile",button_tip_tactile);
+    com_rsb->register_external("/foo/tip_taxel_twist",button_tip_taxel_twist);
     com_rsb->register_external("/foo/tip_taxel_sliding",button_tip_taxel_sliding);
     com_rsb->register_external("/foo/tip_taxel_rolling",button_tip_taxel_rolling);
     com_rsb->register_external("/foo/tip_exploring",button_tip_exploring);
@@ -1398,7 +1428,7 @@ void run_leftarm(){
             }
             if(left_task_vec[i]->mt == VISION3D){
                 mutex_tac.lock();
-                left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],nv_v,tip_nv);
+                left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],nv_v,tip_nv,left_rs);
                 mutex_tac.unlock();
             }
         }

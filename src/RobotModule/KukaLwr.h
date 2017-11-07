@@ -3,6 +3,8 @@
 
 #include "Robot.h"
 #include "UtilModule/RebaType.h"
+#include "IMPotential.h"
+#include "JLPotential.h"
 
 #include <fri_okc_comm.h>
 #include <fri_okc_types.h>
@@ -22,7 +24,7 @@ using namespace CBF;
 class KukaLwr : public Robot
 {
 public:
-    KukaLwr(RobotNameT connectToRobot, ComOkc& com, ToolNameT tn = sensing_pole);
+    KukaLwr(RobotNameT connectToRobot, ComOkc& com, ToolNameT tn = sensing_pole, ControllerT ctrltype = LSSolution_Ctrl);
     void waitForFinished();
     bool isConnected();
     void update_robot_state();
@@ -62,7 +64,7 @@ public:
     void getTcpFtCalib (Eigen::Vector3d &cf);
     void addSegmentinChain(Eigen::Matrix3d R,Eigen::Vector3d p);
     void backKukaChain(ToolNameT tn);
-    void initCbf();
+    void initCbf(ControllerT ctrl=LSSolution_Ctrl);
     bool IsFTAssembled();
 private:
     void initChains(ToolNameT tn=sensing_pole);

@@ -296,6 +296,7 @@ void TacServoController::update_robot_reference(Robot *robot, Task *t,FingertipT
     p_target.setZero();
     o_target.setZero();
     get_desired_lv(robot,t,midfb);
+    limit_eef_euler(get_euler_limit());
 //    std::cout<<"lv before in tacservo "<<llv<<std::endl;
 //    std::cout<<lov<<std::endl;
     llv = llv + llv_tac;

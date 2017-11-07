@@ -98,6 +98,17 @@ enum EXPDIR{
     YN = 4
 };
 
+enum ControllerT{
+    //theta_dot = inv(J) * x_dot: least square solution
+    LSSolution_Ctrl,
+    //Wupoential as secondary task, originall created by Matthias
+    WuPotential_Ctrl,
+    //Joint limitation constraint as secondary task, from "open a door with a redundant impedance controlled robot"
+    JLPotential_Ctrl,
+    //Internal movement Potential as secondar task, main the desired pose in eef and change the joint angle configure to desired ref.
+    IMPotential_Ctrl
+};
+
 
 // class ctrlpara{
 // public:
