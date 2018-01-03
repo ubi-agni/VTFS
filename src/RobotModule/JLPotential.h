@@ -91,11 +91,11 @@ public:
     if (result_norm >= m_MaxGradientStep)
       result = (m_MaxGradientStep/result_norm) * result;
     
-//     std::cout<<"gradient from joint limitation ";
-//     for (unsigned int i = 0; i < input.size(); ++i) {
-//         std::cout<<result[i]<<",";
-//     }
-//     std::cout<<std::endl;
+    std::cout<<"gradient from joint limitation ";
+    for (unsigned int i = 0; i < input.size(); ++i) {
+        std::cout<<result[i]<<",";
+    }
+    std::cout<<std::endl;
   }
 
   virtual unsigned int dim() const { return maxs.size(); }

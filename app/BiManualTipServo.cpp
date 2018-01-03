@@ -21,6 +21,8 @@
 #include <tf_conversions/tf_eigen.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/Vector3Stamped.h>
+#include <std_msgs/Bool.h>
 #endif
 #include <iomanip>
 
@@ -42,6 +44,8 @@
 #include "forceservotask.h"
 #include "tacservocontroller.h"
 #include "tacservotask.h"
+#include "visactcontroller.h"
+#include "visservotask.h"
 #include "RobotState.h"
 #include "Util.h"
 #include <fstream>
@@ -61,8 +65,10 @@
 #ifdef HAVE_ROS
 // ROS objects
 tf::TransformBroadcaster *br;
-sensor_msgs::JointState js_la, js_ra;
+sensor_msgs::JointState js_la, js_ra,js_schunk ;
 ros::Publisher jsPub_la,jsPub_ra;
+ros::Publisher jsPub_schunk;
+ros::Publisher p_ct_pub, lvel_ct_pub,start_rec_pub,change_dir_pub;
 ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,gamma_force_marker_pub,act_taxel_pub,act_taxel_nv_pub;
@@ -95,6 +101,7 @@ TaskNameT right_taskname;
 
 ComRSB *com_rsb;
 RsbDataType rdtleftkuka;
+RsbDataType rdtschunkjs;
 
 //left kuka controller parameters
 ParameterManager* left_pm;
@@ -132,9 +139,13 @@ double initP_x,initP_y,initP_z;
 double initO_x,initO_y,initO_z;
 Eigen::Vector3d tool_vec_g;
 
+Eigen::Vector3d pre_ct_value;
+Eigen::Quaterniond init_obj_pose_val;
+
+
 
 //using mutex locking controller ptr while it is switching.
-std::mutex mutex_act, mutex_force,mutex_tac,mutex_ft;
+std::mutex mutex_act, mutex_force,mutex_tac,mutex_ft,mutex_schunkjs_app;
 //estimated force/torque from fri
 Eigen::Vector3d estkukaforce,estkukamoment;
 Eigen::Vector3d filtered_force;
@@ -163,10 +174,97 @@ Eigen::Vector3d cp_g,cendp_g,cnv_g,cendp_g_gamma;
 //estimated contact taxel posion and normal direction
 Eigen::Vector3d c_taxel_p_l,c_taxel_nv_l,c_taxel_p_g,c_taxel_endp_g,c_taxel_nv_g;
 
+//normal direction of manipulated surface
+Eigen::Vector3d nv_v;
+
+Eigen::Vector3d cp_g_old;
+
+//get schunk joint angle
+std::vector<double> schunkjs;
+
 void closeprog_cb(boost::shared_ptr<std::string> data){
     StopFlag = true;
     std::cout<<"The program will be closed"<<std::endl;
 }
+
+void vis_surf_tracking_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"start visuo servoing controller"<<std::endl;
+    std_msgs::Bool rec_msg,dir_msg;
+    mutex_act.lock();
+    left_ac_vec.clear();
+    left_task_vec.clear();
+
+    left_taskname.vist = NV_VERT_ALIGN;
+    left_ac_vec.push_back(new VisActController(*left_pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new VisuoServoTask(left_taskname.vist));
+    left_task_vec.back()->mt = VISION3D;
+    
+    left_taskname.prot = RLXP;
+    left_ac_vec.push_back(new ProActController(*left_pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
+    left_task_vec.back()->mft = LOCAL;
+    left_task_vec.back()->mt = JOINTS;
+
+    left_taskname.tact = COVER_OBJECT_SURFACE;
+    left_ac_vec.push_back(new TacServoController(*left_pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new TacServoTask(left_taskname.tact));
+    left_task_vec.back()->mt = TACTILE;
+    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+    //compute the desired cp on fingertip-Area I
+    left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+    left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
+    mutex_act.unlock();
+    //publish start record via ros
+    rec_msg.data = true;
+    dir_msg.data = false;
+    start_rec_pub.publish(rec_msg);
+    change_dir_pub.publish(dir_msg);
+    std::cout<<"tactile servoing for sliding/rolling with forward direction"<<std::endl;
+}
+
+void inverse_vis_surf_tracking_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"start visuo servoing controller"<<std::endl;
+    std_msgs::Bool rec_msg,dir_msg;
+    mutex_act.lock();
+    left_ac_vec.clear();
+    left_task_vec.clear();
+
+    left_taskname.vist = NV_VERT_ALIGN;
+    left_ac_vec.push_back(new VisActController(*left_pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new VisuoServoTask(left_taskname.vist));
+    left_task_vec.back()->mt = VISION3D;
+    
+    left_taskname.prot = RLXN;
+    left_ac_vec.push_back(new ProActController(*left_pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new KukaSelfCtrlTask(left_taskname.prot));
+    left_task_vec.back()->mft = LOCAL;
+    left_task_vec.back()->mt = JOINTS;
+
+    left_taskname.tact = COVER_OBJECT_SURFACE;
+    left_ac_vec.push_back(new TacServoController(*left_pm));
+    left_ac_vec.back()->set_init_TM(kuka_left_arm->get_cur_cart_o());
+    left_task_vec.push_back(new TacServoTask(left_taskname.tact));
+    left_task_vec.back()->mt = TACTILE;
+    left_task_vec.back()->set_desired_cf_mid(TAC_F);
+    left_task_vec.back()->set_taxelfb_type_mid(TAXEL_POSITION);
+    //compute the desired cp on fingertip-Area I
+    left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
+    left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
+    mutex_act.unlock();
+    //publish start record via ros
+    rec_msg.data = true;
+    dir_msg.data = true;
+    start_rec_pub.publish(rec_msg);
+    change_dir_pub.publish(dir_msg);
+    std::cout<<"tactile servoing for sliding/rolling with inverse direction"<<std::endl;
+}
+
 
 void tip_moveto_cb(boost::shared_ptr<std::string> data){
     Eigen::Vector3d p,o;
@@ -192,6 +290,38 @@ void tip_moveto_cb(boost::shared_ptr<std::string> data){
     std::cout<<"kuka fingertip self movement and move to new pose"<<std::endl;
 
 }
+
+void tip_pretouch_cb(boost::shared_ptr<std::string> data){
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+    std::cout<<"pretouch value is "<<pre_ct_value(0)<<","<<pre_ct_value(1)<<","<<pre_ct_value(2)<<std::endl;
+    p(0) = pre_ct_value(0);
+    p(1) = pre_ct_value(1);
+    p(2) = pre_ct_value(2);
+
+    Eigen::Matrix3d tm,tip_des_tm;
+    tip_des_tm.setZero();
+    tm = init_obj_pose_val.toRotationMatrix(); 
+    tip_des_tm.col(0) = tm.col(2);
+    tip_des_tm.col(1) = -1*tm.col(0);
+    tip_des_tm.col(2) = -1*tm.col(1);
+    o = tm2axisangle(tip_des_tm);
+
+    mutex_act.lock();
+    left_ac_vec.clear();
+    left_task_vec.clear();
+    left_ac_vec.push_back(new ProActController(*left_pm));
+    left_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
+    left_task_vec.back()->mt = JOINTS;
+    left_task_vec.back()->mft = GLOBAL;
+    left_task_vec.back()->set_desired_p_eigen(p);
+    left_task_vec.back()->set_desired_o_ax(o);
+    mutex_act.unlock();
+    std::cout<<"kuka fingertip pretouch to new pose"<<std::endl;
+
+}
+
 
 void sdh_moveto_cb(boost::shared_ptr<std::string> data){
     Eigen::Vector3d p,o;
@@ -263,6 +393,7 @@ void approaching_ctc_cb(boost::shared_ptr<std::string> data){
 
 
 void tip_tactile_cb(boost::shared_ptr<std::string> data){
+    std_msgs::Bool rec_msg;
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -273,6 +404,9 @@ void tip_tactile_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->mt = TACTILE;
     left_task_vec.back()->set_desired_cf_mid(TAC_F);
     mutex_act.unlock();
+    //publish start record via ros
+    rec_msg.data = false;
+    start_rec_pub.publish(rec_msg);
     std::cout<<"tactile servoing for maintain contact"<<std::endl;
 }
 
@@ -293,6 +427,7 @@ void tip_taxel_sliding_cb(boost::shared_ptr<std::string> data){
 
 
 void tip_exploring_cb(boost::shared_ptr<std::string> data){
+    std_msgs::Bool rec_msg;
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -314,6 +449,9 @@ void tip_exploring_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
     left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
     mutex_act.unlock();
+    //publish start record via ros
+    rec_msg.data = true;
+    start_rec_pub.publish(rec_msg);
     std::cout<<"tactile servoing exploration________________________________________"<<std::endl;
 }
 
@@ -346,6 +484,7 @@ void tip_stop_exploring_cb(boost::shared_ptr<std::string> data){
 
 
 void tip_reverse_exploring_cb(boost::shared_ptr<std::string> data){
+    std_msgs::Bool rec_msg;
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -367,6 +506,9 @@ void tip_reverse_exploring_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->set_desired_position_mid(ftt->get_Center_position(1));
     left_task_vec.back()->set_desired_nv_mid(ftt->get_Center_nv(1));
     mutex_act.unlock();
+    //publish start record via ros
+    rec_msg.data = true;
+    start_rec_pub.publish(rec_msg);
     std::cout<<"tactile servoing reverse exploration****************************************************************************"<<std::endl;
 }
 
@@ -419,6 +561,25 @@ void obj_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     right_rmt = NormalMode;
 }
 
+void tip_normal_ctrl_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"switch to normal control"<<std::endl;
+    Eigen::Vector3d p,o;
+    p.setZero();
+    o.setZero();
+
+    //get start point position in cartesian space
+    p(0) = initP_x = left_rs->robot_position["eef"](0);
+    p(1) = initP_y= left_rs->robot_position["eef"](1);
+    p(2) = initP_z= left_rs->robot_position["eef"](2);
+
+    o = tm2axisangle(left_rs->robot_orien["eef"]);
+    initO_x = o(0);
+    initO_y = o(1);
+    initO_z = o(2);
+    left_task_vec.back()->set_desired_p_eigen(p);
+    left_task_vec.back()->set_desired_o_ax(o);
+    left_rmt = NormalMode;
+}
 
 void gamaftcalib_cb(boost::shared_ptr<std::string> data){
     std::cout<<"calibrate gama ft sensor is actived"<<std::endl;
@@ -530,6 +691,17 @@ recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
 
 #endif
 
+void schunkJSviarsb(){
+    mutex_schunkjs_app.lock();
+    com_rsb->schunkjs_receive(schunkjs);
+//     std::cout<<"schunk joint angle are ";
+//     for(int i = 0; i < schunkjs.size(); i++){
+//         std::cout<<schunkjs.at(i)<<",";
+//     }
+//     std::cout<<std::endl;
+    mutex_schunkjs_app.unlock();
+}
+
 
 #ifdef HAVE_ROS
 void run(){
@@ -547,9 +719,16 @@ void ros_publisher(){
         js_la.position[i]=right_rs->JntPosition_mea[i];
         js_ra.position[i]=left_rs->JntPosition_mea[i];
     }
+    
+    mutex_schunkjs_app.lock();
+    for(unsigned int i = 0; i < schunkjs.size(); i++){
+        js_schunk.position[i] = schunkjs.at(i)*M_PI/180.0;
+    }
+    mutex_schunkjs_app.unlock();
 
     js_la.header.stamp=ros::Time::now();
     js_ra.header.stamp=ros::Time::now();
+    js_schunk.header.stamp=ros::Time::now();
     bool contact_f = false;
     mutex_tac.lock();
     contact_f = ftt->isContact(ftt->data);
@@ -689,6 +868,8 @@ void ros_publisher(){
     //publish the actived position
     if ((act_marker_pub.getNumSubscribers() >= 1)){
         visualization_msgs::Marker act_marker;
+        geometry_msgs::Vector3Stamped vec3_msg;
+        geometry_msgs::Vector3Stamped vec3_vel_msg;
         mutex_tac.lock();
         // Set the color -- be sure to set alpha to something non-zero!
         act_marker.color.r = ftt->pressure;
@@ -700,8 +881,8 @@ void ros_publisher(){
             act_marker.color.a = 0;
         mutex_tac.unlock();
 
-        act_marker.header.frame_id = "frame";
-        act_marker.header.stamp = ros::Time::now();
+        vec3_vel_msg.header.frame_id = vec3_msg.header.frame_id = act_marker.header.frame_id = "frame";
+        vec3_vel_msg.header.stamp = vec3_msg.header.stamp = act_marker.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
         act_marker.ns = "KukaRos";
@@ -725,6 +906,27 @@ void ros_publisher(){
 
         act_marker.lifetime = ros::Duration();
         act_marker_pub.publish(act_marker);
+        //also publish the contact position via ROS
+        Eigen::Vector3d filtered_cp_g;
+        Eigen::Vector3d vel_cp_g;
+//         filtered_cp_g = position_ct_filter->push(cp_g);
+//         vec3_msg.vector.x = filtered_cp_g(0);
+//         vec3_msg.vector.y = filtered_cp_g(1);
+//         vec3_msg.vector.z = filtered_cp_g(2);
+        vec3_msg.vector.x = cp_g(0);
+        vec3_msg.vector.y = cp_g(1);
+        vec3_msg.vector.z = cp_g(2);
+//         std::cout<<"cp_g time stamp is "<<vec3_msg.header.stamp<<std::endl;
+        //0.05s means 20hz
+//         vel_cp_g = (filtered_cp_g - cp_g_old)/0.02;
+//         vec3_vel_msg.vector.x = vel_cp_g(0);
+//         vec3_vel_msg.vector.y = vel_cp_g(1);
+//         vec3_vel_msg.vector.z = vel_cp_g(2);
+        //assign the current position as old position
+//         cp_g_old = filtered_cp_g;
+        cp_g_old = cp_g;
+//         lvel_ct_pub.publish(vec3_vel_msg);
+        p_ct_pub.publish(vec3_msg);
     }
     //publish the actived normal vector
     if(act_marker_nv_pub.getNumSubscribers() >= 1){
@@ -975,6 +1177,7 @@ void ros_publisher(){
     // send a joint_state
     jsPub_la.publish(js_la);
     jsPub_ra.publish(js_ra);
+    jsPub_schunk.publish(js_schunk);
 //    ros::spinOnce();
 }
 
@@ -1024,8 +1227,12 @@ void init(){
     StopFlag = false;
     //initialize the tactile index, this is specified for the specified taxel should be contacted and maintain specified contact force
     tac_index = 0.0;
+    //init normal direction of vision information
+    nv_v.setZero();
+    pre_ct_value.setZero();
     //declare the cb function
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_moveto(tip_moveto_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_pretouch(tip_pretouch_cb);
 //    boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(tip_tactile_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_tactile(approaching_ctc_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_taxel_sliding(tip_taxel_sliding_cb);
@@ -1038,6 +1245,9 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_taccalib_rec(taccalib_rec_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_obj_grav_comp_ctrl(obj_grav_comp_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_obj_normal_ctrl(obj_normal_ctrl_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_tip_normal_ctrl(tip_normal_ctrl_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_vis_surf_tracking(vis_surf_tracking_cb); 
+    boost::function<void(boost::shared_ptr<std::string>)> button_inverse_vis_surf_tracking(inverse_vis_surf_tracking_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_updateadmittance(updateadmittance_cb);
@@ -1137,7 +1347,9 @@ void init(){
 
     com_rsb = new ComRSB();
     rdtleftkuka = LeftKukaEff;
+    rdtschunkjs = SchunkJS;
     com_rsb->add_msg(rdtleftkuka);
+    com_rsb->add_msg(rdtschunkjs);
     ft.setZero(6);
     estkukaforce.setZero();
     estkukamoment.setZero();
@@ -1147,6 +1359,7 @@ void init(){
     int len = 50;
     mtf = new MidTacFeature(len);
     cp_g.setZero();
+    cp_g_old.setZero();
     cendp_g.setZero();
     cendp_g_gamma.setZero();
     cnv_g.setZero();
@@ -1157,6 +1370,7 @@ void init(){
     c_taxel_endp_g.setZero();
     //register cb function
     com_rsb->register_external("/foo/tipmoveto",button_tip_moveto);
+    com_rsb->register_external("/foo/tippretouch",button_tip_pretouch);
     com_rsb->register_external("/foo/sdhmoveto",button_sdh_moveto);
     com_rsb->register_external("/foo/tip_tactile",button_tip_tactile);
     com_rsb->register_external("/foo/tip_taxel_sliding",button_tip_taxel_sliding);
@@ -1168,6 +1382,8 @@ void init(){
     com_rsb->register_external("/foo/taccalib_rec",button_taccalib_rec);
     com_rsb->register_external("/foo/obj_grav_comp_ctrl",button_obj_grav_comp_ctrl);
     com_rsb->register_external("/foo/obj_normal_ctrl",button_obj_normal_ctrl);
+    com_rsb->register_external("/foo/vis_surf_tracking",button_vis_surf_tracking);
+    com_rsb->register_external("/foo/inverse_vis_surf_tracking",button_inverse_vis_surf_tracking);
     com_rsb->register_external("/foo/brake",button_brake);
     com_rsb->register_external("/foo/nobrake",button_nobrake);
     com_rsb->register_external("/foo/updateadmittance",button_updateadmittance);
@@ -1178,6 +1394,7 @@ void init(){
 #ifdef HAVE_ROS
     std::string left_kuka_arm_name="la";
     std::string right_kuka_arm_name="ra";
+    std::string left_schunk_hand_name ="lh";
     js_la.name.push_back(left_kuka_arm_name+"_arm_0_joint");
     js_la.name.push_back(left_kuka_arm_name+"_arm_1_joint");
     js_la.name.push_back(left_kuka_arm_name+"_arm_2_joint");
@@ -1192,6 +1409,15 @@ void init(){
     js_ra.name.push_back(right_kuka_arm_name+"_arm_4_joint");
     js_ra.name.push_back(right_kuka_arm_name+"_arm_5_joint");
     js_ra.name.push_back(right_kuka_arm_name+"_arm_6_joint");
+    
+    //for schunk
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_knuckle_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_finger_22_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_finger_23_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_thumb_2_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_thumb_3_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_finger_12_joint");
+    js_schunk.name.push_back(left_schunk_hand_name+"_sdh_finger_13_joint");
 
     js_la.position.resize(7);
     js_la.velocity.resize(7);
@@ -1200,9 +1426,14 @@ void init(){
     js_ra.position.resize(7);
     js_ra.velocity.resize(7);
     js_ra.effort.resize(7);
+    
+    js_schunk.position.resize(7);
+    js_schunk.velocity.resize(7);
+    js_schunk.effort.resize(7);
 
     js_la.header.frame_id="frame_la";
     js_ra.header.frame_id="frame_ra";
+    js_ra.header.frame_id="frame_lh";
 
     marker_shape = visualization_msgs::Marker::CUBE;
     marker_pub = nh->advertise<visualization_msgs::Marker>("visualization_marker", 2);
@@ -1218,6 +1449,7 @@ void init(){
 
     jsPub_la = nh->advertise<sensor_msgs::JointState> ("/la/joint_states", 2);
     jsPub_ra = nh->advertise<sensor_msgs::JointState> ("/ra/joint_states", 2);
+    jsPub_schunk = nh->advertise<sensor_msgs::JointState> ("/lh/joint_states", 2);
     ros::spinOnce();
 
     br = new tf::TransformBroadcaster();
@@ -1241,6 +1473,12 @@ void get_ft_vis_info(){
     }
     mutex_tac.unlock();
 }
+void get_tip_nv_pose(Eigen::Vector3d& tip_nv){
+    local2global(ftt->get_Center_nv(1),\
+                     left_rs->robot_orien["eef"],tip_nv);
+}
+
+
 void get_mid_info(){
     //computingt the contact information from mid sensor--contact position,estimated
     //contact force vector, and line feature estimation
@@ -1298,6 +1536,9 @@ void run_leftarm(){
         left_rs->updated(kuka_left_arm);
         //using mid for control, get contact information
         get_mid_info();
+        //get fingertip orientation
+        Eigen::Vector3d tip_nv;
+        get_tip_nv_pose(tip_nv);
         //get ft visulization information
         //get_ft_vis_info();
         //using all kinds of controllers to update the reference
@@ -1315,6 +1556,11 @@ void run_leftarm(){
                 left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],ftt);
                 mutex_tac.unlock();
             }
+            if(left_task_vec[i]->mt == VISION3D){
+                mutex_tac.lock();
+                left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],nv_v,tip_nv,left_rs);
+                mutex_tac.unlock();
+            }
         }
         //update with act_vec
         left_ac_vec[0]->llv.setZero();
@@ -1327,6 +1573,13 @@ void run_leftarm(){
         com_okc_left->controller_update = true;
         com_okc_left->data_available = false;
     }
+}
+
+void rcv_surfnv_cb(const geometry_msgs::Vector3Stamped::ConstPtr &msg_nv){
+    nv_v(0) = msg_nv->vector.x;
+    nv_v(1) = msg_nv->vector.y;
+    nv_v(2) = msg_nv->vector.z;
+//     std::cout<<"nv messurement are "<<nv_v(0)<<","<<nv_v(1)<<","<<nv_v(2)<<std::endl;
 }
 
 void run_rightarm(){
@@ -1363,6 +1616,20 @@ void run_rightarm(){
     }
 }
 
+void rcv_pre_ct_cb(const geometry_msgs::Vector3Stamped::ConstPtr& msg){
+    pre_ct_value(0) = msg->vector.x;
+    pre_ct_value(1) = msg->vector.y;
+    pre_ct_value(2) = msg->vector.z;
+}
+
+void rcv_init_obj_pose_cb(const geometry_msgs::Pose::ConstPtr& msg){
+    init_obj_pose_val.x() = msg->orientation.x;
+    init_obj_pose_val.y() = msg->orientation.y;
+    init_obj_pose_val.z() = msg->orientation.z;
+    init_obj_pose_val.w()= msg->orientation.w;
+}
+
+
 
 int main(int argc, char* argv[])
 {
@@ -1389,7 +1656,14 @@ int main(int argc, char* argv[])
         std::cout<<"Connect to ATI FT sensor"<<std::endl;
         GammaFtSub=nh->subscribe("/ft_sensor/wrench", 1, // buffer size
                                 &recvFT);
-
+        
+    p_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("position_ct", 1);
+    lvel_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("lvel_ct", 1);
+    start_rec_pub = nh->advertise<std_msgs::Bool>("start_rec", 1);
+    change_dir_pub = nh->advertise<std_msgs::Bool>("dir_command", 1);
+    ros::Subscriber sub_surf_nv = nh->subscribe("surf_nv",1,rcv_surfnv_cb);
+    ros::Subscriber sub_pre_ct_position = nh->subscribe("pre_ct_position", 1, rcv_pre_ct_cb);
+    ros::Subscriber sub_init_obj_pose = nh->subscribe("init_obj_pose", 1, rcv_init_obj_pose_cb);
 
     #endif
     init();
@@ -1412,6 +1686,12 @@ int main(int argc, char* argv[])
     thrd_rightkuka_ctrl.setSingleShot(false);
     thrd_rightkuka_ctrl.setInterval(Timer::Interval(1));
     thrd_rightkuka_ctrl.start(true);
+    
+    //start Schunk hand read thread
+    Timer thrd_schunk_read(schunkJSviarsb);
+    thrd_schunk_read.setSingleShot(false);
+    thrd_schunk_read.setInterval(Timer::Interval(100));
+    thrd_schunk_read.start(true);
 
     #ifdef HAVE_ROS
     //start ros publisher thread

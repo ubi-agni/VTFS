@@ -101,6 +101,7 @@ ENDIF()
 find_package(catkin QUIET COMPONENTS
   tf
   sensor_msgs
+  std_msgs
   roscpp
   tf_conversions
   cd_dynamics
