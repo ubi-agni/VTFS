@@ -216,6 +216,8 @@ FingertipTac::FingertipTac(int num)
     ct_pressure_filtered = new TemporalSmoothingFilter<double>(5,Average,0);
     ct_position_filtered = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
     ct_nv_filtered = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
+    IsAvailable = false;
+    counter_data_coming = 0;
 }
 
 void FingertipTac::init_taxelmap(){

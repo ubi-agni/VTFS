@@ -29,6 +29,10 @@ public:
     FingertipTac(int num);
     //raw data after pressure threshold
     tac_data data;
+    //is data available
+    bool IsAvailable;
+    //counter to check whether data is coming
+    int counter_data_coming;
     //actived taxel id set
     std::vector<int> act_Ids;
     //actived taxel number;

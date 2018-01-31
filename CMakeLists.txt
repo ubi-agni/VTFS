@@ -105,6 +105,7 @@ find_package(catkin QUIET COMPONENTS
   roscpp
   tf_conversions
   cd_dynamics
+  reba_tactile_msgs
   )
 if(catkin_FOUND)
   # declare this as a catkin package

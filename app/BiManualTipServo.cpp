@@ -22,6 +22,7 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Vector3Stamped.h>
+#include <reba_tactile_msgs/ct_position.h>
 #include <std_msgs/Bool.h>
 #endif
 #include <iomanip>
@@ -161,6 +162,8 @@ float tac_index;
 bool StopFlag;
 TemporalSmoothingFilter<Eigen::Vector3d>* gama_f_filter;
 TemporalSmoothingFilter<Eigen::Vector3d>* gama_t_filter;
+TemporalSmoothingFilter<Eigen::Vector3d>* position_g_ct_filter;
+TemporalSmoothingFilter<Eigen::Vector3d>* position_l_ct_filter;
 
 //flag to record data in order to use gamma ft sensor to calbirate mid tactile fingertip
 bool start_taccalib_rec;
@@ -170,7 +173,7 @@ RobotModeT left_rmt,right_rmt;
 //for moving tactile pattern extaction
 MidTacFeature *mtf;
 //estimated contact point position, normal direction
-Eigen::Vector3d cp_g,cendp_g,cnv_g,cendp_g_gamma;
+Eigen::Vector3d cp_l,cp_g,cendp_g,cnv_g,cendp_g_gamma;
 //estimated contact taxel posion and normal direction
 Eigen::Vector3d c_taxel_p_l,c_taxel_nv_l,c_taxel_p_g,c_taxel_endp_g,c_taxel_nv_g;
 
@@ -639,6 +642,7 @@ recvTipTactile(const tactile_msgs::TactileStateConstPtr& msg){
         ftt->data.fingertip_tac_pressure[j] = press_val;
 //        std::cout<<std::setprecision(5)<<press_val<<"\t";
     }
+    ftt->IsAvailable = true;
 //    std::cout<<std::endl;
     mutex_tac.unlock();
 }
@@ -868,8 +872,7 @@ void ros_publisher(){
     //publish the actived position
     if ((act_marker_pub.getNumSubscribers() >= 1)){
         visualization_msgs::Marker act_marker;
-        geometry_msgs::Vector3Stamped vec3_msg;
-        geometry_msgs::Vector3Stamped vec3_vel_msg;
+        reba_tactile_msgs::ct_position vec3_msg;
         mutex_tac.lock();
         // Set the color -- be sure to set alpha to something non-zero!
         act_marker.color.r = ftt->pressure;
@@ -881,8 +884,8 @@ void ros_publisher(){
             act_marker.color.a = 0;
         mutex_tac.unlock();
 
-        vec3_vel_msg.header.frame_id = vec3_msg.header.frame_id = act_marker.header.frame_id = "frame";
-        vec3_vel_msg.header.stamp = vec3_msg.header.stamp = act_marker.header.stamp = ros::Time::now();
+        vec3_msg.header.frame_id = vec3_msg.local_ct_position.header.frame_id = vec3_msg.global_ct_position.header.frame_id = act_marker.header.frame_id = "frame";
+        vec3_msg.header.stamp = vec3_msg.local_ct_position.header.stamp = vec3_msg.global_ct_position.header.stamp = act_marker.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
         act_marker.ns = "KukaRos";
@@ -907,25 +910,14 @@ void ros_publisher(){
         act_marker.lifetime = ros::Duration();
         act_marker_pub.publish(act_marker);
         //also publish the contact position via ROS
-        Eigen::Vector3d filtered_cp_g;
-        Eigen::Vector3d vel_cp_g;
-//         filtered_cp_g = position_ct_filter->push(cp_g);
-//         vec3_msg.vector.x = filtered_cp_g(0);
-//         vec3_msg.vector.y = filtered_cp_g(1);
-//         vec3_msg.vector.z = filtered_cp_g(2);
-        vec3_msg.vector.x = cp_g(0);
-        vec3_msg.vector.y = cp_g(1);
-        vec3_msg.vector.z = cp_g(2);
-//         std::cout<<"cp_g time stamp is "<<vec3_msg.header.stamp<<std::endl;
-        //0.05s means 20hz
-//         vel_cp_g = (filtered_cp_g - cp_g_old)/0.02;
-//         vec3_vel_msg.vector.x = vel_cp_g(0);
-//         vec3_vel_msg.vector.y = vel_cp_g(1);
-//         vec3_vel_msg.vector.z = vel_cp_g(2);
+        vec3_msg.global_ct_position.vector.x = cp_g(0);
+        vec3_msg.global_ct_position.vector.y = cp_g(1);
+        vec3_msg.global_ct_position.vector.z = cp_g(2);
+        vec3_msg.local_ct_position.vector.x = cp_l(0);
+        vec3_msg.local_ct_position.vector.y = cp_l(1);
+        vec3_msg.local_ct_position.vector.z = cp_l(2);
         //assign the current position as old position
-//         cp_g_old = filtered_cp_g;
         cp_g_old = cp_g;
-//         lvel_ct_pub.publish(vec3_vel_msg);
         p_ct_pub.publish(vec3_msg);
     }
     //publish the actived normal vector
@@ -1356,8 +1348,11 @@ void init(){
     cf_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
     gama_f_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
     gama_t_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
+    position_g_ct_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
+    position_l_ct_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(5,Average,Eigen::Vector3d(0,0,0));
     int len = 50;
     mtf = new MidTacFeature(len);
+    cp_l.setZero();
     cp_g.setZero();
     cp_g_old.setZero();
     cendp_g.setZero();
@@ -1509,6 +1504,14 @@ void get_mid_info(){
         local2global(ftt->pos/1000,\
                      left_rs->robot_orien["eef"],l2g_temp);
         cp_g = left_rs->robot_position["eef"] + l2g_temp;
+        
+        Eigen::Vector3d filtered_cp_g;
+        Eigen::Vector3d filtered_cp_l;
+        filtered_cp_g = position_g_ct_filter->push(cp_g);
+        filtered_cp_l = position_l_ct_filter->push(ftt->pos/1000);
+        cp_l = filtered_cp_l;
+        cp_g = filtered_cp_g;
+        
         local2global(ftt->nv/100,\
                      left_rs->robot_orien["eef"],l2g_temp);
         cendp_g = cp_g + l2g_temp;
@@ -1553,7 +1556,17 @@ void run_leftarm(){
             }
             if(left_task_vec[i]->mt == TACTILE){
                 mutex_tac.lock();
+                if(ftt->IsAvailable == false){
+                    ftt->counter_data_coming ++;
+                    if(ftt->counter_data_coming>=20){
+                        std::cout<<"no feedback from tactile sensor"<<std::endl;
+                    }
+                }
+                else{
+                    ftt->counter_data_coming = 0;
+                }
                 left_ac_vec[i]->update_robot_reference(kuka_left_arm,left_task_vec[i],ftt);
+                ftt->IsAvailable = false;
                 mutex_tac.unlock();
             }
             if(left_task_vec[i]->mt == VISION3D){
@@ -1657,7 +1670,7 @@ int main(int argc, char* argv[])
         GammaFtSub=nh->subscribe("/ft_sensor/wrench", 1, // buffer size
                                 &recvFT);
         
-    p_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("position_ct", 1);
+    p_ct_pub = nh->advertise<reba_tactile_msgs::ct_position>("position_ct", 1);
     lvel_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("lvel_ct", 1);
     start_rec_pub = nh->advertise<std_msgs::Bool>("start_rec", 1);
     change_dir_pub = nh->advertise<std_msgs::Bool>("dir_command", 1);

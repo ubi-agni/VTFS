@@ -10,9 +10,6 @@
   <button args="tip_reverse_exploring" handle="tip_reverse_exploring"/>
   <button args="obj_grav_comp_ctrl" handle="obj_grav_comp_ctrl"/>
   <button args="obj_normal_ctrl" handle="obj_normal_ctrl"/>
-  <button args="opensdh" handle="opensdh"/>
-  <button args="closesdh" handle="closesdh"/>
-  <button args="stopsdh" handle="stopsdh"/>
   <button args="brake" handle="brake"/>
   <button args="nobrake" handle="nobrake"/>
   <button args="updateadmittance" handle="updateadmittance"/>
