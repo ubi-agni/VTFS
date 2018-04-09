@@ -4,6 +4,8 @@
   <button args="taxel_sliding" handle="taxel_sliding"/>
   <button args="taxel_rolling" handle="taxel_rolling"/>
   <button args="tactile_twist" handle="twist"/>
+  <button args="myrmex_exploring" handle="myrmex_exploring"/>
+  <button args="myrmex_reverse_exploring" handle="myrmex_reverse_exploring"/>
   <button args="grav_comp_ctrl" handle="grav_comp_ctrl"/>
   <button args="normal_ctrl" handle="normal_ctrl"/>
   <button args="brake" handle="brake"/>

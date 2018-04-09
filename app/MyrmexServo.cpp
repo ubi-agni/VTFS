@@ -50,7 +50,7 @@
 #include <deque> //for estimating the normal direction of tool-end
 
 //desired contact pressure
-#define TAC_F 4
+#define TAC_F 0.05
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -110,14 +110,14 @@ void tactileviarsb(){
     //via network--RSB, the contact information are obtained.
     mutex_tac.lock();
     if(myrmex_name == "rmyrmex"){
-        com_rsb->tactile_receive(m_myrmex_msg,"rightmyrmex");
+        com_rsb->tactile_receive(m_myrmex_msg,"leftmyrmex");
 //    std::cout<<"tactile output"<<std::endl;
-//    std::cout<<"right myrmex readout "<<m_myrmex_msg.cogx<<","<<m_myrmex_msg.cogy<<","<<m_myrmex_msg.cf<<std::endl;
+//    std::cout<<"left myrmex readout "<<m_myrmex_msg.cogx<<","<<m_myrmex_msg.cogy<<","<<m_myrmex_msg.cf<<std::endl;
     }
     else{
-        com_rsb->tactile_receive(m_myrmex_msg,"leftmyrmex");
+        com_rsb->tactile_receive(m_myrmex_msg,"rightmyrmex");
 //        std::cout<<"tactile output"<<std::endl;
-//        std::cout<<"left myrmex readout "<<m_myrmex_msg.lineorien<<","<<m_myrmex_msg.cf<<std::endl;
+//        std::cout<<"right myrmex readout "<<m_myrmex_msg.lineorien<<","<<m_myrmex_msg.cf<<std::endl;
     }
     mutex_tac.unlock();
 }
@@ -188,6 +188,49 @@ void taxel_rolling_cb(boost::shared_ptr<std::string> data){
 }
 
 
+void myrmex_exploring_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    ac_vec.clear();
+    task_vec.clear();
+    taskname.prot = RLYN;
+    ac_vec.push_back(new ProActController(*pm));
+    ac_vec.back()->set_init_TM(kuka_arm->get_cur_cart_o());
+    task_vec.push_back(new KukaSelfCtrlTask(taskname.prot));
+    task_vec.back()->mft = LOCAL;
+    task_vec.back()->mt = JOINTS;
+
+    taskname.tact = COVER_OBJECT_SURFACE;
+    ac_vec.push_back(new TacServoController(*pm));
+    ac_vec.back()->set_init_TM(kuka_arm->get_cur_cart_o());
+    task_vec.push_back(new TacServoTask(taskname.tact));
+    task_vec.back()->mt = TACTILE;
+    task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for exploration"<<std::endl;
+}
+
+void myrmex_reverse_exploring_cb(boost::shared_ptr<std::string> data){
+    mutex_act.lock();
+    ac_vec.clear();
+    task_vec.clear();
+    taskname.prot = RLYP;
+    ac_vec.push_back(new ProActController(*pm));
+    ac_vec.back()->set_init_TM(kuka_arm->get_cur_cart_o());
+    task_vec.push_back(new KukaSelfCtrlTask(taskname.prot));
+    task_vec.back()->mft = LOCAL;
+    task_vec.back()->mt = JOINTS;
+
+    taskname.tact = COVER_OBJECT_SURFACE;
+    ac_vec.push_back(new TacServoController(*pm));
+    ac_vec.back()->set_init_TM(kuka_arm->get_cur_cart_o());
+    task_vec.push_back(new TacServoTask(taskname.tact));
+    task_vec.back()->mt = TACTILE;
+    task_vec.back()->set_desired_cf_myrmex(TAC_F);
+    mutex_act.unlock();
+    std::cout<<"tactile servoing for reverse exploration"<<std::endl;
+}
+
+
 void grav_comp_ctrl_cb(boost::shared_ptr<std::string> data){
     std::cout<<"switch to psudo_gravity_compasenstation control"<<std::endl;
     rmt = PsudoGravityCompensation;
@@ -206,7 +249,7 @@ void moveto_cb(boost::shared_ptr<std::string> data){
     o.setZero();
 
     //get start point position in cartesian space
-    if(robot_name == "kukaR"){
+    if(robot_name == "kukaL"){
     p(0) =  0.1;
     p(1) =  0.3;
     p(2) = 0.3;
@@ -216,7 +259,7 @@ void moveto_cb(boost::shared_ptr<std::string> data){
     o(2) = 0.0;
     }
     else{
-        p(0) =  -0.1;
+        p(0) =  -0.2;
         p(1) =  0.3;
         p(2) = 0.3;
 
@@ -260,7 +303,7 @@ void run(){
 void ros_publisher(){
     //prepare joint state data
     for(unsigned int i=0 ; i< 7;++i){
-        if(robot_name == "kukaR"){
+        if(robot_name == "kukaL"){
             //there is a arm name changed because the confliction between openkc and kukas in rviz
             js_la.position[i]=robot_rs->JntPosition_mea[i];
             js_ra.position[i]=0;
@@ -323,6 +366,8 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_taxel_sliding(taxel_sliding_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_taxel_rolling(taxel_rolling_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_twist(twist_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_myrmex_exploring(myrmex_exploring_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_myrmex_reverse_exploring(myrmex_reverse_exploring_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_moveto(moveto_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_grav_comp_ctrl(grav_comp_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_normal_ctrl(normal_ctrl_cb);
@@ -354,14 +399,14 @@ void init(){
 
     pm = new ParameterManager(config_filename,TacST);
     if(robot_name == "kukaR"){
-        com_okc = new ComOkc(kuka_right,OKC_HOST,OKC_PORT);
-        com_okc->connect();
-        kuka_arm = new KukaLwr(kuka_right,*com_okc,tn);
-    }
-    else{
         com_okc = new ComOkc(kuka_left,OKC_HOST,OKC_PORT);
         com_okc->connect();
         kuka_arm = new KukaLwr(kuka_left,*com_okc,tn);
+    }
+    else{
+        com_okc = new ComOkc(kuka_right,OKC_HOST,OKC_PORT);
+        com_okc->connect();
+        kuka_arm = new KukaLwr(kuka_right,*com_okc,tn);
     }
     robot_rs = new RobotState(kuka_arm);
     kuka_arm->get_joint_position_act();
@@ -402,6 +447,8 @@ void init(){
     com_rsb->register_external("/foo/taxel_sliding",button_taxel_sliding);
     com_rsb->register_external("/foo/taxel_rolling",button_taxel_rolling);
     com_rsb->register_external("/foo/twist",button_twist);
+    com_rsb->register_external("/foo/myrmex_exploring",button_myrmex_exploring);
+    com_rsb->register_external("/foo/myrmex_reverse_exploring",button_myrmex_reverse_exploring);
     com_rsb->register_external("/foo/grav_comp_ctrl",button_grav_comp_ctrl);
     com_rsb->register_external("/foo/normal_ctrl",button_normal_ctrl);
     com_rsb->register_external("/foo/brake",button_brake);

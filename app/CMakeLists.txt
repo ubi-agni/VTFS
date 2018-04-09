@@ -23,6 +23,7 @@ SET(APPS
          TipInfoEst
          tactoolservo
          MyrmexComTest
+         FTComTest
          MyrmexServo
          BiManualTipServo
          righttactoolservo
@@ -51,6 +52,7 @@ SET(APPS
         RemoteGuiControl
         VisMarkerComTest
         BiManualArticulatedObj
+        
 #        anotherapp
    )
 

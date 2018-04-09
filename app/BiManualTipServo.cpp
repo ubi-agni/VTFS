@@ -22,7 +22,7 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Vector3Stamped.h>
-#include <reba_tactile_msgs/ct_position.h>
+#include <reba_tactile_msgs/cp_info.h>
 #include <std_msgs/Bool.h>
 #endif
 #include <iomanip>
@@ -74,6 +74,7 @@ ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,gamma_force_marker_pub,act_taxel_pub,act_taxel_nv_pub;
 ros::Publisher des_ct_marker_pub,des_ct_nv_marker_pub;
+ros::Publisher reba_robot_end_eff_pub;
 #endif
 std::ofstream Tposition,Tft;
 
@@ -181,6 +182,8 @@ Eigen::Vector3d c_taxel_p_l,c_taxel_nv_l,c_taxel_p_g,c_taxel_endp_g,c_taxel_nv_g
 Eigen::Vector3d nv_v;
 
 Eigen::Vector3d cp_g_old;
+//get fingertip orientation
+Eigen::Vector3d tip_nv;
 
 //get schunk joint angle
 std::vector<double> schunkjs;
@@ -872,7 +875,7 @@ void ros_publisher(){
     //publish the actived position
     if ((act_marker_pub.getNumSubscribers() >= 1)){
         visualization_msgs::Marker act_marker;
-        reba_tactile_msgs::ct_position vec3_msg;
+        reba_tactile_msgs::cp_info vec3_msg;
         mutex_tac.lock();
         // Set the color -- be sure to set alpha to something non-zero!
         act_marker.color.r = ftt->pressure;
@@ -884,8 +887,8 @@ void ros_publisher(){
             act_marker.color.a = 0;
         mutex_tac.unlock();
 
-        vec3_msg.header.frame_id = vec3_msg.local_ct_position.header.frame_id = vec3_msg.global_ct_position.header.frame_id = act_marker.header.frame_id = "frame";
-        vec3_msg.header.stamp = vec3_msg.local_ct_position.header.stamp = vec3_msg.global_ct_position.header.stamp = act_marker.header.stamp = ros::Time::now();
+        vec3_msg.header.frame_id = vec3_msg.local_ct_position.header.frame_id = vec3_msg.global_ct_position.header.frame_id = vec3_msg.global_ct_nv.header.frame_id = vec3_msg.ct_pressure.header.frame_id = act_marker.header.frame_id = "frame";
+        vec3_msg.header.stamp = vec3_msg.local_ct_position.header.stamp = vec3_msg.global_ct_position.header.stamp = vec3_msg.global_ct_nv.header.stamp = vec3_msg.ct_pressure.header.stamp = act_marker.header.stamp = ros::Time::now();
         // Set the namespace and id for this marker.  This serves to create a unique ID
         // Any marker sent with the same namespace and id will overwrite the old one
         act_marker.ns = "KukaRos";
@@ -916,6 +919,12 @@ void ros_publisher(){
         vec3_msg.local_ct_position.vector.x = cp_l(0);
         vec3_msg.local_ct_position.vector.y = cp_l(1);
         vec3_msg.local_ct_position.vector.z = cp_l(2);
+        vec3_msg.global_ct_nv.vector.x = tip_nv(0);
+        vec3_msg.global_ct_nv.vector.y = tip_nv(1);
+        vec3_msg.global_ct_nv.vector.z = tip_nv(2);
+        vec3_msg.ct_pressure.vector.x = 0;
+        vec3_msg.ct_pressure.vector.y = 0;
+        vec3_msg.ct_pressure.vector.z = ftt->pressure;
         //assign the current position as old position
         cp_g_old = cp_g;
         p_ct_pub.publish(vec3_msg);
@@ -1170,6 +1179,20 @@ void ros_publisher(){
     jsPub_la.publish(js_la);
     jsPub_ra.publish(js_ra);
     jsPub_schunk.publish(js_schunk);
+    
+    //publish the robot end-effector position
+    geometry_msgs::Pose reba_robot_end_eff_val;
+    
+    reba_robot_end_eff_val.position.x = right_rs->robot_position["robot_eef"](0);
+    reba_robot_end_eff_val.position.y = right_rs->robot_position["robot_eef"](1);
+    reba_robot_end_eff_val.position.z = right_rs->robot_position["robot_eef"](2);
+    Eigen::Quaterniond tmp_q;
+    tmp_q = right_rs->robot_orien["robot_eef"];
+    reba_robot_end_eff_val.orientation.x = tmp_q.x();
+    reba_robot_end_eff_val.orientation.y = tmp_q.y();
+    reba_robot_end_eff_val.orientation.z = tmp_q.z();
+    reba_robot_end_eff_val.orientation.w = tmp_q.w();
+    reba_robot_end_eff_pub.publish(reba_robot_end_eff_val);
 //    ros::spinOnce();
 }
 
@@ -1468,9 +1491,9 @@ void get_ft_vis_info(){
     }
     mutex_tac.unlock();
 }
-void get_tip_nv_pose(Eigen::Vector3d& tip_nv){
+void get_tip_nv_pose(Eigen::Vector3d& tip_nv_g){
     local2global(ftt->get_Center_nv(1),\
-                     left_rs->robot_orien["eef"],tip_nv);
+                     left_rs->robot_orien["eef"],tip_nv_g);
 }
 
 
@@ -1539,8 +1562,6 @@ void run_leftarm(){
         left_rs->updated(kuka_left_arm);
         //using mid for control, get contact information
         get_mid_info();
-        //get fingertip orientation
-        Eigen::Vector3d tip_nv;
         get_tip_nv_pose(tip_nv);
         //get ft visulization information
         //get_ft_vis_info();
@@ -1670,13 +1691,14 @@ int main(int argc, char* argv[])
         GammaFtSub=nh->subscribe("/ft_sensor/wrench", 1, // buffer size
                                 &recvFT);
         
-    p_ct_pub = nh->advertise<reba_tactile_msgs::ct_position>("position_ct", 1);
+    p_ct_pub = nh->advertise<reba_tactile_msgs::cp_info>("position_ct", 1);
     lvel_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("lvel_ct", 1);
     start_rec_pub = nh->advertise<std_msgs::Bool>("start_rec", 1);
     change_dir_pub = nh->advertise<std_msgs::Bool>("dir_command", 1);
     ros::Subscriber sub_surf_nv = nh->subscribe("surf_nv",1,rcv_surfnv_cb);
     ros::Subscriber sub_pre_ct_position = nh->subscribe("pre_ct_position", 1, rcv_pre_ct_cb);
     ros::Subscriber sub_init_obj_pose = nh->subscribe("init_obj_pose", 1, rcv_init_obj_pose_cb);
+    reba_robot_end_eff_pub = nh->advertise<geometry_msgs::Pose> ("reba_robot_end_eff", 1);
 
     #endif
     init();
