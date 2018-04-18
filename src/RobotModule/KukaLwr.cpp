@@ -368,6 +368,7 @@ void KukaLwr::initChains(ToolNameT tn){
     DH representation referecen paper:Visual Estimation and Control of Robot Manipulating Systems(phd thesis)
 */
     toolname = tn;
+    
     if (kuka_right == rn){
 #ifdef DJALLIL_CONF
     worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.31,0.0))));
@@ -403,10 +404,10 @@ void KukaLwr::initChains(ToolNameT tn){
         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-        if(IsFTAssembled() == true)
-            worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078+0.0286+0.008,0.0))));
-        else
-            worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
+        //0.618 is the length of ati
+//         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078+0.0618,0.0))));
+        //0.0618 = 0.0052+0.017+0.003+0.0286+0.008
         //please comment the next line code if you are doing the robot calibration.
         if(tn == sensing_pole){
             worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
@@ -444,11 +445,7 @@ void KukaLwr::initChains(ToolNameT tn){
         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.0,0.0))));
         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,M_PI_2,0.39,0.0))));
         worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,-1.0*M_PI_2,0.0,0.0))));
-        //0.0286+0.008 is the length of F/T sensor.
-        if(IsFTAssembled() == true)
-            worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078+0.0286+0.008,0.0))));
-        else
-            worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
+        worldToTool->addSegment (Segment(Joint(Joint::RotZ),Frame(Frame::DH(0.0,0.0,0.078,0.0))));
         //please comment the next line code if you are doing the robot calibration.
         if(tn == sensing_pole){
             worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
