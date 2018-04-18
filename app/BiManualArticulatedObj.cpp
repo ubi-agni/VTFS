@@ -1759,7 +1759,7 @@ void init(){
 
     js_la.header.frame_id="frame_la";
     js_ra.header.frame_id="frame_ra";
-    js_ra.header.frame_id="frame_lh";
+    js_schunk.header.frame_id="frame_lh";
     nv_est_marker_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker", 2);
     nv_est_marker_update_pub = nh->advertise<visualization_msgs::Marker>("nv_est_marker_update", 2);
     Marker_1_pub = nh->advertise<visualization_msgs::Marker>("marker1", 2);

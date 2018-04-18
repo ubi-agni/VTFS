@@ -24,10 +24,12 @@ SET(APPS
          tactoolservo
          MyrmexComTest
          FTComTest
+         FTCalibTest
          MyrmexServo
          BiManualTipServo
          righttactoolservo
          HapticExploring
+         ViconTracker
 #        CQTest
 #        KukaCartImpTest
 #        RigTFEst
