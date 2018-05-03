@@ -70,6 +70,7 @@ sensor_msgs::JointState js_la, js_ra,js_schunk ;
 ros::Publisher jsPub_la,jsPub_ra;
 ros::Publisher jsPub_schunk;
 ros::Publisher p_ct_pub, lvel_ct_pub,start_rec_pub,change_dir_pub;
+ros::Publisher get_hinge_vec_point_pub, rerender_hinge_vec_point_pub;
 ros::NodeHandle *nh;
 ros::Publisher marker_pub,marker_array_pub,marker_nvarray_pub;
 ros::Publisher act_marker_pub,act_marker_nv_pub,gamma_force_marker_pub,act_taxel_pub,act_taxel_nv_pub;
@@ -119,7 +120,7 @@ gamaFT *ft_gama;
 
 
 //predefined pose of left arm should go
-#define left_newP_x -0.1
+#define left_newP_x -0.4
 #define left_newP_y 0.3
 #define left_newP_z 0.30
 
@@ -128,7 +129,7 @@ gamaFT *ft_gama;
 #define left_newO_z 0.0;
 
 //predefined pose of right arm should go
-#define right_newP_x 0.1
+#define right_newP_x 0.3
 #define right_newP_y 0.3
 #define right_newP_z 0.4
 
@@ -273,16 +274,39 @@ void inverse_vis_surf_tracking_cb(boost::shared_ptr<std::string> data){
 
 
 void tip_moveto_cb(boost::shared_ptr<std::string> data){
+    //Eigen::Vector3d p,o;
+    //p.setZero();
+    //o.setZero();
+    //p(0) = left_newP_x;
+    //p(1) = left_newP_y;
+    //p(2) = left_newP_z;
+
+    //o(0) = left_newO_x;
+    //o(1) = left_newO_y;
+    //o(2) = left_newO_z;
+    //mutex_act.lock();
+    //left_ac_vec.clear();
+    //left_task_vec.clear();
+    //left_ac_vec.push_back(new ProActController(*left_pm));
+    //left_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
+    //left_task_vec.back()->mt = JOINTS;
+    //left_task_vec.back()->mft = GLOBAL;
+    //left_task_vec.back()->set_desired_p_eigen(p);
+    //left_task_vec.back()->set_desired_o_ax(o);
+    
+    //extract relative transformation from ROS parameter server
+    
+    //define new pose
     Eigen::Vector3d p,o;
     p.setZero();
     o.setZero();
-    p(0) = left_newP_x;
-    p(1) = left_newP_y;
-    p(2) = left_newP_z;
 
-    o(0) = left_newO_x;
-    o(1) = left_newO_y;
-    o(2) = left_newO_z;
+    //get start point position in cartesian space
+    p(0) = initP_x = left_rs->robot_position["eef"](0)-0.3;
+    p(1) = initP_y= left_rs->robot_position["eef"](1);
+    p(2) = initP_z= left_rs->robot_position["eef"](2);
+
+    o = tm2axisangle(left_rs->robot_orien["eef"]);
     mutex_act.lock();
     left_ac_vec.clear();
     left_task_vec.clear();
@@ -293,6 +317,7 @@ void tip_moveto_cb(boost::shared_ptr<std::string> data){
     left_task_vec.back()->set_desired_p_eigen(p);
     left_task_vec.back()->set_desired_o_ax(o);
     mutex_act.unlock();
+    
     std::cout<<"kuka fingertip self movement and move to new pose"<<std::endl;
 
 }
@@ -582,6 +607,12 @@ void tip_normal_ctrl_cb(boost::shared_ptr<std::string> data){
     initO_x = o(0);
     initO_y = o(1);
     initO_z = o(2);
+    left_ac_vec.clear();
+    left_task_vec.clear();
+    left_ac_vec.push_back(new ProActController(*left_pm));
+    left_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
+    left_task_vec.back()->mt = JOINTS;
+    left_task_vec.back()->mft = GLOBAL;
     left_task_vec.back()->set_desired_p_eigen(p);
     left_task_vec.back()->set_desired_o_ax(o);
     left_rmt = NormalMode;
@@ -607,6 +638,22 @@ void brake_cb(boost::shared_ptr<std::string> data){
 void nobrake_cb(boost::shared_ptr<std::string> data){
     com_okc_left->release_brake();
     com_okc_right->release_brake();
+}
+
+void get_hinge_vec_point_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"get-hinge-vec"<<std::endl;
+    std_msgs::Bool get_hinge_msg;
+    //publish start record via ros
+    get_hinge_msg.data = true;
+    get_hinge_vec_point_pub.publish(get_hinge_msg);
+}
+
+void rerenderhinge_vec_point_cb(boost::shared_ptr<std::string> data){
+    std::cout<<"re-render"<<std::endl;
+    std_msgs::Bool rerender_hinge_msg;
+    //publish start record via ros
+    rerender_hinge_msg.data = true;
+    rerender_hinge_vec_point_pub.publish(rerender_hinge_msg);
 }
 
 void updateadmittance_cb(boost::shared_ptr<std::string> data){
@@ -1192,6 +1239,9 @@ void ros_publisher(){
     reba_robot_end_eff_val.orientation.y = tmp_q.y();
     reba_robot_end_eff_val.orientation.z = tmp_q.z();
     reba_robot_end_eff_val.orientation.w = tmp_q.w();
+    
+    std::cout<<"eef position is "<<right_rs->robot_position["robot_eef"](0)<<","<<right_rs->robot_position["robot_eef"](1)<<","<<right_rs->robot_position["robot_eef"](2)<<std::endl;
+    
     reba_robot_end_eff_pub.publish(reba_robot_end_eff_val);
 //    ros::spinOnce();
 }
@@ -1263,6 +1313,8 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_tip_normal_ctrl(tip_normal_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_vis_surf_tracking(vis_surf_tracking_cb); 
     boost::function<void(boost::shared_ptr<std::string>)> button_inverse_vis_surf_tracking(inverse_vis_surf_tracking_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_get_hinge_vec_point(get_hinge_vec_point_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_rerenderhinge_vec_point(rerenderhinge_vec_point_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_brake(brake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_nobrake(nobrake_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_updateadmittance(updateadmittance_cb);
@@ -1396,10 +1448,13 @@ void init(){
     com_rsb->register_external("/foo/tip_exploring",button_tip_exploring);
     com_rsb->register_external("/foo/tip_stop_exploring",button_tip_stop_exploring);
     com_rsb->register_external("/foo/tip_reverse_exploring",button_tip_reverse_exploring);
+    com_rsb->register_external("/foo/get_hinge_vec_point",button_get_hinge_vec_point);
+    com_rsb->register_external("/foo/rerenderhinge_vec_point",button_rerenderhinge_vec_point);
     com_rsb->register_external("/foo/gamaftcalib",button_gamaftcalib);
     com_rsb->register_external("/foo/taccalib_rec",button_taccalib_rec);
     com_rsb->register_external("/foo/obj_grav_comp_ctrl",button_obj_grav_comp_ctrl);
     com_rsb->register_external("/foo/obj_normal_ctrl",button_obj_normal_ctrl);
+    com_rsb->register_external("/foo/tip_normal_ctrl",button_tip_normal_ctrl);
     com_rsb->register_external("/foo/vis_surf_tracking",button_vis_surf_tracking);
     com_rsb->register_external("/foo/inverse_vis_surf_tracking",button_inverse_vis_surf_tracking);
     com_rsb->register_external("/foo/brake",button_brake);
@@ -1695,6 +1750,10 @@ int main(int argc, char* argv[])
     lvel_ct_pub = nh->advertise<geometry_msgs::Vector3Stamped>("lvel_ct", 1);
     start_rec_pub = nh->advertise<std_msgs::Bool>("start_rec", 1);
     change_dir_pub = nh->advertise<std_msgs::Bool>("dir_command", 1);
+    
+    get_hinge_vec_point_pub = nh->advertise<std_msgs::Bool>("get_hinge", 1);
+    rerender_hinge_vec_point_pub = nh->advertise<std_msgs::Bool>("rerender_hinge", 1);
+    
     ros::Subscriber sub_surf_nv = nh->subscribe("surf_nv",1,rcv_surfnv_cb);
     ros::Subscriber sub_pre_ct_position = nh->subscribe("pre_ct_position", 1, rcv_pre_ct_cb);
     ros::Subscriber sub_init_obj_pose = nh->subscribe("init_obj_pose", 1, rcv_init_obj_pose_cb);
@@ -1732,7 +1791,7 @@ int main(int argc, char* argv[])
     //start ros publisher thread
     Timer thrd_rospublisher(ros_publisher);
     thrd_rospublisher.setSingleShot(false);
-    thrd_rospublisher.setInterval(Timer::Interval(20));
+    thrd_rospublisher.setInterval(Timer::Interval(10));
     thrd_rospublisher.start(true);
     #endif
     //main thread is hanging

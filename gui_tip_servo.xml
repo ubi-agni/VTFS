@@ -1,5 +1,6 @@
 <vbox>
-  <button args="Moveto" handle="tipmoveto"/>
+  <button args="TipMoveto" handle="tipmoveto"/>
+  <button args="SDHMoveto" handle="sdhmoveto"/>
   <button args="tippretouch" handle="tippretouch"/>
   <button args="gamaftcalib" handle="gamaftcalib"/>
   <button args="taccalib_rec" handle="taccalib_rec"/>
@@ -16,6 +17,8 @@
   <button args="tip_normal_ctrl" handle="tip_normal_ctrl"/>
   <button args="vis_surf_tracking" handle="vis_surf_tracking"/>
   <button args="inverse_vis_surf_tracking" handle="inverse_vis_surf_tracking"/>
+  <button args="get_hinge_vec_point" handle="get_hinge_vec_point"/>
+  <button args="rerenderhinge_vec_point" handle="rerenderhinge_vec_point"/>
   <button args="brake" handle="brake"/>
   <button args="nobrake" handle="nobrake"/>
   <button args="updateadmittance" handle="updateadmittance"/>

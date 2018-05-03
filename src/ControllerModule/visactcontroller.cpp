@@ -51,9 +51,9 @@ void VisActController::get_desired_lv(Robot *robot, Task *t,Eigen::Vector3d nv_v
     lv_vis.tail(3).setZero();
     counter++;
     if(counter >=100){
-        std::cout<<"nv_v "<<nv_v(0)<<","<<nv_v(1)<<","<<nv_v(2)<<std::endl;
-        std::cout<<"tip_nv "<<tip_nv(0)<<","<<tip_nv(1)<<","<<tip_nv(2)<<std::endl;
-        std::cout<<"dot product "<<nv_v.dot(tip_nv)<<std::endl;
+        //std::cout<<"nv_v "<<nv_v(0)<<","<<nv_v(1)<<","<<nv_v(2)<<std::endl;
+        //std::cout<<"tip_nv "<<tip_nv(0)<<","<<tip_nv(1)<<","<<tip_nv(2)<<std::endl;
+        //std::cout<<"dot product "<<nv_v.dot(tip_nv)<<std::endl;
         counter = 0;
     }
     if(nv_v.dot(tip_nv) < 0){
