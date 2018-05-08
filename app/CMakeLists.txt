@@ -30,6 +30,7 @@ SET(APPS
          righttactoolservo
          HapticExploring
          ViconTracker
+         HingedToolManip
 #        CQTest
 #        KukaCartImpTest
 #        RigTFEst

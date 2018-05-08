@@ -30,7 +30,8 @@ enum ToolNameT{
     sensing_pole,
     teensy_finger,
     tactool,
-    myrmex_sensor
+    myrmex_sensor,
+    hingedtool
 };
 
 enum MotionDirT{

@@ -421,7 +421,9 @@ void KukaLwr::initChains(ToolNameT tn){
             worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Rotation(Rotation::RotZ(3.1415)))));
              std::cout<<"myrmex_sensor in the end-effector on right arm"<<std::endl;
         }
-
+        if(tn == hingedtool){
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0.01461, 0.2510, 0.2465))));
+        }
         if(tn == tactool){
             //nothing tool is assembled
              std::cout<<"using tactile tool on right arm"<<std::endl;

@@ -22,6 +22,8 @@ ProActController::ProActController(ParameterManager &p) : ActController(p)
     llv_pro.setZero();
     lov_pro.setZero();
     lv_pro.setZero(6);
+    delta_ag = 0; 
+    delta_ag_int = 0;
 }
 
 void ProActController::set_pm(ParameterManager &p){
@@ -108,6 +110,76 @@ void ProActController::update_robot_reference(Robot *robot){
     for(int i = 0; i < 6; i++)
         robot->set_cart_command(cart_command);
 }
+
+void ProActController::get_desired_lv(Robot *robot, Task *t,Eigen::Vector3d cur_dir,RobotState* rs){
+	Eigen::VectorXd identity_v;
+    identity_v.setOnes(6);
+    Eigen::Vector3d tmp_rot_axis;
+    tmp_rot_axis.setZero();
+    Eigen::Vector3d normalized_cur_dir;
+    normalized_cur_dir = cur_dir.normalized();
+    KukaSelfCtrlTask tst(t->curtaskname.prot);
+    tst = *(KukaSelfCtrlTask*)t;
+    std::cout<<"kpp and psm"<<tst.curtaskname.prot<<std::endl;
+//    std::cout<<"old prot"<<t->curtaskname.prot<<std::endl;
+    std::cout<<"Kpp "<<Kpp[tst.curtaskname.prot]<<std::endl;
+    std::cout<<"Kop "<<Kop[tst.curtaskname.prot]<<std::endl;
+//    std::cout<<std::endl;
+    lv_pro = Kpp[tst.curtaskname.prot] * psm[tst.curtaskname.prot] * identity_v;
+    llv_pro = lv_pro.head(3);
+    global2local(normalized_cur_dir.cross(tst.desired_axis_dir),\
+                     rs->robot_orien["eef"],tmp_rot_axis);
+    delta_ag = (1.0-fabs(normalized_cur_dir.dot(tst.desired_axis_dir)));
+    delta_ag_int =  delta_ag_int + delta_ag;                
+    lv_pro.tail(3) = delta_ag * tmp_rot_axis + 0.001 * delta_ag_int * tmp_rot_axis;
+    std::cout<<"local rotation axis is "<<lv_pro(3)<<","<<lv_pro(4)<<","<<lv_pro(5)<<std::endl;
+    lov_pro = Kop[tst.curtaskname.prot] * lv_pro.tail(3);
+    limit_vel(get_llv_limit(),llv_pro,lov_pro);
+}
+
+
+void ProActController::update_robot_reference(Robot *robot, Task *t, Eigen::Vector3d cur_dir, RobotState* rs){
+    Eigen::Vector3d p_target,o_target;
+    p_target.setZero();
+    o_target.setZero();
+    if(t->mft == GLOBAL){
+        p_target = t->get_desired_p_eigen();
+        o_target = t->get_desired_o_ax();
+    }
+    if(t->mft == LOCAL){
+        get_desired_lv(robot,t,cur_dir,rs);
+//        limit_eef_euler(get_euler_limit());
+//        std::cout<<"lv before in proservo "<<llv<<std::endl;
+//        std::cout<<lov<<std::endl;
+        llv = llv + llv_pro;
+        lov = lov + lov_pro;
+//        std::cout<<"lv after in proservo "<<llv<<std::endl;
+//        std::cout<<lov<<std::endl;
+        local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
+                        lov,p_target,o_target);
+    }
+    if(t->mft == LOCALP2P){
+        //checking the whether moved distance is the same like desired move distance
+        if((robot->get_cur_cart_p()-t->get_initial_p_eigen()).norm()<\
+            (t->get_desired_p_eigen()-t->get_initial_p_eigen()).norm()){
+            p_target = robot->get_cur_cart_p() + t->velocity_p2p;\
+            std::cout<<"p cur are "<<robot->get_cur_cart_p()<<std::endl;
+            std::cout<<"vel "<<t->velocity_p2p<<std::endl;
+        }
+        else{
+            p_target = robot->get_cur_cart_p();
+        }
+        std::cout<<"in local p2p mode"<<std::endl;
+        o_target = t->get_desired_o_ax();
+    }
+    for (int i=0; i < 3; i++){
+        cart_command[i] = p_target(i);
+        cart_command[i+3] = o_target(i);
+    }
+    for(int i = 0; i < 6; i++)
+        robot->set_cart_command(cart_command);
+}
+
 
 void ProActController::update_robot_reference(Robot *robot, Task *t){
     Eigen::Vector3d p_target,o_target;

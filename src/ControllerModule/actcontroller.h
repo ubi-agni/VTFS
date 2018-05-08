@@ -24,6 +24,7 @@ public:
     virtual void update_robot_reference(Robot *, Task *,myrmex_msg *) = 0;
     virtual void update_robot_reference(Robot *, Task *,FingertipTac *) = 0;
     virtual void update_robot_reference(Robot *, Task *, Eigen::VectorXd, RobotState* rs) = 0;
+    virtual void update_robot_reference(Robot *, Task *, Eigen::Vector3d, RobotState* rs) = 0;
     virtual void update_robot_reference(ManipTool *, Robot *, Task *,myrmex_msg *) = 0;
     virtual void update_robot_reference(Robot *, Task *,Eigen::Vector3d,Eigen::Vector3d , RobotState*) = 0;
     virtual void update_controller_para(Eigen::Vector3d,PROTaskNameT) = 0;
@@ -39,6 +40,7 @@ public:
     virtual void get_desired_lv(Robot *, Task *, FingertipTac *) = 0;
     virtual void get_desired_lv(ManipTool *, Robot *, Task *,myrmex_msg *) = 0;
     virtual void get_desired_lv(Robot *, Task *, Eigen::VectorXd kukaft,RobotState*)=0;
+    virtual void get_desired_lv(Robot *, Task *, Eigen::Vector3d kukaft,RobotState*)=0;
     virtual void get_desired_lv(Robot *, Task *,Eigen::Vector3d,Eigen::Vector3d, RobotState* rs) = 0;
     virtual void get_lv(Eigen::Vector3d& lv, Eigen::Vector3d& ov) = 0;
     virtual void set_pm(ParameterManager &p) = 0;

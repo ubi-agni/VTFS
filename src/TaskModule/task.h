@@ -103,6 +103,7 @@ public:
     virtual void set_initial_p_eigen(Eigen::Vector3d p) = 0;
     virtual void set_desired_o_eigen(Eigen::Matrix3d o_eigen) = 0;
     virtual void set_desired_o_ax(Eigen::Vector3d o_ax) = 0;
+    virtual void set_desired_axis_dir(Eigen::Vector3d ax_dir) = 0;
     virtual void set_desired_cp_myrmex(double *) = 0;
     virtual void set_desired_cf_myrmex(double) = 0;
     virtual void set_desired_cf_kuka(double) = 0;
@@ -129,6 +130,8 @@ protected:
     Eigen::Vector3d desired_p_eigen,initial_p_eigen;
     Eigen::Matrix3d desired_o_eigen;
     Eigen::Vector3d desired_o_ax;
+public:
+    Eigen::Vector3d desired_axis_dir;
 };
 
 #endif // TASK_H

@@ -1,6 +1,7 @@
 <vbox>
   <button args="TipMoveto" handle="tipmoveto"/>
   <button args="SDHMoveto" handle="sdhmoveto"/>
+  <button args="SDHAxisVecMoveto" handle="sdhaxisvecmoveto"/>
   <button args="tippretouch" handle="tippretouch"/>
   <button args="gamaftcalib" handle="gamaftcalib"/>
   <button args="taccalib_rec" handle="taccalib_rec"/>
