@@ -132,23 +132,22 @@ void ProActController::get_desired_lv(Robot *robot, Task *t,Eigen::Vector3d cur_
     Eigen::Matrix3d Rel;
     Rel.setIdentity();
     Rel = rs->robot_orien["eef"].transpose() * tst.contact_frame;
-    std::cout<<"contact frame is "<<std::endl;
-    std::cout<<tst.contact_frame<<std::endl;
-    
-    lv_pro.head(3) = Kpp[tst.curtaskname.prot].block(0,0,3,3) * psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3);
-    std::cout<<"local motion in proprioception "<<lv_pro(0)<<","<<lv_pro(1)<<","<<lv_pro(2)<<std::endl;
-    std::cout<<"c to g "<<std::endl;
-    std::cout<<tst.contact_frame * identity_v.head(3)<<std::endl;
-    std::cout<<"c to e "<<std::endl;
-    std::cout<<Rel * identity_v.head(3)<<std::endl;
+   
+    lv_pro.head(3) = Kpp[tst.curtaskname.prot].block(0,0,3,3) * \
+                    psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3);
     llv_pro = lv_pro.head(3);
-    global2local(normalized_cur_dir.cross(tst.desired_axis_dir),\
+    std::cout<<"linear motion is "<<lv_pro.head(3)<<std::endl;
+    if(tst.tmp == ROTATE_TOWARDS_AXIS){
+		global2local(normalized_cur_dir.cross(tst.desired_axis_dir),\
                      rs->robot_orien["eef"],tmp_rot_axis);
-    delta_ag = (1.0-fabs(normalized_cur_dir.dot(tst.desired_axis_dir)));
-    delta_ag_int =  delta_ag_int + delta_ag;                
-    lv_pro.tail(3) = delta_ag * tmp_rot_axis + 0.001 * delta_ag_int * tmp_rot_axis;
-//    std::cout<<"local rotation axis is "<<lv_pro(3)<<","<<lv_pro(4)<<","<<lv_pro(5)<<std::endl;
-    lov_pro = Kop[tst.curtaskname.prot] * lv_pro.tail(3);
+		delta_ag = (1.0-fabs(normalized_cur_dir.dot(tst.desired_axis_dir)));
+		delta_ag_int =  delta_ag_int + delta_ag;  
+		//obtain the rotation command requested by the desired goal direction of rotation axis              
+		lv_pro.tail(3) = delta_ag * tmp_rot_axis + 0.001 * delta_ag_int * tmp_rot_axis;
+		lov_pro = Kop[tst.curtaskname.prot] * lv_pro.tail(3);
+    }
+    if(tst.tmp == ROTATE_AROUND_AXIS)
+	    lov_pro = Kop[tst.curtaskname.prot] *(-0.02) * rs->robot_orien["eef"].transpose()*normalized_cur_dir;
     limit_vel(get_llv_limit(),llv_pro,lov_pro);
 }
 

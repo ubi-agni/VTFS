@@ -81,6 +81,13 @@ enum MoveFrameT{
     LOCALP2P
 };
 
+enum ToolManipPrim{
+	NOPRIM = 0,
+	SLIDING = 1,
+	ROTATE_AROUND_AXIS = 2,
+	ROTATE_TOWARDS_AXIS
+};
+
 //explore action mode for tactool learning
 enum ExploreModeT{
     NOEXPLORE,
@@ -105,6 +112,7 @@ public:
     virtual void set_desired_o_ax(Eigen::Vector3d o_ax) = 0;
     virtual void set_desired_axis_dir(Eigen::Vector3d ax_dir) = 0;
     virtual void set_desired_surf_nv(Eigen::Vector3d surf_nv) = 0;
+    virtual void set_primitive(ToolManipPrim prim) = 0;
     virtual void set_desired_cp_myrmex(double *) = 0;
     virtual void set_desired_cf_myrmex(double) = 0;
     virtual void set_desired_cf_kuka(double) = 0;
@@ -124,6 +132,7 @@ public:
     ModalityT mt;
     MoveFrameT mft;
     ExploreModeT emt;
+    ToolManipPrim tmp;
     Eigen::Vector3d velocity_p2p;
     TacFBType tft;
     Eigen::Vector3d desired_pose_range;

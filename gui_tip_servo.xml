@@ -5,6 +5,7 @@
   <button args="SDHMaintainF" handle="sdhmaintainF"/>
   <button args="SDHSlideX" handle="sdhslideX"/>
   <button args="SDHSlideY" handle="sdhslideY"/>
+  <button args="SDHfoldtool" handle="sdhfoldtool"/>
   <button args="tippretouch" handle="tippretouch"/>
   <button args="gamaftcalib" handle="gamaftcalib"/>
   <button args="taccalib_rec" handle="taccalib_rec"/>

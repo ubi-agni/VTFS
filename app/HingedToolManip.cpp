@@ -189,6 +189,7 @@ void sdhaxisvec_moveto_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = JOINTS;
     right_task_vec.back()->mft = LOCAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
+    right_task_vec.back()->set_primitive(ROTATE_TOWARDS_AXIS);
     mutex_act.unlock();
     std::cout<<"kuka sdh self movement and move to desired direction"<<std::endl;
 }
@@ -203,6 +204,8 @@ void sdhmaintainF_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = JOINTS;
     right_task_vec.back()->mft = LOCAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
+    right_task_vec.back()->set_primitive(NOPRIM);
+    
     
     right_ac_vec.clear();
     right_task_vec.clear();
@@ -244,6 +247,7 @@ void sdhslideX_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mft = LOCAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
     right_task_vec.back()->set_contact_frame(cf_tm);
+    right_task_vec.back()->set_primitive(SLIDING);
     
 
     right_taskname.forcet = F_MAINTAIN;
@@ -270,8 +274,7 @@ void sdhslideY_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mft = LOCAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
     
-    right_ac_vec.clear();
-    right_task_vec.clear();
+
     right_taskname.forcet = F_MAINTAIN;
     right_ac_vec.push_back(new ForceServoController(*right_pm));
     right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
@@ -281,14 +284,41 @@ void sdhslideY_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->set_desired_cf_kuka(des_force);
     Eigen::Vector3d des_surf_nv;
     des_surf_nv.setZero();
-    des_surf_nv(0) = 1.0;
+    des_surf_nv(2) = 1.0;
     right_task_vec.back()->set_desired_surf_nv(des_surf_nv);
     
     mutex_force.unlock();
     std::cout<<"tool's hybrid control Y"<<std::endl;
 	}
 
+void sdhfoldtool_cb(boost::shared_ptr<std::string> data){
+	mutex_force.lock();
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_ac_vec.push_back(new ProActController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new KukaSelfCtrlTask(RP_ROTATEFOLLOW));
+    right_task_vec.back()->mt = JOINTS;
+    right_task_vec.back()->mft = LOCAL;
+    right_task_vec.back()->set_desired_axis_dir(des_vec);
+    right_task_vec.back()->set_primitive(ROTATE_AROUND_AXIS);
+    
 
+    right_taskname.forcet = F_MAINTAIN;
+    right_ac_vec.push_back(new ForceServoController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new ForceServoTask(right_taskname.forcet));
+    right_task_vec.back()->mt = FORCE;
+    right_task_vec.back()->mft = GLOBAL;
+    right_task_vec.back()->set_desired_cf_kuka(des_force);
+    Eigen::Vector3d des_surf_nv;
+    des_surf_nv.setZero();
+    des_surf_nv(2) = 1.0;
+    right_task_vec.back()->set_desired_surf_nv(des_surf_nv);
+    
+    mutex_force.unlock();
+    std::cout<<"fold the tool rotated by the axis"<<std::endl;
+	}
 
 
 
@@ -683,6 +713,7 @@ void init(){
     boost::function<void(boost::shared_ptr<std::string>)> button_sdhmaintainF(sdhmaintainF_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_sdhslideX(sdhslideX_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_sdhslideY(sdhslideY_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_sdhfoldtool(sdhfoldtool_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_gamaftcalib(gamaftcalib_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_sdh_grav_comp_ctrl(sdh_grav_comp_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_sdh_normal_ctrl(sdh_normal_ctrl_cb);
@@ -746,6 +777,7 @@ void init(){
     com_rsb->register_external("/foo/sdhmaintainF",button_sdhmaintainF);
     com_rsb->register_external("/foo/sdhslideX",button_sdhslideX);
     com_rsb->register_external("/foo/sdhslideY",button_sdhslideY);
+    com_rsb->register_external("/foo/sdhfoldtool",button_sdhfoldtool);
     com_rsb->register_external("/foo/gamaftcalib",button_gamaftcalib);
     com_rsb->register_external("/foo/sdh_grav_comp_ctrl",button_sdh_grav_comp_ctrl);
     com_rsb->register_external("/foo/sdh_normal_ctrl",button_sdh_normal_ctrl);

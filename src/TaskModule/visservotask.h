@@ -17,6 +17,7 @@ public:
     void set_desired_axis_dir(Eigen::Vector3d ax_dir){}
     void set_desired_surf_nv(Eigen::Vector3d surf_nv){}
     void set_contact_frame(Eigen::Matrix3d){}
+    void set_primitive(ToolManipPrim prim){}
     void set_desired_cp_myrmex(double *){}
     void set_desired_cf_myrmex(double){}
     void set_desired_orien_myrmex(double){}
