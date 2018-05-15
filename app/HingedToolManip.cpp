@@ -57,7 +57,7 @@
 //define the gravity of the schunk hand and its accessory
 #define Grav_Schunk_Acc 21.63
 #define tool_grav 0.15*9.81
-
+#define des_force 2
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -193,6 +193,104 @@ void sdhaxisvec_moveto_cb(boost::shared_ptr<std::string> data){
     std::cout<<"kuka sdh self movement and move to desired direction"<<std::endl;
 }
 
+void sdhmaintainF_cb(boost::shared_ptr<std::string> data){
+    mutex_force.lock();
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_ac_vec.push_back(new ProActController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new KukaSelfCtrlTask(RP_NOCONTROL));
+    right_task_vec.back()->mt = JOINTS;
+    right_task_vec.back()->mft = LOCAL;
+    right_task_vec.back()->set_desired_axis_dir(des_vec);
+    
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_taskname.forcet = F_MAINTAIN;
+    right_ac_vec.push_back(new ForceServoController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new ForceServoTask(right_taskname.forcet));
+    right_task_vec.back()->mt = FORCE;
+    right_task_vec.back()->mft = GLOBAL;
+    right_task_vec.back()->set_desired_cf_kuka(des_force);
+    Eigen::Vector3d des_surf_nv;
+    des_surf_nv.setZero();
+    des_surf_nv(2) = 1.0;
+    right_task_vec.back()->set_desired_surf_nv(des_surf_nv);
+    
+    mutex_force.unlock();
+    std::cout<<"maintain the contact force using F/T feedback"<<std::endl;
+}
+
+void sdhslideX_cb(boost::shared_ptr<std::string> data){
+	Eigen::Vector3d des_surf_nv,cur_axis;
+    des_surf_nv.setZero();
+    cur_axis.setZero();
+    cur_axis(1) = 1.0;
+    des_surf_nv(2) = 1.0;
+	//generate contact frame
+	Eigen::Matrix3d cf_tm;
+	cf_tm.setZero();
+	cf_tm.col(0) = des_surf_nv;
+	cf_tm.col(2) = cur_axis;
+	cf_tm.col(1) = cur_axis.cross(des_surf_nv);
+	mutex_force.lock();
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_ac_vec.push_back(new ProActController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new KukaSelfCtrlTask(RP_LINEFOLLOW));
+    right_task_vec.back()->mt = JOINTS;
+    right_task_vec.back()->mft = LOCAL;
+    right_task_vec.back()->set_desired_axis_dir(des_vec);
+    right_task_vec.back()->set_contact_frame(cf_tm);
+    
+
+    right_taskname.forcet = F_MAINTAIN;
+    right_ac_vec.push_back(new ForceServoController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new ForceServoTask(right_taskname.forcet));
+    right_task_vec.back()->mt = FORCE;
+    right_task_vec.back()->mft = GLOBAL;
+    right_task_vec.back()->set_desired_cf_kuka(des_force);
+    
+    right_task_vec.back()->set_desired_surf_nv(des_surf_nv);
+    
+    mutex_force.unlock();
+    std::cout<<"tool's hybrid control X"<<std::endl;
+	}
+void sdhslideY_cb(boost::shared_ptr<std::string> data){
+	mutex_force.lock();
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_ac_vec.push_back(new ProActController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new KukaSelfCtrlTask(RP_LINEFOLLOW));
+    right_task_vec.back()->mt = JOINTS;
+    right_task_vec.back()->mft = LOCAL;
+    right_task_vec.back()->set_desired_axis_dir(des_vec);
+    
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_taskname.forcet = F_MAINTAIN;
+    right_ac_vec.push_back(new ForceServoController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new ForceServoTask(right_taskname.forcet));
+    right_task_vec.back()->mt = FORCE;
+    right_task_vec.back()->mft = GLOBAL;
+    right_task_vec.back()->set_desired_cf_kuka(des_force);
+    Eigen::Vector3d des_surf_nv;
+    des_surf_nv.setZero();
+    des_surf_nv(0) = 1.0;
+    right_task_vec.back()->set_desired_surf_nv(des_surf_nv);
+    
+    mutex_force.unlock();
+    std::cout<<"tool's hybrid control Y"<<std::endl;
+	}
+
+
+
+
 
 void sdh_grav_comp_ctrl_cb(boost::shared_ptr<std::string> data){
     std::cout<<"switch to psudo_gravity_compasenstation control"<<std::endl;
@@ -261,6 +359,9 @@ recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
     ft_gama->calib_ft_t = ft_gama->raw_ft_t;
     //use smooth filter to get rid of noise.
     ft.head(3) = ft_gama->filtered_gama_f = gama_f_filter->push(ft_gama->calib_ft_f);
+    //get rid of noise of no contacting
+    if(ft_gama->filtered_gama_f.norm() <1.5)
+	    ft.head(3).setZero();
     ft.tail(3) = ft_gama->filtered_gama_t = gama_t_filter->push(ft_gama->calib_ft_t);
     
     //counter_t ++;
@@ -349,8 +450,7 @@ void ros_publisher(){
         gamma_force_marker.scale.z = .01;
 
         gamma_force_marker.lifetime = ros::Duration();
-        if(ft_gama->filtered_gama_f.norm() >1.5)
-	        gamma_force_marker_pub.publish(gamma_force_marker);
+	    gamma_force_marker_pub.publish(gamma_force_marker);
     }
     
     //publish the director of the rotation axis
@@ -580,6 +680,9 @@ void init(){
 
     boost::function<void(boost::shared_ptr<std::string>)> button_sdh_moveto(sdh_moveto_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_sdhaxisvec_moveto(sdhaxisvec_moveto_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_sdhmaintainF(sdhmaintainF_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_sdhslideX(sdhslideX_cb);
+    boost::function<void(boost::shared_ptr<std::string>)> button_sdhslideY(sdhslideY_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_gamaftcalib(gamaftcalib_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_sdh_grav_comp_ctrl(sdh_grav_comp_ctrl_cb);
     boost::function<void(boost::shared_ptr<std::string>)> button_sdh_normal_ctrl(sdh_normal_ctrl_cb);
@@ -640,6 +743,9 @@ void init(){
     //register cb function
     com_rsb->register_external("/foo/sdhmoveto",button_sdh_moveto);
     com_rsb->register_external("/foo/sdhaxisvecmoveto",button_sdhaxisvec_moveto);
+    com_rsb->register_external("/foo/sdhmaintainF",button_sdhmaintainF);
+    com_rsb->register_external("/foo/sdhslideX",button_sdhslideX);
+    com_rsb->register_external("/foo/sdhslideY",button_sdhslideY);
     com_rsb->register_external("/foo/gamaftcalib",button_gamaftcalib);
     com_rsb->register_external("/foo/sdh_grav_comp_ctrl",button_sdh_grav_comp_ctrl);
     com_rsb->register_external("/foo/sdh_normal_ctrl",button_sdh_normal_ctrl);

@@ -19,6 +19,9 @@ Task::Task()
     curtaskname.tact = CONTACT_FORCE_TRACKING;
     curtaskname.prot = RP_NOCONTROL;
     curtaskname.vist = NV_VERT_ALIGN;
+    desired_surf_nv.setZero();
+    desired_axis_dir.setZero();
+    contact_frame.setIdentity();
     //modality type
     mt = JOINTS;
     //motion frame type
