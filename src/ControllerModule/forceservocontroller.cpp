@@ -43,6 +43,7 @@ ForceServoController::ForceServoController(ParameterManager &p) : ActController(
     lov_f.setZero();
     lv_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
     vel_rec2.open("/tmp/data/vel_rec.txt");
+    est_rot_angle = 0;
 }
 void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd ft, RobotState* rs){
     ForceServoTask tst(t->curtaskname.forcet);
@@ -56,6 +57,32 @@ void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd
     //get the desired contact force
     double desiredf;
     tst.get_desired_cf_kuka(desiredf);
+    
+    //tool slides on a curved surface. Purpose: to estimate the desired contact force direction
+    //cited paper: "Integrated vision/force robotic servoing in the task frame formalism"
+    
+    //integator to estimate the rotation angle from the rotation rate.
+    est_rot_angle = est_rot_angle + v_ratio(2) * 0.004;
+    //estimate the current contact frame orientation using estimated rotation angle
+    //R_new = R_init * R_axis_angle
+    tool_contact_frame = tst.init_contact_frame * Eigen::AngleAxisd(est_rot_angle, Eigen::Vector3d::UnitZ());
+    
+    tst.desired_surf_nv = tool_contact_frame.col(2);
+    
+    //estimate the tool-origin's linear velocity(global)
+    est_v_g = rs->EstRobotEefLVel_Ref(robot);
+    //estimate the tool-origin's linear velocity(local)
+    rs_lv = tool_contact_frame.transpose() * rs->EstRobotEefLVel_Ref(robot);
+    filtered_lv = lv_filter->push(rs_lv);
+
+    if((filtered_lv[0] == 0)&&(filtered_lv[1] == 0)){
+        v_ratio.setZero();
+    }else{
+        v_ratio(2) = atan(filtered_lv[1]/filtered_lv[0]);
+        v_ratio(1) = atan((-1)*filtered_lv[2]/filtered_lv[0]);
+        v_ratio(0) = atan(filtered_lv[2]/filtered_lv[1]);
+    }
+    
     
     if(tst.mft == GLOBAL){
 		Eigen::VectorXd delta_g;
@@ -94,22 +121,13 @@ void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd
             Kpi[tst.curtaskname.forcet] * sm[tst.curtaskname.forcet] * deltais_int + \
             Kpd[tst.curtaskname.forcet] * sm[tst.curtaskname.forcet] * (deltais - deltais_old);
     llv_f = deltape.head(3);
-    est_v_g = rs->EstRobotEefLVel_Ref(robot);
-
-    rs_lv = rs->robot_orien["eef"].transpose()*rs->EstRobotEefLVel_Ref(robot);
-    filtered_lv = lv_filter->push(rs_lv);
-
-    if((filtered_lv[0] == 0)&&(filtered_lv[1] == 0)){
-        v_ratio.setZero();
-    }else{
-        v_ratio(2) = atan(filtered_lv[1]/filtered_lv[0]);
-        v_ratio(1) = atan((-1)*filtered_lv[2]/filtered_lv[0]);
-        v_ratio(0) = atan(filtered_lv[2]/filtered_lv[1]);
-    }
+    
+    
     lov_f = Kop[tst.curtaskname.forcet] * v_ratio;
-    lov_f(0) = 0.0;
-    lov_f(1) = 0.0;
-    lov_f(2) = 0.0;
+    lov_f(0) = 0;
+    lov_f(1) = 0;
+    lov_f(2) = 0;
+
     //~ std::cout<<lov_f(0)<<","<<lov_f(1)<<","<<lov_f(2)<<std::endl;
     //~ vel_rec2<<est_v_g(0)<<","<<est_v_g(1)<<","<<est_v_g(2)<<","\
            //~ <<filtered_lv[0]<<","<<filtered_lv[1]<<","<<filtered_lv[2]<<","\
@@ -129,7 +147,7 @@ void ForceServoController::update_robot_reference(Robot *robot, Task *t, Eigen::
 //    std::cout<<lov<<std::endl;
     llv = llv + llv_f;
     lov = lov + lov_f;
-    std::cout<<"lv after in forceservo "<<llv<<std::endl;
+//    std::cout<<"lv after in forceservo "<<llv<<std::endl;
 //    std::cout<<lov<<std::endl;
     local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
                     lov,p_target,o_target);

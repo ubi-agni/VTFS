@@ -13,6 +13,7 @@
 
 Eigen::Vector3d ActController::llv;
 Eigen::Vector3d ActController::lov;
+Eigen::Matrix3d ActController::tool_contact_frame;
 
 ActController::ActController(ParameterManager& p)
 {
@@ -33,6 +34,7 @@ ActController::ActController(ParameterManager& p)
     m_euler_limit(2) = 0.6;
     pose_o_eigen_l.setZero();
     pm = p;
+    tool_contact_frame.setIdentity();
 }
 
 

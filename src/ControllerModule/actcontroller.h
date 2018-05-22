@@ -59,6 +59,7 @@ public:
     void limit_eef_euler(Eigen::Vector3d lim);
     static Eigen::Vector3d llv,lov;
     ParameterManager pm;
+    static Eigen::Matrix3d tool_contact_frame;
 protected:
     double cart_command[6];
     Eigen::Vector3d glv,gov;

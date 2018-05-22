@@ -16,8 +16,8 @@ public:
     void set_desired_o_eigen(Eigen::Matrix3d o_eigen){desired_o_eigen = o_eigen;}
     void set_desired_o_ax(Eigen::Vector3d o_ax){desired_o_ax = o_ax;}
     void set_desired_axis_dir(Eigen::Vector3d ax_dir){}
-    void set_desired_surf_nv(Eigen::Vector3d surf_nv){}
-    void set_contact_frame(Eigen::Matrix3d){}
+    void set_desired_init_surf_nv(Eigen::Vector3d surf_nv){}
+    void set_init_contact_frame(Eigen::Matrix3d){}
     void set_primitive(ToolManipPrim prim){}
     void set_desired_cp_myrmex(double *);
     void set_desired_cf_myrmex(double);

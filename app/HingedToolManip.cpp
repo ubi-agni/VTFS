@@ -195,6 +195,17 @@ void sdhaxisvec_moveto_cb(boost::shared_ptr<std::string> data){
 }
 
 void sdhmaintainF_cb(boost::shared_ptr<std::string> data){
+	Eigen::Vector3d des_surf_nv,cur_axis;
+    des_surf_nv.setZero();
+    cur_axis.setZero();
+    cur_axis(1) = 1.0;
+    des_surf_nv(2) = 1.0;
+	//generate contact frame
+	Eigen::Matrix3d cf_tm;
+	cf_tm.setZero();
+	cf_tm.col(0) = des_surf_nv;
+	cf_tm.col(2) = cur_axis;
+	cf_tm.col(1) = cur_axis.cross(des_surf_nv);
     mutex_force.lock();
     right_ac_vec.clear();
     right_task_vec.clear();
@@ -216,10 +227,8 @@ void sdhmaintainF_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = FORCE;
     right_task_vec.back()->mft = GLOBAL;
     right_task_vec.back()->set_desired_cf_kuka(des_force);
-    Eigen::Vector3d des_surf_nv;
-    des_surf_nv.setZero();
-    des_surf_nv(2) = 1.0;
-    right_task_vec.back()->set_desired_surf_nv(des_surf_nv);
+    right_task_vec.back()->set_desired_init_surf_nv(des_surf_nv);
+    right_task_vec.back()->set_init_contact_frame(cf_tm);
     
     mutex_force.unlock();
     std::cout<<"maintain the contact force using F/T feedback"<<std::endl;
@@ -246,7 +255,7 @@ void sdhslideX_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = JOINTS;
     right_task_vec.back()->mft = LOCAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
-    right_task_vec.back()->set_contact_frame(cf_tm);
+    right_task_vec.back()->set_init_contact_frame(cf_tm);
     right_task_vec.back()->set_primitive(SLIDING);
     
 
@@ -257,13 +266,24 @@ void sdhslideX_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = FORCE;
     right_task_vec.back()->mft = GLOBAL;
     right_task_vec.back()->set_desired_cf_kuka(des_force);
-    
-    right_task_vec.back()->set_desired_surf_nv(des_surf_nv);
+    right_task_vec.back()->set_init_contact_frame(cf_tm);
+    right_task_vec.back()->set_desired_init_surf_nv(des_surf_nv);
     
     mutex_force.unlock();
     std::cout<<"tool's hybrid control X"<<std::endl;
 	}
 void sdhslideY_cb(boost::shared_ptr<std::string> data){
+	Eigen::Vector3d des_surf_nv,cur_axis;
+    des_surf_nv.setZero();
+    cur_axis.setZero();
+    cur_axis(1) = 1.0;
+    des_surf_nv(2) = 1.0;
+	//generate contact frame
+	Eigen::Matrix3d cf_tm;
+	cf_tm.setZero();
+	cf_tm.col(0) = des_surf_nv;
+	cf_tm.col(2) = cur_axis;
+	cf_tm.col(1) = cur_axis.cross(des_surf_nv);
 	mutex_force.lock();
     right_ac_vec.clear();
     right_task_vec.clear();
@@ -273,6 +293,8 @@ void sdhslideY_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = JOINTS;
     right_task_vec.back()->mft = LOCAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
+    right_task_vec.back()->set_init_contact_frame(cf_tm);
+    right_task_vec.back()->set_primitive(SLIDING);
     
 
     right_taskname.forcet = F_MAINTAIN;
@@ -282,16 +304,25 @@ void sdhslideY_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = FORCE;
     right_task_vec.back()->mft = GLOBAL;
     right_task_vec.back()->set_desired_cf_kuka(des_force);
-    Eigen::Vector3d des_surf_nv;
-    des_surf_nv.setZero();
-    des_surf_nv(2) = 1.0;
-    right_task_vec.back()->set_desired_surf_nv(des_surf_nv);
+    right_task_vec.back()->set_init_contact_frame(cf_tm);
+    right_task_vec.back()->set_desired_init_surf_nv(des_surf_nv);
     
     mutex_force.unlock();
     std::cout<<"tool's hybrid control Y"<<std::endl;
 	}
 
 void sdhfoldtool_cb(boost::shared_ptr<std::string> data){
+	Eigen::Vector3d des_surf_nv,cur_axis;
+    des_surf_nv.setZero();
+    cur_axis.setZero();
+    cur_axis(1) = 1.0;
+    des_surf_nv(2) = 1.0;
+	//generate contact frame
+	Eigen::Matrix3d cf_tm;
+	cf_tm.setZero();
+	cf_tm.col(0) = des_surf_nv;
+	cf_tm.col(2) = cur_axis;
+	cf_tm.col(1) = cur_axis.cross(des_surf_nv);
 	mutex_force.lock();
     right_ac_vec.clear();
     right_task_vec.clear();
@@ -302,6 +333,7 @@ void sdhfoldtool_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mft = LOCAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
     right_task_vec.back()->set_primitive(ROTATE_AROUND_AXIS);
+    right_task_vec.back()->set_init_contact_frame(cf_tm);
     
 
     right_taskname.forcet = F_MAINTAIN;
@@ -311,10 +343,7 @@ void sdhfoldtool_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mt = FORCE;
     right_task_vec.back()->mft = GLOBAL;
     right_task_vec.back()->set_desired_cf_kuka(des_force);
-    Eigen::Vector3d des_surf_nv;
-    des_surf_nv.setZero();
-    des_surf_nv(2) = 1.0;
-    right_task_vec.back()->set_desired_surf_nv(des_surf_nv);
+    right_task_vec.back()->set_desired_init_surf_nv(des_surf_nv);
     
     mutex_force.unlock();
     std::cout<<"fold the tool rotated by the axis"<<std::endl;

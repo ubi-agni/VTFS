@@ -131,12 +131,12 @@ void ProActController::get_desired_lv(Robot *robot, Task *t,Eigen::Vector3d cur_
     identity_v(2) = 0;
     Eigen::Matrix3d Rel;
     Rel.setIdentity();
-    Rel = rs->robot_orien["eef"].transpose() * tst.contact_frame;
+    Rel = rs->robot_orien["eef"].transpose() * tool_contact_frame;
    
     lv_pro.head(3) = Kpp[tst.curtaskname.prot].block(0,0,3,3) * \
                     psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3);
     llv_pro = lv_pro.head(3);
-    std::cout<<"linear motion is "<<lv_pro.head(3)<<std::endl;
+//    std::cout<<"linear motion is "<<lv_pro.head(3)<<std::endl;
     if(tst.tmp == ROTATE_TOWARDS_AXIS){
 		global2local(normalized_cur_dir.cross(tst.desired_axis_dir),\
                      rs->robot_orien["eef"],tmp_rot_axis);

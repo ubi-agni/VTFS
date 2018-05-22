@@ -111,13 +111,13 @@ public:
     virtual void set_desired_o_eigen(Eigen::Matrix3d o_eigen) = 0;
     virtual void set_desired_o_ax(Eigen::Vector3d o_ax) = 0;
     virtual void set_desired_axis_dir(Eigen::Vector3d ax_dir) = 0;
-    virtual void set_desired_surf_nv(Eigen::Vector3d surf_nv) = 0;
+    virtual void set_desired_init_surf_nv(Eigen::Vector3d surf_nv) = 0;
     virtual void set_primitive(ToolManipPrim prim) = 0;
     virtual void set_desired_cp_myrmex(double *) = 0;
     virtual void set_desired_cf_myrmex(double) = 0;
     virtual void set_desired_cf_kuka(double) = 0;
     virtual void set_desired_taxel_mid(int) = 0;
-    virtual void set_contact_frame(Eigen::Matrix3d) = 0;
+    virtual void set_init_contact_frame(Eigen::Matrix3d) = 0;
     virtual void get_desired_position_mid(Eigen::Vector3d &)=0;
     virtual void set_desired_position_mid(Eigen::Vector3d) = 0;
     virtual void get_desired_nv_mid(Eigen::Vector3d &)=0;
@@ -144,7 +144,8 @@ protected:
 public:
     Eigen::Vector3d desired_axis_dir;
     Eigen::Vector3d desired_surf_nv;
-    Eigen::Matrix3d contact_frame;
+    Eigen::Vector3d desired_init_surf_nv;
+    Eigen::Matrix3d init_contact_frame;
 };
 
 #endif // TASK_H
