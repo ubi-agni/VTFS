@@ -21,6 +21,7 @@ Task::Task()
     curtaskname.vist = NV_VERT_ALIGN;
     desired_surf_nv.setZero();
     desired_axis_dir.setZero();
+    init_contact_frame.setIdentity();
     //modality type
     mt = JOINTS;
     //motion frame type

@@ -6,6 +6,10 @@
   <button args="SDHSlideX" handle="sdhslideX"/>
   <button args="SDHSlideY" handle="sdhslideY"/>
   <button args="SDHfoldtool" handle="sdhfoldtool"/>
+  <button args="SDHdmptest" handle="dmptest"/>
+  <button args="Slidingcylinder" handle="slidingcylinder"/>
+  <button args="record_init" handle="record_init"/>
+  <button args="record_training" handle="record_training"/>
   <button args="tippretouch" handle="tippretouch"/>
   <button args="gamaftcalib" handle="gamaftcalib"/>
   <button args="taccalib_rec" handle="taccalib_rec"/>

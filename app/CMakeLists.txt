@@ -17,45 +17,26 @@
 
 # set all apps
 SET(APPS
-         ApproachTest
-         TipComTest
-         TipServo
-         TipInfoEst
-         tactoolservo
-         MyrmexComTest
-         FTComTest
-         FTCalibTest
-         MyrmexServo
-         BiManualTipServo
-         righttactoolservo
-         HapticExploring
-         ViconTracker
-         HingedToolManip
-#        CQTest
-#        KukaCartImpTest
-#        RigTFEst
-#        CBFTest
-#        ExploringTest
-#        LeftCurFolForce
-#        SelfTouchTest
-#        FMTestNoContact
-#        LeftKukaTest
-#        StiffTest
-#        CompositionCtrlTest
-#        FollowMotionTest
-#        NewComTest
-#        test_smoothing_filter
-#        ContactTest
-#        ICLCartImpTest
-#        RightKukaTest
-#        TwistFollowTest
-#        NewappTest
+        ApproachTest
+        TipComTest
+        TipServo
+        TipInfoEst
+        tactoolservo
+        MyrmexComTest
+        FTComTest
+        FTCalibTest
+        MyrmexServo
+        BiManualTipServo
+        righttactoolservo
+        HapticExploring
+        ViconTracker
+        HingedToolManip
+        DMPHingedToolManip
         Schunkreader
         RemoteGUITest
         RemoteGuiControl
         VisMarkerComTest
         BiManualArticulatedObj
-        
 #        anotherapp
    )
 
@@ -67,6 +48,11 @@ include_directories("${PROJECT_SOURCE_DIR}/src/UtilModule")
 include_directories("${PROJECT_SOURCE_DIR}/src/RobotModule")
 include_directories("${PROJECT_SOURCE_DIR}/src/LearningModule")
 include_directories("${PROJECT_SOURCE_DIR}/src/TacModule")
+find_package(DMP QUIET)
+
+if(DMP_FOUND)
+    include_directories(${DMP_INCLUDE_DIRS})
+endif()
 
 ## add icl headers
 #include_directories(${ICL_INCLUDE_DIRS})

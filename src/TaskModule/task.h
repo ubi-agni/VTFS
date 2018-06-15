@@ -85,7 +85,14 @@ enum ToolManipPrim{
 	NOPRIM = 0,
 	SLIDING = 1,
 	ROTATE_AROUND_AXIS = 2,
-	ROTATE_TOWARDS_AXIS
+	ROTATE_TOWARDS_AXIS = 3,
+	ROTATE_BY_MOTION = 4,
+	ROTATE_BY_FORCE
+};
+
+enum SkillSrc{
+	MANUAL,
+	DMP_FEEDBACK
 };
 
 //explore action mode for tactool learning
@@ -133,6 +140,8 @@ public:
     MoveFrameT mft;
     ExploreModeT emt;
     ToolManipPrim tmp;
+    //define the skill is from manual setting or generalized from DMP
+    SkillSrc Ssrc;
     Eigen::Vector3d velocity_p2p;
     TacFBType tft;
     Eigen::Vector3d desired_pose_range;

@@ -61,9 +61,10 @@ public:
     Eigen::VectorXd delta_obj_old;
     Eigen::VectorXd delta_obj_int_o;
     Eigen::VectorXd delta_obj_old_o;
-    TemporalSmoothingFilter<Eigen::Vector3d>* lv_filter;
+    
     std::ofstream vel_rec2;
-    double est_rot_angle;
+    
+    Eigen::Vector3d old_ft_dir;
 };
 
 #endif // FORCESERVOCONTROLLER_H
