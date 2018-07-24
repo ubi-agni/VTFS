@@ -98,7 +98,7 @@ Eigen::VectorXd ft;
 //predefined pose of right arm should go
 #define right_newP_x 0.0
 #define right_newP_y 0.3
-#define right_newP_z 0.2
+#define right_newP_z 0.15
 
 #define right_newO_x 0.0
 #define right_newO_y M_PI;
@@ -256,7 +256,7 @@ void sdhslideX_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mft = LOCAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
     right_task_vec.back()->set_init_contact_frame(cf_tm);
-    right_task_vec.back()->set_primitive(SLIDING);
+    right_task_vec.back()->set_primitive(SLIDINGY);
     
 
     right_taskname.forcet = F_MAINTAIN;
@@ -294,7 +294,7 @@ void sdhslideY_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->mft = LOCAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
     right_task_vec.back()->set_init_contact_frame(cf_tm);
-    right_task_vec.back()->set_primitive(SLIDING);
+    right_task_vec.back()->set_primitive(SLIDINGZ);
     
 
     right_taskname.forcet = F_MAINTAIN;

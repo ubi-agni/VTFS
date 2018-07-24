@@ -414,7 +414,7 @@ void KukaLwr::initChains(ToolNameT tn){
             worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
         }
         if(tn == teensy_finger){
-            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.027+0.13605))));
         }
         if(tn == myrmex_sensor){
             //myrmex_sensor tool is assembled
@@ -454,7 +454,7 @@ void KukaLwr::initChains(ToolNameT tn){
             worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.170))));
         }
         if(tn == teensy_finger){
-            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.13605))));
+            worldToTool->addSegment (Segment(Joint(Joint::None),Frame(Vector(0, 0, 0.027+0.13605))));
         }
         if(tn == myrmex_sensor){
             //myrmex_sensor tool is assembled

@@ -1240,7 +1240,7 @@ void ros_publisher(){
     reba_robot_end_eff_val.orientation.z = tmp_q.z();
     reba_robot_end_eff_val.orientation.w = tmp_q.w();
     
-    std::cout<<"eef position is "<<right_rs->robot_position["robot_eef"](0)<<","<<right_rs->robot_position["robot_eef"](1)<<","<<right_rs->robot_position["robot_eef"](2)<<std::endl;
+    //std::cout<<"eef position is "<<right_rs->robot_position["robot_eef"](0)<<","<<right_rs->robot_position["robot_eef"](1)<<","<<right_rs->robot_position["robot_eef"](2)<<std::endl;
     
     reba_robot_end_eff_pub.publish(reba_robot_end_eff_val);
 //    ros::spinOnce();

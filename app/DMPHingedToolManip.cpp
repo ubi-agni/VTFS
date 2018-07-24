@@ -57,7 +57,7 @@
 //define the gravity of the schunk hand and its accessory
 #define Grav_Schunk_Acc 21.63
 #define tool_grav 0.15*9.81
-#define des_force 5
+#define des_force 3
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -98,7 +98,7 @@ Eigen::VectorXd ft;
 //predefined pose of right arm should go
 #define right_newP_x 0.2
 #define right_newP_y 0.3
-#define right_newP_z 0.15
+#define right_newP_z 0.25
 
 #define right_newO_x 0.0
 #define right_newO_y M_PI;
@@ -299,6 +299,7 @@ void sdh_moveto_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->Ssrc = MANUAL;
     right_task_vec.back()->set_desired_p_eigen(p);
     right_task_vec.back()->set_desired_o_ax(o);
+    std::cout<<"position is "<<p(0)<<","<<p(1)<<","<<p(2)<<std::endl;
     mutex_act.unlock();
     std::cout<<"kuka sdh self movement and move to new pose"<<std::endl;
 
@@ -392,7 +393,7 @@ void sdhslideX_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->Ssrc = MANUAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
     right_task_vec.back()->set_init_contact_frame(cf_tm);
-    right_task_vec.back()->set_primitive(SLIDING);
+    right_task_vec.back()->set_primitive(SLIDINGY);
     
 
     right_taskname.forcet = F_MAINTAIN;
@@ -410,6 +411,42 @@ void sdhslideX_cb(boost::shared_ptr<std::string> data){
 	}
 void sdhslideY_cb(boost::shared_ptr<std::string> data){
 
+    Eigen::Vector3d des_surf_nv,cur_axis;
+    des_surf_nv.setZero();
+    cur_axis.setZero();
+    cur_axis(1) = 1.0;
+    des_surf_nv(2) = 1.0;
+	//generate contact frame
+	Eigen::Matrix3d cf_tm;
+	cf_tm.setZero();
+	cf_tm.col(0) = des_surf_nv;
+	cf_tm.col(2) = cur_axis;
+	cf_tm.col(1) = cur_axis.cross(des_surf_nv);
+	mutex_force.lock();
+    right_ac_vec.clear();
+    right_task_vec.clear();
+    right_ac_vec.push_back(new ProActController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new KukaSelfCtrlTask(RP_LINEFOLLOW));
+    right_task_vec.back()->mt = JOINTS;
+    right_task_vec.back()->mft = LOCAL;
+    right_task_vec.back()->Ssrc = MANUAL;
+    right_task_vec.back()->set_desired_axis_dir(des_vec);
+    right_task_vec.back()->set_init_contact_frame(cf_tm);
+    right_task_vec.back()->set_primitive(SLIDINGZ);
+    
+
+    right_taskname.forcet = F_MAINTAIN;
+    right_ac_vec.push_back(new ForceServoController(*right_pm));
+    right_ac_vec.back()->set_init_TM(right_rs->robot_orien["eef"]);
+    right_task_vec.push_back(new ForceServoTask(right_taskname.forcet));
+    right_task_vec.back()->mt = FORCE;
+    right_task_vec.back()->mft = GLOBAL;
+    right_task_vec.back()->set_desired_cf_kuka(des_force);
+    right_task_vec.back()->set_init_contact_frame(cf_tm);
+    right_task_vec.back()->set_desired_init_surf_nv(des_surf_nv);
+    
+    mutex_force.unlock();
     std::cout<<"tool's hybrid control Y"<<std::endl;
 	}
 	
@@ -867,7 +904,6 @@ std::string get_selfpath() {
 }
 
 void init(){
-
     std::string data_f ("/tmp/");
     TInitOrien.open((data_f+std::string("initorien.txt")).c_str());
     Tpose.open((data_f+std::string("pose.txt")).c_str());

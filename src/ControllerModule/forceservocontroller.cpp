@@ -62,7 +62,7 @@ void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd
     {
 		if ((ft(0) < 1e-05)&&(ft(1) < 1e-05)){
 			v_ratio.setZero();
-			//std::cout<<"no control before no contact force."<<std::endl;
+			std::cout<<"no control before no contact force."<<std::endl;
 		}
 		else{
 			Eigen::Vector3d rot_z = rs->robot_orien["eef"] * m_init_tm.transpose() * tst.init_contact_frame.col(2);
@@ -85,14 +85,13 @@ void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd
 		}	
 		else
 		{
-		    tst.desired_surf_nv = old_ft_dir;
+		    tst.desired_surf_nv = tst.desired_init_surf_nv;
 		}
 		old_ft_dir = tst.desired_surf_nv;   
 		 
 		Eigen::VectorXd delta_g;
 		delta_g.setZero(6);
         delta_g.head(3) = (-1) * (desiredf * tst.desired_surf_nv - ft.head(3));
-
 		delta_g(3) = 0;
 		delta_g(4) = 0;
 		delta_g(5) = 0;

@@ -166,9 +166,6 @@ void ProActController::get_desired_lv(Robot *robot, Task *t,Eigen::Vector3d cur_
 //    std::cout<<"Kop "<<Kop[tst.curtaskname.prot]<<std::endl;
 //    std::cout<<std::endl;
 
-    //test for one axis
-    identity_v(0) = 0;
-    identity_v(2) = 0;
     
     if(tst.Ssrc == DMP_FEEDBACK){
 	    // dmp
@@ -265,25 +262,46 @@ void ProActController::get_desired_lv(Robot *robot, Task *t,Eigen::Vector3d cur_
 		v_ratio.setZero();
 		filtered_lv.setZero();
 		
+		
 		Eigen::Matrix3d Rel;
 		Rel = rs->robot_orien["eef"].transpose() * tst.init_contact_frame  * Eigen::AngleAxisd(est_rot_angle, Eigen::Vector3d::UnitZ());
 		llv_pro = lv_pro.head(3) = Kpp[tst.curtaskname.prot].block(0,0,3,3) * \
 	                    psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3);   
-		//    std::cout<<"linear motion is "<<lv_pro.head(3)<<std::endl;
+
+        if(tst.tmp == SLIDINGY){
+			//test for x axis in tool frame
+		    identity_v(0) = 0;
+		    identity_v(2) = 0;
+			llv_pro = Kpp[tst.curtaskname.prot].block(0,0,3,3) * \
+	                    psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3); 
+			}
+		if(tst.tmp == SLIDINGZ){
+			//test for x axis in tool frame
+		    identity_v(0) = 0;
+		    identity_v(1) = 0;
+			llv_pro = Kpp[tst.curtaskname.prot].block(0,0,3,3) * \
+	                    psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3); 
+			}
+			
 	    if(tst.tmp == ROTATE_TOWARDS_AXIS){
+
 			global2local(normalized_cur_dir.cross(tst.desired_axis_dir),\
 	                     rs->robot_orien["eef"],tmp_rot_axis);
 			delta_ag = (1.0-fabs(normalized_cur_dir.dot(tst.desired_axis_dir)));
+
 			delta_ag_int =  delta_ag_int + delta_ag;  
+
 			//obtain the rotation command requested by the desired goal direction of rotation axis              
 			lv_pro.tail(3) = delta_ag * tmp_rot_axis + 0.001 * delta_ag_int * tmp_rot_axis;
+
 			lov_pro = Kop[tst.curtaskname.prot] * lv_pro.tail(3);
+
 	    }
 	    if(tst.tmp == ROTATE_AROUND_AXIS)
 		    lov_pro = Kop[tst.curtaskname.prot] *(-0.02) * rs->robot_orien["eef"].transpose()*normalized_cur_dir;
 	    if(tst.tmp == NOPRIM)
 	        lov_pro.setZero();
-	    if(tst.tmp = ROTATE_BY_MOTION){
+	    if(tst.tmp == ROTATE_BY_MOTION){
 			//tool slides on a curved surface. Purpose: to estimate the desired contact force direction
 			//cited paper: "Integrated vision/force robotic servoing in the task frame formalism"
 			    
@@ -326,12 +344,12 @@ void ProActController::update_robot_reference(Robot *robot, Task *t, Eigen::Vect
     if(t->mft == LOCAL){
         get_desired_lv(robot,t,cur_dir,ft_f,rs);
 //        limit_eef_euler(get_euler_limit());
-//        std::cout<<"lv before in proservo "<<llv<<std::endl;
-//        std::cout<<lov<<std::endl;
+        std::cout<<"lv before in proservo "<<llv<<std::endl;
+        std::cout<<lov<<std::endl;
         llv = llv + llv_pro;
         lov = lov + lov_pro;
-//        std::cout<<"lv after in proservo "<<llv<<std::endl;
-//        std::cout<<lov<<std::endl;
+        std::cout<<"lv after in proservo "<<llv<<std::endl;
+        std::cout<<lov<<std::endl;
         local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
                         lov,p_target,o_target);
     }

@@ -51,12 +51,12 @@ recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
    else{
        counter ++;
 }
-//     ft_gama->raw_ft_f(0) = msg->wrench.force.x;
-//     ft_gama->raw_ft_f(1) = msg->wrench.force.y-0.1;
-//     ft_gama->raw_ft_f(2) = msg->wrench.force.z;
-//     ft_gama->raw_ft_t(0) = msg->wrench.torque.x;
-//     ft_gama->raw_ft_t(1) = msg->wrench.torque.y;
-//     ft_gama->raw_ft_t(2) = msg->wrench.torque.z;
+     ft_gama->raw_ft_f(0) = msg->wrench.force.x;
+     ft_gama->raw_ft_f(1) = msg->wrench.force.y-0.1;
+     ft_gama->raw_ft_f(2) = msg->wrench.force.z;
+     ft_gama->raw_ft_t(0) = msg->wrench.torque.x;
+     ft_gama->raw_ft_t(1) = msg->wrench.torque.y;
+     ft_gama->raw_ft_t(2) = msg->wrench.torque.z;
 }
 
 #endif
@@ -83,6 +83,7 @@ int main(int argc, char* argv[])
 
     boost::function<void(boost::shared_ptr<std::string>)> button_closeprog(closeprog_cb);
     StopFlag = false;
+    ft_gama = new gamaFT;
     #ifdef HAVE_ROS
         ros::init(argc, argv, "KukaRos",ros::init_options::NoSigintHandler);
         nh = new ros::NodeHandle();
