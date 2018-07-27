@@ -53,7 +53,7 @@ private:
     std::map<PROTaskNameT, Eigen::Matrix3d> Kop;
     Eigen::Vector3d llv_pro,lov_pro;
     Eigen::VectorXd lv_pro;
-    
+    bool rot_by_motion;
 
 public:
     double delta_ag, delta_ag_int;

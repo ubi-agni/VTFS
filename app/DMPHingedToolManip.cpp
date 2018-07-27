@@ -1,13 +1,13 @@
 
 /*
  ============================================================================
- Name        : HingedToolManip.cpp
+ Name        : DMPHingedToolManip.cpp
  Author      : Qiang Li
  Version     :
  Copyright   : Copyright Qiang Li, Universität Bielefeld
- Description : visual servo for right arm + schunk grasp the hinged tool assuming that
+ Description : force servo for right arm + schunk grasp the hinged tool assuming that
  *             the hinged origin and axis direction has been estimated in advanced. The estimation
- *              can be done with fingertip flap the tool
+ *              can be done with fingertip flap the tool. DMP is used for the feedforward signal.
  ============================================================================
  */
 
@@ -57,7 +57,7 @@
 //define the gravity of the schunk hand and its accessory
 #define Grav_Schunk_Acc 21.63
 #define tool_grav 0.15*9.81
-#define des_force 3
+#define des_force 4
 
 #ifdef HAVE_ROS
 // ROS objects
@@ -98,7 +98,7 @@ Eigen::VectorXd ft;
 //predefined pose of right arm should go
 #define right_newP_x 0.2
 #define right_newP_y 0.3
-#define right_newP_z 0.25
+#define right_newP_z 0.35
 
 #define right_newO_x 0.0
 #define right_newO_y M_PI;
@@ -447,7 +447,7 @@ void sdhslideY_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->set_desired_init_surf_nv(des_surf_nv);
     
     mutex_force.unlock();
-    std::cout<<"tool's hybrid control Y"<<std::endl;
+    std::cout<<"tool's hybrid control YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"<<std::endl;
 	}
 	
 void slidingcylinder_cb(boost::shared_ptr<std::string> data){
@@ -473,7 +473,7 @@ void slidingcylinder_cb(boost::shared_ptr<std::string> data){
     right_task_vec.back()->Ssrc = MANUAL;
     right_task_vec.back()->set_desired_axis_dir(des_vec);
     right_task_vec.back()->set_init_contact_frame(cf_tm);
-    right_task_vec.back()->set_primitive(ROTATE_BY_MOTION);
+    right_task_vec.back()->set_primitive(SLIDINGZ_ROTATE_BY_MOTION);
     
 
     right_taskname.forcet = F_MAINTAIN;
@@ -608,18 +608,24 @@ recvFT(const geometry_msgs::WrenchStampedConstPtr& msg){
     //get rid of tool/pokingstick gravity--calib
     ft_gama->calib_ft_f = right_rs->robot_orien["eef"] * ft_gama->raw_ft_f + grav_tmp;
     ft_gama->calib_ft_t = ft_gama->raw_ft_t;
+    Eigen::Vector3d f_offset;
+    f_offset.setZero();
+    f_offset(0) = -0.5;
+    f_offset(1) = -0.5;
+    f_offset(2) = -0.6;
     //use smooth filter to get rid of noise.
-    ft.head(3) = ft_gama->filtered_gama_f = gama_f_filter->push(ft_gama->calib_ft_f);
+    ft.head(3) = ft_gama->filtered_gama_f = gama_f_filter->push(ft_gama->calib_ft_f) - f_offset;
     //get rid of noise of no contacting
     if(ft_gama->filtered_gama_f.norm() <1.5)
 	    ft.head(3).setZero();
     ft.tail(3) = ft_gama->filtered_gama_t = gama_t_filter->push(ft_gama->calib_ft_t);
     
-    //counter_t ++;
-    //if(counter_t%50==0){
-        //counter_t = 0;
-        //std::cout<<"estimated contact force: "<<ft_gama->filtered_gama_f(0)<<","<<ft_gama->filtered_gama_f(1)<<","<<ft_gama->filtered_gama_f(2)<<std::endl;
-//}
+    counter_t ++;
+    if(counter_t%50==0){
+        counter_t = 0;
+//        std::cout<<"estimated contact force: "<<ft_gama->filtered_gama_f(0)<<","<<ft_gama->filtered_gama_f(1)<<","
+//                <<ft_gama->filtered_gama_f(2)<<","<<ft_gama->filtered_gama_t(0)<<","<<ft_gama->filtered_gama_t(1)<<","<<ft_gama->filtered_gama_t(2)<<std::endl;
+}
     
     mutex_force.unlock();
 }

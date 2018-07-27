@@ -24,7 +24,7 @@ ProActController::ProActController(ParameterManager &p) : ActController(p)
     lv_pro.setZero(6);
     delta_ag = 0; 
     delta_ag_int = 0;
-
+    rot_by_motion = false;
 }
 
 ProActController::ProActController(ParameterManager &p, const std::string &dmpFileName) : ActController(p)
@@ -61,6 +61,7 @@ ProActController::ProActController(ParameterManager &p, const std::string &dmpFi
     est_rot_angle = 0;
     pro_data_store.open("/tmp/data/pro_data_store.txt");
     lv_filter = new TemporalSmoothingFilter<Eigen::Vector3d>(10,Average,Eigen::Vector3d(0,0,0));
+    rot_by_motion = false;
     
 //    beginClock = std::chrono::steady_clock::now();
 
@@ -269,14 +270,14 @@ void ProActController::get_desired_lv(Robot *robot, Task *t,Eigen::Vector3d cur_
 	                    psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3);   
 
         if(tst.tmp == SLIDINGY){
-			//test for x axis in tool frame
+            //test for y axis in tool frame
 		    identity_v(0) = 0;
 		    identity_v(2) = 0;
 			llv_pro = Kpp[tst.curtaskname.prot].block(0,0,3,3) * \
 	                    psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3); 
 			}
 		if(tst.tmp == SLIDINGZ){
-			//test for x axis in tool frame
+            //test for z axis in tool frame
 		    identity_v(0) = 0;
 		    identity_v(1) = 0;
 			llv_pro = Kpp[tst.curtaskname.prot].block(0,0,3,3) * \
@@ -301,7 +302,15 @@ void ProActController::get_desired_lv(Robot *robot, Task *t,Eigen::Vector3d cur_
 		    lov_pro = Kop[tst.curtaskname.prot] *(-0.02) * rs->robot_orien["eef"].transpose()*normalized_cur_dir;
 	    if(tst.tmp == NOPRIM)
 	        lov_pro.setZero();
-	    if(tst.tmp == ROTATE_BY_MOTION){
+
+
+        if(tst.tmp == SLIDINGY_ROTATE_BY_MOTION){
+            //test for y axis in tool frame
+            identity_v(0) = 0;
+            identity_v(2) = 0;
+            llv_pro = Kpp[tst.curtaskname.prot].block(0,0,3,3) * \
+                        psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3);
+
 			//tool slides on a curved surface. Purpose: to estimate the desired contact force direction
 			//cited paper: "Integrated vision/force robotic servoing in the task frame formalism"
 			    
@@ -327,6 +336,37 @@ void ProActController::get_desired_lv(Robot *robot, Task *t,Eigen::Vector3d cur_
 			}
 			lov_pro = Kop[tst.curtaskname.prot] * v_ratio;
 		}
+
+        if(tst.tmp == SLIDINGZ_ROTATE_BY_MOTION){
+            identity_v(0) = 0;
+            identity_v(1) = 0;
+            llv_pro = Kpp[tst.curtaskname.prot].block(0,0,3,3) * \
+                        psm[tst.curtaskname.prot].block(0,0,3,3) * Rel * identity_v.head(3);
+            //tool slides on a curved surface. Purpose: to estimate the desired contact force direction
+            //cited paper: "Integrated vision/force robotic servoing in the task frame formalism"
+
+            //integator to estimate the rotation angle from the rotation rate.
+            est_rot_angle = est_rot_angle + v_ratio(2) * 0.004;
+            //estimate the current contact frame orientation using estimated rotation angle
+            //R_new = R_init * R_axis_angle
+            tool_contact_frame = tst.init_contact_frame * Eigen::AngleAxisd(est_rot_angle, Eigen::Vector3d::UnitZ());
+
+            //estimate the tool-origin's linear velocity(global)
+            //est_v_g = rs->EstRobotEefLVel_Ref(robot);
+            //estimate the tool-origin's linear velocity(local)
+            rs_lv = tool_contact_frame.transpose() * rs->EstRobotEefLVel_Ref(robot);
+            filtered_lv = lv_filter->push(rs_lv);
+
+            if((filtered_lv[0] == 0)&&(filtered_lv[1] == 0)){
+                v_ratio.setZero();
+            }
+            else{
+                v_ratio(2) = atan(filtered_lv[1]/filtered_lv[0]);
+                v_ratio(1) = atan((-1)*filtered_lv[2]/filtered_lv[0]);
+                v_ratio(0) = atan(filtered_lv[2]/filtered_lv[1]);
+            }
+            lov_pro = Kop[tst.curtaskname.prot] * v_ratio;
+        }
     	
 	}
 //    limit_vel(get_llv_limit(),llv_pro,lov_pro);
@@ -344,12 +384,12 @@ void ProActController::update_robot_reference(Robot *robot, Task *t, Eigen::Vect
     if(t->mft == LOCAL){
         get_desired_lv(robot,t,cur_dir,ft_f,rs);
 //        limit_eef_euler(get_euler_limit());
-        std::cout<<"lv before in proservo "<<llv<<std::endl;
-        std::cout<<lov<<std::endl;
+//        std::cout<<"lv before in proservo "<<llv<<std::endl;
+//        std::cout<<lov<<std::endl;
         llv = llv + llv_pro;
         lov = lov + lov_pro;
-        std::cout<<"lv after in proservo "<<llv<<std::endl;
-        std::cout<<lov<<std::endl;
+//        std::cout<<"lv after in proservo "<<llv<<std::endl;
+//        std::cout<<lov<<std::endl;
         local_to_global(robot->get_cur_cart_p(),robot->get_cur_cart_o(),llv,\
                         lov,p_target,o_target);
     }

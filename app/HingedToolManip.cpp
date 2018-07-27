@@ -5,7 +5,7 @@
  Author      : Qiang Li
  Version     :
  Copyright   : Copyright Qiang Li, Universität Bielefeld
- Description : visual servo for right arm + schunk grasp the hinged tool assuming that
+ Description : force servo for right arm + schunk grasp the hinged tool assuming that
  *             the hinged origin and axis direction has been estimated in advanced. The estimation
  *              can be done with fingertip flap the tool
  ============================================================================

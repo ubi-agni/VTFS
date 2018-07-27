@@ -62,17 +62,37 @@ void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd
     {
 		if ((ft(0) < 1e-05)&&(ft(1) < 1e-05)){
 			v_ratio.setZero();
-			std::cout<<"no control before no contact force."<<std::endl;
+//			std::cout<<"no control before no contact force."<<std::endl;
 		}
 		else{
+            //desired rotation axis is not changed. so the online estimated global direction of rotation axis is:
+            //v_g_online = T_l2g_online * T_g2l_init * v_g
 			Eigen::Vector3d rot_z = rs->robot_orien["eef"] * m_init_tm.transpose() * tst.init_contact_frame.col(2);
-			Eigen::Vector3d norm_ft = ft.head(3).normalized();
+
+            Eigen::Matrix3d contact_frame;
+            contact_frame.setZero();
+            contact_frame = rs->robot_orien["eef"] * m_init_tm.transpose() * tst.init_contact_frame;
+            std::cout<<"contact frame "<<contact_frame<<std::endl;
+
+            Eigen::Vector3d ft_local,ft_global_nofriction;
+            ft_local.setZero();
+            ft_global_nofriction.setZero();
+            std::cout<<"ft head3 "<<ft(0)<<","<<ft(1)<<","<<ft(2)<<","<<std::endl;
+            ft_local = contact_frame.transpose() * ft.head(3);
+            std::cout<<"ft_local before "<<ft_local(0)<<","<<ft_local(1)<<","<<ft_local(2)<<","<<std::endl;
+            ft_local(1) = 0;
+            ft_local(2) = 0;
+            std::cout<<"ft_local after "<<ft_local(0)<<","<<ft_local(1)<<","<<ft_local(2)<<","<<std::endl;
+            ft_global_nofriction =contact_frame * ft_local;
+            std::cout<<"ft_global_nofriction "<<ft_global_nofriction(0)<<","<<ft_global_nofriction(1)<<","<<ft_global_nofriction(2)<<","<<std::endl;
+
+            Eigen::Vector3d norm_ft = ft_global_nofriction.normalized();
 			Eigen::Vector3d rot_axis = norm_ft.cross(rot_z);
-			double angle = M_PI/2.0 - acos(ft.head(3).normalized().dot(rot_z));
+            double angle = M_PI/2.0 - acos(norm_ft.dot(rot_z));
 			vel_rec2<<angle<<","<<norm_ft(0)<<","<<norm_ft(1)<<","<<norm_ft(2)<<","<<rot_z(0)<<","<<rot_z(1)<<","<<rot_z(2)<<std::endl;
-			std::cout<<"angle  is"<<angle<<std::endl;
-			v_ratio = 0.3* rs->robot_orien["eef"].transpose() * rot_axis * angle;
-			std::cout<<"v_ratio is "<<v_ratio(0)<<","<<v_ratio(1)<<","<<v_ratio(2)<<std::endl;
+            std::cout<<"angle  is"<<angle<<std::endl;
+            v_ratio = 1 * rs->robot_orien["eef"].transpose() * rot_axis * angle;
+//			std::cout<<"v_ratio is "<<v_ratio(0)<<","<<v_ratio(1)<<","<<v_ratio(2)<<std::endl;
 		}
 		
 	}
@@ -95,6 +115,8 @@ void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd
 		delta_g(3) = 0;
 		delta_g(4) = 0;
 		delta_g(5) = 0;
+        //vel from global to robot eef
+        //std::cout<<"global vel from force "<<delta_g(0)<<","<<delta_g(1)<<","<<delta_g(2)<<std::endl;
 		deltais.head(3) = rs->robot_orien["eef"].transpose() * delta_g.head(3);
 		deltais(3) = 0;
 		deltais(4) = 0;
@@ -125,7 +147,7 @@ void ForceServoController::get_desired_lv(Robot *robot, Task *t, Eigen::VectorXd
             Kpi[tst.curtaskname.forcet] * sm[tst.curtaskname.forcet] * deltais_int + \
             Kpd[tst.curtaskname.forcet] * sm[tst.curtaskname.forcet] * (deltais - deltais_old);
     llv_f = deltape.head(3);
-    //std::cout<<"local vel from force "<<llv_f(0)<<","<<llv_f(1)<<","<<llv_f(2)<<std::endl;
+//    std::cout<<"local vel from force "<<llv_f(0)<<","<<llv_f(1)<<","<<llv_f(2)<<std::endl;
     //llv_f.setZero();
     
    //lov_f = Kop[tst.curtaskname.forcet] * v_ratio;
